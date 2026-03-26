@@ -24,14 +24,21 @@ export function registerCreateMetric(server: McpServer): void {
         id: z.string().describe('Unique metric identifier, e.g. "total-revenue"'),
         title: z.string().describe('Metric title, e.g. "Total Revenue"'),
         subtitle: z.string().optional().describe('Optional subtitle, e.g. "Last 7 days"'),
-        color: z.string().optional().describe('Hex color for the metric background, e.g. "#54B399". Defaults to Kibana green.'),
+        color: z
+          .string()
+          .optional()
+          .describe(
+            'Hex color for the metric background, e.g. "#54B399". Defaults to Kibana green.'
+          ),
         esqlQuery: z
           .string()
           .describe(
             'ES|QL query that returns a single row with the metric value. ' +
-            'Example: FROM kibana_sample_data_ecommerce | STATS total = SUM(taxful_total_price)',
+              'Example: FROM kibana_sample_data_ecommerce | STATS total = SUM(taxful_total_price)'
           ),
-        valueField: z.string().describe('Column name from the query result to use as the metric value, e.g. "total"'),
+        valueField: z
+          .string()
+          .describe('Column name from the query result to use as the metric value, e.g. "total"'),
         valuePrefix: z.string().optional().describe('Text before the value, e.g. "$" or "USD "'),
         valueSuffix: z.string().optional().describe('Text after the value, e.g. "%" or " orders"'),
         trendEsqlQuery: z
@@ -39,11 +46,21 @@ export function registerCreateMetric(server: McpServer): void {
           .optional()
           .describe(
             'Optional ES|QL query for the sparkline trend. Should return time-bucketed rows. ' +
-            'Example: FROM kibana_sample_data_ecommerce | STATS revenue = SUM(taxful_total_price) BY BUCKET(order_date, 1 day)',
+              'Example: FROM kibana_sample_data_ecommerce | STATS revenue = SUM(taxful_total_price) BY BUCKET(order_date, 1 day)'
           ),
-        trendXField: z.string().optional().describe('Column name for the trend x-axis (time field), e.g. "order_date"'),
-        trendYField: z.string().optional().describe('Column name for the trend y-axis (value field), e.g. "revenue"'),
-        trendShape: z.enum(['area', 'bars']).optional().default('area').describe('Sparkline shape: "area" (default) or "bars"'),
+        trendXField: z
+          .string()
+          .optional()
+          .describe('Column name for the trend x-axis (time field), e.g. "order_date"'),
+        trendYField: z
+          .string()
+          .optional()
+          .describe('Column name for the trend y-axis (value field), e.g. "revenue"'),
+        trendShape: z
+          .enum(['area', 'bars'])
+          .optional()
+          .default('area')
+          .describe('Sparkline shape: "area" (default) or "bars"'),
       },
     },
     async (args) => {
@@ -72,19 +89,30 @@ export function registerCreateMetric(server: McpServer): void {
         const rows = columnarToRows(response);
 
         if (rows.length === 0) {
-          return { content: [{ type: 'text', text: 'Metric query returned no results.' }], isError: true };
+          return {
+            content: [{ type: 'text', text: 'Metric query returned no results.' }],
+            isError: true,
+          };
         }
 
         value = Number(rows[0][valueField]);
         if (isNaN(value)) {
           return {
-            content: [{ type: 'text', text: `Field "${valueField}" is not a number. Got: ${rows[0][valueField]}` }],
+            content: [
+              {
+                type: 'text',
+                text: `Field "${valueField}" is not a number. Got: ${rows[0][valueField]}`,
+              },
+            ],
             isError: true,
           };
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        return { content: [{ type: 'text', text: `Metric query failed: ${message}` }], isError: true };
+        return {
+          content: [{ type: 'text', text: `Metric query failed: ${message}` }],
+          isError: true,
+        };
       }
 
       // Execute the optional trend query
@@ -110,8 +138,16 @@ export function registerCreateMetric(server: McpServer): void {
       }
 
       const metric: MetricConfig = {
-        id, title, chartType: 'metric', subtitle,
-        color: color || '#54B399', value, valuePrefix, valueSuffix, esqlQuery, trend,
+        id,
+        title,
+        chartType: 'metric',
+        subtitle,
+        color: color || '#54B399',
+        value,
+        valuePrefix,
+        valueSuffix,
+        esqlQuery,
+        trend,
       };
 
       const dashboard = addChart(metric);
@@ -133,6 +169,6 @@ export function registerCreateMetric(server: McpServer): void {
       }
 
       return { content };
-    },
+    }
   );
 }

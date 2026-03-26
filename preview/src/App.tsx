@@ -118,10 +118,23 @@ export function App() {
   if (renderChartId) {
     const chart = dashboard.charts.find((c) => c.id === renderChartId);
     if (!chart) {
-      return <div id="render-ready" data-status="not-found">Chart not found</div>;
+      return (
+        <div id="render-ready" data-status="not-found">
+          Chart not found
+        </div>
+      );
     }
     return (
-      <div id="render-ready" data-status="ok" style={{ width: 600, height: chart.chartType === 'metric' ? 200 : 350, padding: 16, background: '#fff' }}>
+      <div
+        id="render-ready"
+        data-status="ok"
+        style={{
+          width: 600,
+          height: chart.chartType === 'metric' ? 200 : 350,
+          padding: 16,
+          background: '#fff',
+        }}
+      >
         <ChartPanel config={chart} />
       </div>
     );
@@ -164,7 +177,7 @@ export function App() {
         </PanelChrome>
       );
     },
-    [chartMap],
+    [chartMap]
   );
 
   return (
@@ -174,8 +187,8 @@ export function App() {
         {hasCharts && (
           <p style={{ color: '#666', marginTop: 4, fontSize: 14 }}>
             {dashboard.charts.length} chart(s)
-            {sections.length > 0 && ` · ${sections.length} section(s)`}
-            {' '}· Last updated: {new Date(dashboard.updatedAt).toLocaleTimeString()}
+            {sections.length > 0 && ` · ${sections.length} section(s)`} · Last updated:{' '}
+            {new Date(dashboard.updatedAt).toLocaleTimeString()}
           </p>
         )}
       </header>
@@ -192,8 +205,12 @@ export function App() {
         <div style={{ textAlign: 'center', padding: '80px 20px', color: '#666' }}>
           <h2 style={{ fontSize: 20, marginBottom: 8 }}>No charts yet</h2>
           <p>
-            Use the MCP tools in Cursor to create charts. Try asking:<br />
-            <em>"Create a bar chart showing revenue by product category from the ecommerce sample data"</em>
+            Use the MCP tools in Cursor to create charts. Try asking:
+            <br />
+            <em>
+              "Create a bar chart showing revenue by product category from the ecommerce sample
+              data"
+            </em>
           </p>
         </div>
       )}

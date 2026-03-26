@@ -34,5 +34,5 @@ appendIconComponentCache({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <EuiProvider colorMode="light">
     <App />
-  </EuiProvider>,
+  </EuiProvider>
 );

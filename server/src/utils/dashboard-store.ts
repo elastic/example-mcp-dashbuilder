@@ -19,11 +19,12 @@ function ensureDashboardsDir(): void {
 }
 
 function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    || 'untitled';
+  return (
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'untitled'
+  );
 }
 
 function getDashboardPath(id: string): string {
@@ -77,7 +78,10 @@ function writeDashboard(config: DashboardConfig): void {
 
 // ── Multi-dashboard management ──
 
-export function createDashboard(title: string, id?: string): { id: string; dashboard: DashboardConfig } {
+export function createDashboard(
+  title: string,
+  id?: string
+): { id: string; dashboard: DashboardConfig } {
   ensureDashboardsDir();
   const dashboardId = id || slugify(title);
   const config = emptyDashboard(title);
@@ -86,7 +90,12 @@ export function createDashboard(title: string, id?: string): { id: string; dashb
   return { id: dashboardId, dashboard: config };
 }
 
-export function listDashboards(): Array<{ id: string; title: string; updatedAt: string; isActive: boolean }> {
+export function listDashboards(): Array<{
+  id: string;
+  title: string;
+  updatedAt: string;
+  isActive: boolean;
+}> {
   ensureDashboardsDir();
   const activeId = getActiveDashboardId();
   const files = readdirSync(DASHBOARDS_DIR).filter((f) => f.endsWith('.json'));

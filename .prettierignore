@@ -1,0 +1,5 @@
+node_modules/
+dist/
+preview/public/dashboard.json
+preview/public/dashboards/
+server/src/resources/esql_docs/

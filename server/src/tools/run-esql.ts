@@ -16,9 +16,11 @@ export function registerRunEsql(server: McpServer): void {
         'Use this to explore data, test queries, and understand the shape of results ' +
         'before creating charts. Returns both raw columns/types and row-oriented data.',
       inputSchema: {
-        query: z.string().describe(
-          'The ES|QL query to execute, e.g. "FROM logs-* | STATS count = COUNT(*) BY host.name"',
-        ),
+        query: z
+          .string()
+          .describe(
+            'The ES|QL query to execute, e.g. "FROM logs-* | STATS count = COUNT(*) BY host.name"'
+          ),
       },
     },
     async (args) => {
@@ -40,6 +42,6 @@ export function registerRunEsql(server: McpServer): void {
           },
         ],
       };
-    },
+    }
   );
 }

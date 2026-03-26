@@ -73,7 +73,10 @@ export const GridLayout = ({
    */
   useEffect(() => {
     const orderedLayout = getOrderedLayout(layout);
-    const isEqual = isOrderedLayoutEqual(orderedLayout, gridLayoutStateManager.gridLayout$.getValue());
+    const isEqual = isOrderedLayoutEqual(
+      orderedLayout,
+      gridLayoutStateManager.gridLayout$.getValue()
+    );
     if (!isEqual) {
       const newLayout = cloneDeep(orderedLayout);
       Object.entries(newLayout).forEach(([sectionId, row]) => {
@@ -188,7 +191,7 @@ export const GridLayout = ({
         renderPanelContents,
         useCustomDragHandle,
         gridLayoutStateManager,
-      } as GridLayoutContextType),
+      }) as GridLayoutContextType,
     [renderPanelContents, useCustomDragHandle, gridLayoutStateManager]
   );
 
@@ -203,12 +206,14 @@ export const GridLayout = ({
           }}
           className={classNames('kbnGrid', className)}
           css={[styles.layout, styles.hasActivePanel, styles.singleColumn, styles.hasExpandedPanel]}
-          style={{
-            // Set initial CSS variables so layout renders before resize observer fires
-            '--kbnGridGutterSize': `${gridSettings.gutterSize}`,
-            '--kbnGridRowHeight': `${gridSettings.rowHeight}`,
-            '--kbnGridColumnCount': `${gridSettings.columnCount}`,
-          } as React.CSSProperties}
+          style={
+            {
+              // Set initial CSS variables so layout renders before resize observer fires
+              '--kbnGridGutterSize': `${gridSettings.gutterSize}`,
+              '--kbnGridRowHeight': `${gridSettings.rowHeight}`,
+              '--kbnGridColumnCount': `${gridSettings.columnCount}`,
+            } as React.CSSProperties
+          }
         >
           {elementsInOrder.map((element) => {
             switch (element.type) {

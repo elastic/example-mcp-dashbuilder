@@ -107,8 +107,14 @@ function buildColorScale(values: number[], steps = 8): HeatmapBandsColorScale {
 
   // Borealis temperature palette — euiPaletteForTemperature(8) from Kibana's EUI
   const ramp = [
-    '#61A2FF', '#9AC2FF', '#CFE1FF', '#F2F7FE',
-    '#FDF5F4', '#FFD4CF', '#FDA49C', '#F6726A',
+    '#61A2FF',
+    '#9AC2FF',
+    '#CFE1FF',
+    '#F2F7FE',
+    '#FDF5F4',
+    '#FFD4CF',
+    '#FDA49C',
+    '#F6726A',
   ];
 
   const bands = ramp.map((color, i) => ({
@@ -213,9 +219,14 @@ function XYChartPanel({ config }: { config: XYChartConfig }) {
         ) : (
           <>
             <Axis id="bottom" position={Position.Bottom} title={xField} />
-            <Axis id="left" position={Position.Left} title={yFields.length === 1 ? yFields[0] : undefined} />
+            <Axis
+              id="left"
+              position={Position.Left}
+              title={yFields.length === 1 ? yFields[0] : undefined}
+            />
             {yFields.map((yField) => {
-              const Series = chartType === 'line' ? LineSeries : chartType === 'area' ? AreaSeries : BarSeries;
+              const Series =
+                chartType === 'line' ? LineSeries : chartType === 'area' ? AreaSeries : BarSeries;
               return (
                 <Series
                   key={`${id}-${yField}`}

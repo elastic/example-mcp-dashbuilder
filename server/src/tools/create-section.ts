@@ -17,7 +17,9 @@ export function registerSectionTools(server: McpServer): void {
         'After creating a section, use move_panel_to_section to assign panels to it.',
       inputSchema: {
         id: z.string().describe('Unique section identifier, e.g. "revenue-section"'),
-        title: z.string().describe('Section title displayed in the collapsible header, e.g. "Revenue Metrics"'),
+        title: z
+          .string()
+          .describe('Section title displayed in the collapsible header, e.g. "Revenue Metrics"'),
         panelIds: z
           .array(z.string())
           .optional()
@@ -45,7 +47,7 @@ export function registerSectionTools(server: McpServer): void {
           },
         ],
       };
-    },
+    }
   );
 
   registerTool(
@@ -53,7 +55,8 @@ export function registerSectionTools(server: McpServer): void {
     'move_panel_to_section',
     {
       title: 'Move Panel to Section',
-      description: 'Move a panel into a collapsible section. The panel will be removed from any other section it belongs to.',
+      description:
+        'Move a panel into a collapsible section. The panel will be removed from any other section it belongs to.',
       inputSchema: {
         panelId: z.string().describe('The ID of the panel to move'),
         sectionId: z.string().describe('The ID of the section to move the panel into'),
@@ -62,9 +65,11 @@ export function registerSectionTools(server: McpServer): void {
     async (args) => {
       movePanelToSection(args.panelId as string, args.sectionId as string);
       return {
-        content: [{ type: 'text', text: `Panel "${args.panelId}" moved to section "${args.sectionId}".` }],
+        content: [
+          { type: 'text', text: `Panel "${args.panelId}" moved to section "${args.sectionId}".` },
+        ],
       };
-    },
+    }
   );
 
   registerTool(
@@ -82,6 +87,6 @@ export function registerSectionTools(server: McpServer): void {
       return {
         content: [{ type: 'text', text: `Section "${args.sectionId}" removed.` }],
       };
-    },
+    }
   );
 }

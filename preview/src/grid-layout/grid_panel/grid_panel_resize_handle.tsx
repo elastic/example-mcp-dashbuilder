@@ -12,7 +12,7 @@ import React, { useEffect, useRef } from 'react';
 import type { UseEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 
-import { useGridLayoutContext} from '../use_grid_layout_context';
+import { useGridLayoutContext } from '../use_grid_layout_context';
 import { useGridLayoutPanelEvents, getDefaultResizeOptions } from '../use_grid_layout_events';
 
 export const ResizeHandle = React.memo(

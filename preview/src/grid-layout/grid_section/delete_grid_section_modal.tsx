@@ -40,9 +40,7 @@ export const DeleteGridSectionModal = ({
       }}
     >
       <EuiModalHeader>
-        <EuiModalHeaderTitle>
-          {'Delete section'}
-        </EuiModalHeaderTitle>
+        <EuiModalHeaderTitle>{'Delete section'}</EuiModalHeaderTitle>
       </EuiModalHeader>
       <EuiModalBody>
         {'Choose to remove the section, including its contents, or only the section.'}

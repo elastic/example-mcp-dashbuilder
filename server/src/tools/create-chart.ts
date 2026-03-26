@@ -27,19 +27,23 @@ export function registerCreateChart(server: McpServer): void {
           .string()
           .describe(
             'ES|QL query that produces the data for this chart. ' +
-            'Should return columns matching xField and yFields. ' +
-            'Example: FROM kibana_sample_data_ecommerce | STATS revenue = SUM(taxful_total_price) BY category',
+              'Should return columns matching xField and yFields. ' +
+              'Example: FROM kibana_sample_data_ecommerce | STATS revenue = SUM(taxful_total_price) BY category'
           ),
         xField: z
           .string()
           .describe('Column name from the query result to use as the x-axis (or pie slice labels)'),
         yFields: z
           .array(z.string())
-          .describe('Column name(s) from the query result to use as y-axis values (or pie slice sizes)'),
+          .describe(
+            'Column name(s) from the query result to use as y-axis values (or pie slice sizes)'
+          ),
         splitField: z
           .string()
           .optional()
-          .describe('Optional column name to split the data into multiple series (for grouped/stacked charts)'),
+          .describe(
+            'Optional column name to split the data into multiple series (for grouped/stacked charts)'
+          ),
       },
     },
     async (args) => {
@@ -70,7 +74,9 @@ export function registerCreateChart(server: McpServer): void {
 
       if (data.length === 0) {
         return {
-          content: [{ type: 'text', text: 'Query returned no results. Check the query and try again.' }],
+          content: [
+            { type: 'text', text: 'Query returned no results. Check the query and try again.' },
+          ],
           isError: true,
         };
       }
@@ -103,10 +109,13 @@ export function registerCreateChart(server: McpServer): void {
       if (imageBase64) {
         content.push({ type: 'image', data: imageBase64, mimeType: 'image/png' });
       } else {
-        content.push({ type: 'text', text: '(Image preview unavailable — make sure the preview app is running on localhost:5173)' });
+        content.push({
+          type: 'text',
+          text: '(Image preview unavailable — make sure the preview app is running on localhost:5173)',
+        });
       }
 
       return { content };
-    },
+    }
   );
 }

@@ -1,17 +1,36 @@
 {
   "name": "mcp-app-dashboards",
   "private": true,
-  "workspaces": ["server", "preview"],
+  "workspaces": [
+    "server",
+    "preview"
+  ],
   "type": "module",
   "scripts": {
     "dev:server": "npm run dev --workspace=server",
     "dev:preview": "npm run dev --workspace=preview",
     "build": "npm run build --workspace=server && npm run build --workspace=preview",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit --project server/tsconfig.json && tsc --noEmit --project preview/tsconfig.json"
+    "typecheck": "tsc --noEmit --project server/tsconfig.json && tsc --noEmit --project preview/tsconfig.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run lint && npm run typecheck",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "typescript-eslint": "^8.0.0",
-    "eslint": "^9.0.0"
+    "eslint": "^9.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.0.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   }
 }

@@ -27,14 +27,16 @@ export function registerCreateHeatmap(server: McpServer): void {
           .string()
           .describe(
             'ES|QL query that returns rows with x, y, and value columns. ' +
-            'Example: FROM kibana_sample_data_ecommerce ' +
-            '| EVAL day = DATE_FORMAT("EEEE", order_date), hour = DATE_FORMAT("HH", order_date) ' +
-            '| STATS order_count = COUNT(*) BY day, hour ' +
-            '| SORT day, hour',
+              'Example: FROM kibana_sample_data_ecommerce ' +
+              '| EVAL day = DATE_FORMAT("EEEE", order_date), hour = DATE_FORMAT("HH", order_date) ' +
+              '| STATS order_count = COUNT(*) BY day, hour ' +
+              '| SORT day, hour'
           ),
         xField: z.string().describe('Column name for the x-axis (horizontal buckets), e.g. "hour"'),
         yField: z.string().describe('Column name for the y-axis (vertical buckets), e.g. "day"'),
-        valueField: z.string().describe('Column name for the cell values (color intensity), e.g. "order_count"'),
+        valueField: z
+          .string()
+          .describe('Column name for the cell values (color intensity), e.g. "order_count"'),
       },
     },
     async (args) => {
@@ -56,14 +58,26 @@ export function registerCreateHeatmap(server: McpServer): void {
         data = columnarToRows(response);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        return { content: [{ type: 'text', text: `ES|QL query failed: ${message}` }], isError: true };
+        return {
+          content: [{ type: 'text', text: `ES|QL query failed: ${message}` }],
+          isError: true,
+        };
       }
 
       if (data.length === 0) {
         return { content: [{ type: 'text', text: 'Query returned no results.' }], isError: true };
       }
 
-      const heatmap: HeatmapConfig = { id, title, chartType: 'heatmap', esqlQuery, xField, yField, valueField, data };
+      const heatmap: HeatmapConfig = {
+        id,
+        title,
+        chartType: 'heatmap',
+        esqlQuery,
+        xField,
+        yField,
+        valueField,
+        data,
+      };
 
       const dashboard = addChart(heatmap);
 
@@ -87,6 +101,6 @@ export function registerCreateHeatmap(server: McpServer): void {
       }
 
       return { content };
-    },
+    }
   );
 }

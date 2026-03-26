@@ -56,7 +56,8 @@ function translateXY(config: ChartConfig, layerId: string) {
     });
   }
 
-  const seriesType = config.chartType === 'area' ? 'area' : config.chartType === 'line' ? 'line' : 'bar';
+  const seriesType =
+    config.chartType === 'area' ? 'area' : config.chartType === 'line' ? 'line' : 'bar';
 
   const visualization = {
     preferredSeriesType: seriesType,

@@ -60,9 +60,7 @@ export const ResizeGauge = React.memo(({ panelId }: { panelId: string }) => {
   return isResizing ? (
     <div css={outerStyles} className="kbnGridPanel--resizeGauge">
       <div className="kbnGridPanel--resizeGauge--inner">
-        <span className="kbnGridPanel--resizeGauge--text">
-          {`${width}x${height}`}
-        </span>
+        <span className="kbnGridPanel--resizeGauge--text">{`${width}x${height}`}</span>
       </div>
     </div>
   ) : null;

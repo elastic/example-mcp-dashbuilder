@@ -58,9 +58,18 @@ function autoPlacePanels(
       colOffset = 0;
       maxHeightInRow = 0;
     }
-    panels.push(buildSavedPanel(chart, {
-      x: colOffset, y: nextRow, w: size.w, h: size.h,
-    }, sectionId));
+    panels.push(
+      buildSavedPanel(
+        chart,
+        {
+          x: colOffset,
+          y: nextRow,
+          w: size.w,
+          h: size.h,
+        },
+        sectionId
+      )
+    );
     colOffset += size.w;
     maxHeightInRow = Math.max(maxHeightInRow, size.h);
     if (colOffset >= 48) {
@@ -93,7 +102,11 @@ export function translateDashboardToSavedObject(config: DashboardConfig): {
   }
 
   let allPanels: SavedDashboardPanel[];
-  const sectionsArray: Array<{ title: string; collapsed: boolean; gridData: { y: number; i: string } }> = [];
+  const sectionsArray: Array<{
+    title: string;
+    collapsed: boolean;
+    gridData: { y: number; i: string };
+  }> = [];
 
   if (gridLayout) {
     // Use positions from user's drag/resize in the preview app
@@ -121,9 +134,14 @@ export function translateDashboardToSavedObject(config: DashboardConfig): {
       if (widget.type === 'panel') {
         const chart = chartMap.get(widgetId);
         if (chart) {
-          allPanels.push(buildSavedPanel(chart, {
-            x: widget.column, y: widget.row, w: widget.width, h: widget.height,
-          }));
+          allPanels.push(
+            buildSavedPanel(chart, {
+              x: widget.column,
+              y: widget.row,
+              w: widget.width,
+              h: widget.height,
+            })
+          );
         }
       } else if (widget.type === 'section') {
         sectionsArray.push({
@@ -136,9 +154,18 @@ export function translateDashboardToSavedObject(config: DashboardConfig): {
           for (const [panelId, panel] of Object.entries(widget.panels)) {
             const chart = chartMap.get(panelId);
             if (chart) {
-              allPanels.push(buildSavedPanel(chart, {
-                x: panel.column, y: panel.row, w: panel.width, h: panel.height,
-              }, widgetId));
+              allPanels.push(
+                buildSavedPanel(
+                  chart,
+                  {
+                    x: panel.column,
+                    y: panel.row,
+                    w: panel.width,
+                    h: panel.height,
+                  },
+                  widgetId
+                )
+              );
             }
           }
         }

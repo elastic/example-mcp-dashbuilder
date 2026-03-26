@@ -45,7 +45,9 @@ export function registerExportToKibana(server: McpServer): void {
         title: z
           .string()
           .optional()
-          .describe('Optional title override for the Kibana dashboard. Defaults to the current dashboard title.'),
+          .describe(
+            'Optional title override for the Kibana dashboard. Defaults to the current dashboard title.'
+          ),
       },
     },
     async (args) => {
@@ -84,7 +86,9 @@ export function registerExportToKibana(server: McpServer): void {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return {
-          content: [{ type: 'text', text: `Failed to connect to Kibana at ${KIBANA_URL}: ${message}` }],
+          content: [
+            { type: 'text', text: `Failed to connect to Kibana at ${KIBANA_URL}: ${message}` },
+          ],
           isError: true,
         };
       }
@@ -103,7 +107,10 @@ export function registerExportToKibana(server: McpServer): void {
       if (!dashboardId) {
         return {
           content: [
-            { type: 'text', text: `Dashboard created but could not extract ID: ${JSON.stringify(result)}` },
+            {
+              type: 'text',
+              text: `Dashboard created but could not extract ID: ${JSON.stringify(result)}`,
+            },
           ],
         };
       }
@@ -123,6 +130,6 @@ export function registerExportToKibana(server: McpServer): void {
           },
         ],
       };
-    },
+    }
   );
 }

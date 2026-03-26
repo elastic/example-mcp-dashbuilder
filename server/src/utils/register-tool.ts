@@ -17,7 +17,7 @@ export function registerTool(
   handler: (args: Record<string, unknown>) => Promise<{
     content: Array<{ type: string; text?: string; data?: string; mimeType?: string }>;
     isError?: boolean;
-  }>,
+  }>
 ): void {
   // @ts-expect-error — MCP SDK generic recursion too deep for TS
   server.registerTool(name, config, handler);

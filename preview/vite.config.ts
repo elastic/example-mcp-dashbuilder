@@ -21,7 +21,9 @@ function layoutSavePlugin() {
         }
 
         let body = '';
-        req.on('data', (chunk: string) => { body += chunk; });
+        req.on('data', (chunk: string) => {
+          body += chunk;
+        });
         req.on('end', () => {
           try {
             const gridLayout = JSON.parse(body);

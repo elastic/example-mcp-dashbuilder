@@ -40,8 +40,8 @@ export const GridPanel = React.memo(({ panelId }: GridPanelProps) => {
       height: calc(
         1px *
           (
-            ${initialPanel.height} * (var(--kbnGridRowHeight) + var(--kbnGridGutterSize)) -
-              var(--kbnGridGutterSize)
+            ${initialPanel.height} *
+              (var(--kbnGridRowHeight) + var(--kbnGridGutterSize)) - var(--kbnGridGutterSize)
           )
       );
       grid-column-start: ${initialPanel.column + 1};

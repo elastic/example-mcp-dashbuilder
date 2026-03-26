@@ -106,66 +106,71 @@ Open the `elastic-dashbuilder` folder in Cursor. The MCP server will auto-connec
 ### Example prompts
 
 **Quick start:**
+
 > "Build me a dashboard from kibana_sample_data_ecommerce with revenue metrics, order trends, and category breakdowns"
 
 **Detailed:**
+
 > "Create a new dashboard called 'Flight Operations'. Show metrics for total flights, average delay, and cancellation rate. Add a bar chart of flights by carrier, a line chart of delays over time, and a pie chart of flight status distribution. Organize into sections."
 
 **Exploratory:**
+
 > "Explore the kibana_sample_data_logs index and build me the most insightful dashboard you can"
 
 **Export:**
+
 > "Export the current dashboard to Kibana"
 
 **Multi-dashboard:**
+
 > "List my dashboards" / "Switch to the ecommerce dashboard" / "Create a new dashboard called 'Log Analysis'"
 
 ### Available MCP tools
 
-| Tool | Description |
-|------|-------------|
-| `create_dashboard` | Create a new dashboard |
-| `list_dashboards` | List all saved dashboards |
-| `switch_dashboard` | Switch to a different dashboard |
-| `delete_dashboard` | Delete a dashboard |
-| `run_esql` | Execute ES\|QL queries |
-| `list_indices` | Discover available indices |
-| `get_fields` | Get field mappings for an index |
-| `create_chart` | Create bar, line, area, or pie charts |
-| `create_metric` | Create metric/KPI panels with trend sparklines |
-| `create_heatmap` | Create heatmap visualizations |
-| `create_section` | Create collapsible dashboard sections |
-| `move_panel_to_section` | Assign panels to sections |
-| `export_to_kibana` | Export to Kibana as Lens visualizations |
+| Tool                    | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| `create_dashboard`      | Create a new dashboard                         |
+| `list_dashboards`       | List all saved dashboards                      |
+| `switch_dashboard`      | Switch to a different dashboard                |
+| `delete_dashboard`      | Delete a dashboard                             |
+| `run_esql`              | Execute ES\|QL queries                         |
+| `list_indices`          | Discover available indices                     |
+| `get_fields`            | Get field mappings for an index                |
+| `create_chart`          | Create bar, line, area, or pie charts          |
+| `create_metric`         | Create metric/KPI panels with trend sparklines |
+| `create_heatmap`        | Create heatmap visualizations                  |
+| `create_section`        | Create collapsible dashboard sections          |
+| `move_panel_to_section` | Assign panels to sections                      |
+| `export_to_kibana`      | Export to Kibana as Lens visualizations        |
 
 ### Available MCP resources
 
-| Resource | Description |
-|----------|-------------|
-| `dataviz://guidelines` | Chart selection, dashboard composition, and anti-patterns |
-| `esql://reference` | ES\|QL commands, functions, and visualization query patterns |
+| Resource               | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| `dataviz://guidelines` | Chart selection, dashboard composition, and anti-patterns    |
+| `esql://reference`     | ES\|QL commands, functions, and visualization query patterns |
 
 ## Supported chart types
 
-| Type | Best for | Example |
-|------|----------|---------|
-| Bar | Comparing categories | Revenue by product category |
-| Line | Trends over time | Daily order count |
-| Area | Volume over time | Traffic over time |
-| Pie | Part-of-whole (max 6 slices) | Orders by status |
-| Metric | Single KPI with optional trend | Total revenue with daily sparkline |
-| Heatmap | Patterns across 2 dimensions | Orders by day of week × hour |
+| Type    | Best for                       | Example                            |
+| ------- | ------------------------------ | ---------------------------------- |
+| Bar     | Comparing categories           | Revenue by product category        |
+| Line    | Trends over time               | Daily order count                  |
+| Area    | Volume over time               | Traffic over time                  |
+| Pie     | Part-of-whole (max 6 slices)   | Orders by status                   |
+| Metric  | Single KPI with optional trend | Total revenue with daily sparkline |
+| Heatmap | Patterns across 2 dimensions   | Orders by day of week × hour       |
 
 ## Export to Kibana
 
 The export tool translates each panel to a Lens visualization:
 
-| MCP Chart | Kibana Lens Type |
-|-----------|-----------------|
+| MCP Chart         | Kibana Lens Type |
+| ----------------- | ---------------- |
 | bar / line / area | XY Visualization |
-| pie | Partition (Pie) |
-| metric | Metric |
-| heatmap | Heatmap |
+| pie               | Partition (Pie)  |
+| metric            | Metric           |
+| heatmap           | Heatmap          |
 
 Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer directly.
 
@@ -200,5 +205,23 @@ npm run dev:preview   # Start preview app (Vite dev server)
 npm run build         # Build both server and preview
 npm run lint          # ESLint check
 npm run typecheck     # TypeScript check (both projects)
+npm run format        # Format all files with Prettier
+npm run format:check  # Check formatting without writing
+npm run check         # Run all checks (format + lint + typecheck)
 ```
 
+### Code quality
+
+- TypeScript strict mode enabled
+- `no-explicit-any` enforced via ESLint
+- Prettier formatting enforced
+- Pre-commit hook runs lint-staged (format + lint on staged files)
+- CI pipeline on GitHub Actions (format check + lint + typecheck + build)
+- Emotion theme types properly declared for EUI integration
+
+## Credits
+
+- [Elastic Charts](https://elastic.github.io/elastic-charts) for visualization rendering
+- [kbn-grid-layout](https://github.com/elastic/kibana) for the dashboard grid (adapted from Kibana)
+- [Model Context Protocol](https://modelcontextprotocol.io) for AI tool integration
+- ES|QL reference docs adapted from Kibana's NL-to-ES|QL feature

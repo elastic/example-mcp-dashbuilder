@@ -33,7 +33,7 @@ export function registerListIndices(server: McpServer): void {
       return {
         content: [{ type: 'text', text: JSON.stringify(indices, null, 2) }],
       };
-    },
+    }
   );
 
   registerTool(
@@ -60,13 +60,13 @@ export function registerListIndices(server: McpServer): void {
       return {
         content: [{ type: 'text', text: JSON.stringify(fields, null, 2) }],
       };
-    },
+    }
   );
 }
 
 function flattenFields(
   properties: Record<string, unknown>,
-  prefix = '',
+  prefix = ''
 ): Array<{ field: string; type: string }> {
   const fields: Array<{ field: string; type: string }> = [];
 
