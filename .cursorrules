@@ -4,9 +4,11 @@ This project is an MCP (Model Context Protocol) dashboard app that creates Elast
 
 You have MCP tools available — use them directly instead of reading/writing code files.
 
-**IMPORTANT: Before creating any charts or dashboards, ALWAYS read both MCP resources first:**
-1. Read `dataviz://guidelines` for chart selection and dashboard composition best practices
-2. Read `esql://reference` for correct ES|QL query syntax and patterns
+**IMPORTANT:**
+- Before creating any charts or dashboards, ALWAYS read both MCP resources first:
+  1. Read `dataviz://guidelines` for chart selection and dashboard composition best practices
+  2. Read `esql://reference` for correct ES|QL query syntax and patterns
+- After creating all charts, ALWAYS call `view_dashboard` to show the live preview inline in the chat
 
 ### Available MCP tools:
 
@@ -35,8 +37,9 @@ You have MCP tools available — use them directly instead of reading/writing co
 - `remove_section` — Remove a section
 - `remove_chart` — Remove a chart
 
-**Export:**
+**Export & preview:**
 - `export_to_kibana` — Export the active dashboard to Kibana as real Lens visualizations
+- `view_dashboard` — Display the live dashboard preview inline in the chat (interactive iframe)
 
 ### Available MCP resources:
 - `dataviz://guidelines` — Data visualization best practices. Read this before building dashboards.

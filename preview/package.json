@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "build:mcp-app": "vite build --config vite.mcp-app.config.ts"
   },
   "dependencies": {
     "@elastic/charts": "^67.0.0",

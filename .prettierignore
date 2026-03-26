@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-mcp-app/
 preview/public/dashboard.json
 preview/public/dashboards/
 server/src/resources/esql_docs/

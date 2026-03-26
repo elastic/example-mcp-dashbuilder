@@ -55,6 +55,7 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    cors: true,
     watch: {
       include: ['public/dashboard.json'],
     },

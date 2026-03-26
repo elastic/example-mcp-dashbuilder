@@ -182,9 +182,19 @@ export function App() {
   }
 
   return (
-    <div style={{ padding: '16px 24px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div
+      style={{
+        padding: '16px 24px',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        background: '#F5F7FA',
+        color: '#343741',
+        minHeight: '100vh',
+      }}
+    >
       <header style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{dashboard.title}</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: '#1A1C21' }}>
+          {dashboard.title}
+        </h1>
         {hasCharts && (
           <p style={{ color: '#666', marginTop: 4, fontSize: 14 }}>
             {dashboard.charts.length} chart(s)

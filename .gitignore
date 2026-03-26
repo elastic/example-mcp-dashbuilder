@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-mcp-app/
 *.tsbuildinfo
 preview/public/dashboards/
 preview/public/dashboard.json

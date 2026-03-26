@@ -68,7 +68,12 @@ export function useDashboardConfig(): DashboardConfig {
   useEffect(() => {
     async function fetchConfig() {
       try {
-        const res = await fetch(`/dashboard.json?t=${Date.now()}`);
+        // Use absolute URL when running inside MCP App sandbox (different origin)
+        const baseUrl =
+          window.location.protocol === 'https:' || window.location.hostname !== 'localhost'
+            ? 'http://localhost:5173'
+            : '';
+        const res = await fetch(`${baseUrl}/dashboard.json?t=${Date.now()}`);
         if (res.ok) {
           const text = await res.text();
           // Strip gridLayout and updatedAt from comparison so user drag/resize
