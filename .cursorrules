@@ -1,0 +1,60 @@
+This project is an MCP (Model Context Protocol) dashboard app that creates Elasticsearch visualizations using ES|QL and Elastic Charts.
+
+## How to use this project
+
+You have MCP tools available — use them directly instead of reading/writing code files.
+
+**IMPORTANT: Before creating any charts or dashboards, ALWAYS read both MCP resources first:**
+1. Read `dataviz://guidelines` for chart selection and dashboard composition best practices
+2. Read `esql://reference` for correct ES|QL query syntax and patterns
+
+### Available MCP tools:
+
+**Dashboard management:**
+- `create_dashboard` — Create a new dashboard (previous ones are preserved)
+- `list_dashboards` — List all saved dashboards
+- `switch_dashboard` — Switch to a different dashboard by ID
+- `delete_dashboard` — Delete a saved dashboard
+- `set_dashboard_title` — Set the active dashboard title
+- `get_dashboard` — View current dashboard state
+- `clear_dashboard` — Reset the active dashboard
+
+**Data exploration:**
+- `run_esql` — Execute ES|QL queries against Elasticsearch
+- `list_indices` — Discover available indices
+- `get_fields` — Get field mappings for an index
+
+**Visualization creation:**
+- `create_chart` — Create bar, line, area, or pie charts
+- `create_metric` — Create metric/KPI panels with optional trend sparklines
+- `create_heatmap` — Create heatmap visualizations
+
+**Layout & organization:**
+- `create_section` — Create collapsible dashboard sections
+- `move_panel_to_section` — Assign panels to sections
+- `remove_section` — Remove a section
+- `remove_chart` — Remove a chart
+
+**Export:**
+- `export_to_kibana` — Export the active dashboard to Kibana as real Lens visualizations
+
+### Available MCP resources:
+- `dataviz://guidelines` — Data visualization best practices. Read this before building dashboards.
+- `esql://reference` — ES|QL language reference with commands, functions, and common query patterns. Read this when writing ES|QL queries.
+
+### Workflow:
+1. Create a new dashboard with `create_dashboard` (or use the active one)
+2. Read the dataviz guidelines resource
+3. Use `list_indices` and `get_fields` to explore available data
+4. Use `run_esql` to test queries
+5. Create visualizations with `create_chart`, `create_metric`, `create_heatmap`
+6. Organize with `create_section` and `move_panel_to_section`
+7. Export with `export_to_kibana`
+8. Each chart creation returns a preview link at http://localhost:5173
+
+### Important:
+- Do NOT edit source code files to create dashboards — use the MCP tools
+- Multiple dashboards are supported — each is preserved when you create a new one
+- The preview app runs at http://localhost:5173
+- Kibana is at http://localhost:5601
+- Elasticsearch is at http://localhost:9200

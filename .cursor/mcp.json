@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "elastic-dashbuilder": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "server/src/index.ts"],
+      "env": {
+        "ES_NODE": "http://localhost:9200",
+        "ES_USERNAME": "elastic",
+        "ES_PASSWORD": "changeme",
+        "KIBANA_URL": "http://localhost:5601"
+      }
+    }
+  }
+}

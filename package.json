@@ -1,0 +1,10 @@
+{
+  "name": "mcp-app-dashboards",
+  "private": true,
+  "workspaces": ["server", "preview"],
+  "scripts": {
+    "dev:server": "npm run dev --workspace=server",
+    "dev:preview": "npm run dev --workspace=preview",
+    "build": "npm run build --workspace=server && npm run build --workspace=preview"
+  }
+}
