@@ -21,18 +21,26 @@ export function registerListIndices(server: McpServer): void {
       },
     },
     async (args) => {
-      const pattern = (args.pattern as string) || '*';
-      const client = getESClient();
-      const indices = await client.cat.indices({
-        index: pattern,
-        format: 'json',
-        h: 'index,docs.count,store.size',
-        s: 'index',
-      });
+      try {
+        const pattern = (args.pattern as string) || '*';
+        const client = getESClient();
+        const indices = await client.cat.indices({
+          index: pattern,
+          format: 'json',
+          h: 'index,docs.count,store.size',
+          s: 'index',
+        });
 
-      return {
-        content: [{ type: 'text', text: JSON.stringify(indices, null, 2) }],
-      };
+        return {
+          content: [{ type: 'text', text: JSON.stringify(indices, null, 2) }],
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: 'text', text: `Failed to list indices: ${message}` }],
+          isError: true,
+        };
+      }
     }
   );
 
@@ -49,17 +57,25 @@ export function registerListIndices(server: McpServer): void {
       },
     },
     async (args) => {
-      const index = args.index as string;
-      const client = getESClient();
-      const mapping = await client.indices.getMapping({ index });
+      try {
+        const index = args.index as string;
+        const client = getESClient();
+        const mapping = await client.indices.getMapping({ index });
 
-      const indexMapping = Object.values(mapping)[0];
-      const properties = indexMapping?.mappings?.properties || {};
-      const fields = flattenFields(properties);
+        const indexMapping = Object.values(mapping)[0];
+        const properties = indexMapping?.mappings?.properties || {};
+        const fields = flattenFields(properties);
 
-      return {
-        content: [{ type: 'text', text: JSON.stringify(fields, null, 2) }],
-      };
+        return {
+          content: [{ type: 'text', text: JSON.stringify(fields, null, 2) }],
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: 'text', text: `Failed to get fields: ${message}` }],
+          isError: true,
+        };
+      }
     }
   );
 }

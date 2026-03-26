@@ -27,8 +27,15 @@ function slugify(title: string): string {
   );
 }
 
+function safeDashboardId(id: string): string {
+  const sanitized = id.replace(/[^a-z0-9_-]/gi, '');
+  if (!sanitized) throw new Error('Invalid dashboard ID');
+  return sanitized;
+}
+
 function getDashboardPath(id: string): string {
-  return resolve(DASHBOARDS_DIR, `${id}.json`);
+  const safeId = safeDashboardId(id);
+  return resolve(DASHBOARDS_DIR, `${safeId}.json`);
 }
 
 function getActiveDashboardId(): string {

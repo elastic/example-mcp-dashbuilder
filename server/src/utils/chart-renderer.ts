@@ -21,9 +21,10 @@ async function getBrowser(): Promise<Browser> {
  * Returns a base64-encoded PNG string, or null if rendering fails.
  */
 export async function renderChartToImage(chartId: string): Promise<string | null> {
+  let page: Awaited<ReturnType<Browser['newPage']>> | null = null;
   try {
     const b = await getBrowser();
-    const page = await b.newPage();
+    page = await b.newPage();
 
     await page.setViewport({ width: 650, height: 420 });
     await page.goto(`${PREVIEW_URL}?render=${encodeURIComponent(chartId)}`, {
@@ -39,17 +40,19 @@ export async function renderChartToImage(chartId: string): Promise<string | null
 
     const element = await page.$('#render-ready');
     if (!element) {
-      await page.close();
       return null;
     }
 
     const screenshot = await element.screenshot({ type: 'png', encoding: 'base64' });
-    await page.close();
 
     return screenshot as string;
   } catch (err) {
     console.error('Chart rendering failed:', err);
     return null;
+  } finally {
+    if (page) {
+      await page.close().catch(() => {});
+    }
   }
 }
 

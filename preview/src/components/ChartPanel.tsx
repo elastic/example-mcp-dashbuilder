@@ -100,11 +100,6 @@ function MetricPanel({ config }: { config: MetricPanelConfig }) {
 // ── Heatmap ──
 
 function buildColorScale(values: number[], steps = 8): HeatmapBandsColorScale {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const step = range / steps;
-
   // Borealis temperature palette — euiPaletteForTemperature(8) from Kibana's EUI
   const ramp = [
     '#61A2FF',
@@ -116,6 +111,15 @@ function buildColorScale(values: number[], steps = 8): HeatmapBandsColorScale {
     '#FDA49C',
     '#F6726A',
   ];
+
+  if (values.length === 0) {
+    return { type: 'bands', bands: [{ start: 0, end: 1, color: ramp[0] }] };
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const step = range / steps;
 
   const bands = ramp.map((color, i) => ({
     start: min + step * i,

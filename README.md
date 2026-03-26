@@ -209,19 +209,3 @@ npm run format        # Format all files with Prettier
 npm run format:check  # Check formatting without writing
 npm run check         # Run all checks (format + lint + typecheck)
 ```
-
-### Code quality
-
-- TypeScript strict mode enabled
-- `no-explicit-any` enforced via ESLint
-- Prettier formatting enforced
-- Pre-commit hook runs lint-staged (format + lint on staged files)
-- CI pipeline on GitHub Actions (format check + lint + typecheck + build)
-- Emotion theme types properly declared for EUI integration
-
-## Credits
-
-- [Elastic Charts](https://elastic.github.io/elastic-charts) for visualization rendering
-- [kbn-grid-layout](https://github.com/elastic/kibana) for the dashboard grid (adapted from Kibana)
-- [Model Context Protocol](https://modelcontextprotocol.io) for AI tool integration
-- ES|QL reference docs adapted from Kibana's NL-to-ES|QL feature

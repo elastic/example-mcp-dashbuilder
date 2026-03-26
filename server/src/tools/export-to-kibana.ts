@@ -5,8 +5,8 @@ import { translateDashboardToSavedObject } from '../utils/dashboard-translator.j
 import { registerTool } from '../utils/register-tool.js';
 
 const KIBANA_URL = process.env.KIBANA_URL || 'http://localhost:5601';
-const ES_USERNAME = process.env.ES_USERNAME || 'elastic';
-const ES_PASSWORD = process.env.ES_PASSWORD || 'changeme';
+const ES_USERNAME = process.env.ES_USERNAME;
+const ES_PASSWORD = process.env.ES_PASSWORD;
 
 /**
  * Discover Kibana's base path by following the redirect from /api/status.
@@ -51,6 +51,18 @@ export function registerExportToKibana(server: McpServer): void {
       },
     },
     async (args) => {
+      if (!ES_USERNAME || !ES_PASSWORD) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'ES_USERNAME and ES_PASSWORD environment variables must be set to export to Kibana.',
+            },
+          ],
+          isError: true,
+        };
+      }
+
       const dashboard = getDashboard();
 
       if (dashboard.charts.length === 0) {

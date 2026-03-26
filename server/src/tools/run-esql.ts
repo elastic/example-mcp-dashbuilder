@@ -24,24 +24,32 @@ export function registerRunEsql(server: McpServer): void {
       },
     },
     async (args) => {
-      const query = args.query as string;
-      const client = getESClient();
-      const response = (await client.esql.query({
-        query,
-        format: 'json',
-      })) as unknown as ESQLResponse;
+      try {
+        const query = args.query as string;
+        const client = getESClient();
+        const response = (await client.esql.query({
+          query,
+          format: 'json',
+        })) as unknown as ESQLResponse;
 
-      const columns = describeColumns(response);
-      const rows = columnarToRows(response);
+        const columns = describeColumns(response);
+        const rows = columnarToRows(response);
 
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({ columns, rows, rowCount: rows.length }, null, 2),
-          },
-        ],
-      };
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ columns, rows, rowCount: rows.length }, null, 2),
+            },
+          ],
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: 'text', text: `ES|QL query failed: ${message}` }],
+          isError: true,
+        };
+      }
     }
   );
 }

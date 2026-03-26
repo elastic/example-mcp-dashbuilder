@@ -8,6 +8,7 @@ import { registerCreateHeatmap } from './tools/create-heatmap.js';
 import { registerSectionTools } from './tools/create-section.js';
 import { registerManageDashboard } from './tools/manage-dashboard.js';
 import { registerExportToKibana } from './tools/export-to-kibana.js';
+import { closeBrowser } from './utils/chart-renderer.js';
 import { DATAVIZ_GUIDELINES } from './resources/dataviz-guidelines.js';
 import { buildEsqlReference } from './resources/esql-reference.js';
 
@@ -68,6 +69,16 @@ registerCreateHeatmap(server);
 registerSectionTools(server);
 registerManageDashboard(server);
 registerExportToKibana(server);
+
+// Clean up browser on shutdown
+process.on('SIGINT', async () => {
+  await closeBrowser();
+  process.exit(0);
+});
+process.on('SIGTERM', async () => {
+  await closeBrowser();
+  process.exit(0);
+});
 
 // Connect via stdio (Cursor spawns this process)
 const transport = new StdioServerTransport();

@@ -25,7 +25,8 @@ const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
 
 function autoPlacePanels(
   charts: PanelConfig[],
-  startRow: number = 0
+  startRow: number = 0,
+  columnCount: number = GRID_SETTINGS.columnCount
 ): { panels: Record<string, GridPanelData>; nextRow: number } {
   const panels: Record<string, GridPanelData> = {};
   let nextRow = startRow;
@@ -34,7 +35,7 @@ function autoPlacePanels(
 
   for (const chart of charts) {
     const size = DEFAULT_SIZES[chart.chartType] || { w: 24, h: 15 };
-    if (colOffset + size.w > 48) {
+    if (colOffset + size.w > columnCount) {
       nextRow += maxHeightInRow;
       colOffset = 0;
       maxHeightInRow = 0;
@@ -48,7 +49,7 @@ function autoPlacePanels(
     };
     colOffset += size.w;
     maxHeightInRow = Math.max(maxHeightInRow, size.h);
-    if (colOffset >= 48) {
+    if (colOffset >= columnCount) {
       nextRow += maxHeightInRow;
       colOffset = 0;
       maxHeightInRow = 0;
@@ -115,31 +116,6 @@ export function App() {
   const params = new URLSearchParams(window.location.search);
   const renderChartId = params.get('render');
 
-  if (renderChartId) {
-    const chart = dashboard.charts.find((c) => c.id === renderChartId);
-    if (!chart) {
-      return (
-        <div id="render-ready" data-status="not-found">
-          Chart not found
-        </div>
-      );
-    }
-    return (
-      <div
-        id="render-ready"
-        data-status="ok"
-        style={{
-          width: 600,
-          height: chart.chartType === 'metric' ? 200 : 350,
-          padding: 16,
-          background: '#fff',
-        }}
-      >
-        <ChartPanel config={chart} />
-      </div>
-    );
-  }
-
   const chartMap = useMemo(() => {
     const map: Record<string, PanelConfig> = {};
     for (const chart of dashboard.charts) {
@@ -179,6 +155,31 @@ export function App() {
     },
     [chartMap]
   );
+
+  if (renderChartId) {
+    const chart = dashboard.charts.find((c) => c.id === renderChartId);
+    if (!chart) {
+      return (
+        <div id="render-ready" data-status="not-found">
+          Chart not found
+        </div>
+      );
+    }
+    return (
+      <div
+        id="render-ready"
+        data-status="ok"
+        style={{
+          width: 600,
+          height: chart.chartType === 'metric' ? 200 : 350,
+          padding: 16,
+          background: '#fff',
+        }}
+      >
+        <ChartPanel config={chart} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '16px 24px', fontFamily: 'Inter, system-ui, sans-serif' }}>
