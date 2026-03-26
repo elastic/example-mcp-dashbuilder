@@ -1,0 +1,204 @@
+# elastic-dashbuilder
+
+An MCP (Model Context Protocol) app that lets AI assistants build Kibana dashboards using ES|QL and Elastic Charts. Create visualizations through natural language in Cursor, preview them live with Kibana's grid layout, and export directly to Kibana as real Lens dashboards.
+
+## What it does
+
+```
+You (in Cursor) → "Build me an ecommerce analytics dashboard"
+    ↓
+AI explores your Elasticsearch data via ES|QL
+    ↓
+Creates charts (bar, line, pie, metric, heatmap) with Elastic Charts
+    ↓
+Live preview with Kibana's drag-and-drop grid layout
+    ↓
+One-click export to Kibana as Lens visualizations
+```
+
+## Features
+
+- **Natural language dashboard creation** — describe what you want, the AI builds it
+- **ES|QL powered** — all queries use ES|QL for data retrieval
+- **Live preview** — see your dashboard at `localhost:5173` with real Elastic Charts
+- **Kibana grid layout** — same 48-column drag-and-drop grid as Kibana dashboards
+- **Borealis theme** — matches Kibana's latest visual design
+- **Inline chart previews** — see rendered chart images directly in Cursor
+- **Collapsible sections** — organize panels into groups
+- **Export to Kibana** — creates real Kibana dashboards with Lens visualizations
+- **Multiple dashboards** — create, switch between, and manage multiple dashboards
+- **Dataviz best practices** — built-in guidelines for chart selection and dashboard composition
+- **ES|QL reference** — built-in language reference for correct query syntax
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│  Cursor (AI Assistant)                          │
+│  ↕ MCP Protocol (stdio)                        │
+├─────────────────────────────────────────────────┤
+│  MCP Server (TypeScript)                        │
+│  ├── Tools: query, chart, metric, heatmap, ...  │
+│  ├── Resources: dataviz guidelines, ES|QL ref   │
+│  ├── Puppeteer: inline chart screenshots        │
+│  └── Export: Kibana saved objects API           │
+├─────────────────────────────────────────────────┤
+│  Preview App (Vite + React)                     │
+│  ├── Elastic Charts (bar, line, pie, etc.)      │
+│  ├── kbn-grid-layout (drag, resize, sections)   │
+│  └── Borealis theme                             │
+├─────────────────────────────────────────────────┤
+│  Elasticsearch  ←→  Kibana                      │
+└─────────────────────────────────────────────────┘
+```
+
+## Prerequisites
+
+- Node.js 20+
+- Elasticsearch running on `localhost:9200`
+- Kibana running on `localhost:5601` (for export)
+- [Cursor](https://cursor.com) editor
+
+## Setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Start the preview app
+
+```bash
+npm run dev:preview
+```
+
+This starts the live preview at [http://localhost:5173](http://localhost:5173).
+
+### 3. Configure Cursor
+
+The MCP server is configured in `.cursor/mcp.json`. Update the environment variables if your Elasticsearch/Kibana setup differs:
+
+```json
+{
+  "mcpServers": {
+    "elastic-dashbuilder": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "server/src/index.ts"],
+      "env": {
+        "ES_NODE": "http://localhost:9200",
+        "ES_USERNAME": "elastic",
+        "ES_PASSWORD": "changeme",
+        "KIBANA_URL": "http://localhost:5601"
+      }
+    }
+  }
+}
+```
+
+### 4. Open the project in Cursor
+
+Open the `elastic-dashbuilder` folder in Cursor. The MCP server will auto-connect. You should see it listed in Cursor Settings > MCP.
+
+## Usage
+
+### Example prompts
+
+**Quick start:**
+> "Build me a dashboard from kibana_sample_data_ecommerce with revenue metrics, order trends, and category breakdowns"
+
+**Detailed:**
+> "Create a new dashboard called 'Flight Operations'. Show metrics for total flights, average delay, and cancellation rate. Add a bar chart of flights by carrier, a line chart of delays over time, and a pie chart of flight status distribution. Organize into sections."
+
+**Exploratory:**
+> "Explore the kibana_sample_data_logs index and build me the most insightful dashboard you can"
+
+**Export:**
+> "Export the current dashboard to Kibana"
+
+**Multi-dashboard:**
+> "List my dashboards" / "Switch to the ecommerce dashboard" / "Create a new dashboard called 'Log Analysis'"
+
+### Available MCP tools
+
+| Tool | Description |
+|------|-------------|
+| `create_dashboard` | Create a new dashboard |
+| `list_dashboards` | List all saved dashboards |
+| `switch_dashboard` | Switch to a different dashboard |
+| `delete_dashboard` | Delete a dashboard |
+| `run_esql` | Execute ES\|QL queries |
+| `list_indices` | Discover available indices |
+| `get_fields` | Get field mappings for an index |
+| `create_chart` | Create bar, line, area, or pie charts |
+| `create_metric` | Create metric/KPI panels with trend sparklines |
+| `create_heatmap` | Create heatmap visualizations |
+| `create_section` | Create collapsible dashboard sections |
+| `move_panel_to_section` | Assign panels to sections |
+| `export_to_kibana` | Export to Kibana as Lens visualizations |
+
+### Available MCP resources
+
+| Resource | Description |
+|----------|-------------|
+| `dataviz://guidelines` | Chart selection, dashboard composition, and anti-patterns |
+| `esql://reference` | ES\|QL commands, functions, and visualization query patterns |
+
+## Supported chart types
+
+| Type | Best for | Example |
+|------|----------|---------|
+| Bar | Comparing categories | Revenue by product category |
+| Line | Trends over time | Daily order count |
+| Area | Volume over time | Traffic over time |
+| Pie | Part-of-whole (max 6 slices) | Orders by status |
+| Metric | Single KPI with optional trend | Total revenue with daily sparkline |
+| Heatmap | Patterns across 2 dimensions | Orders by day of week × hour |
+
+## Export to Kibana
+
+The export tool translates each panel to a Lens visualization:
+
+| MCP Chart | Kibana Lens Type |
+|-----------|-----------------|
+| bar / line / area | XY Visualization |
+| pie | Partition (Pie) |
+| metric | Metric |
+| heatmap | Heatmap |
+
+Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer directly.
+
+## Development
+
+### Project structure
+
+```
+├── server/                    # MCP Server
+│   └── src/
+│       ├── index.ts           # Server entry point
+│       ├── types.ts           # Shared types
+│       ├── tools/             # MCP tool implementations
+│       ├── utils/             # ES client, dashboard store, translators
+│       └── resources/         # Dataviz guidelines, ES|QL reference
+├── preview/                   # Preview App (Vite + React)
+│   └── src/
+│       ├── App.tsx            # Main app with grid layout
+│       ├── components/        # ChartPanel, PanelChrome
+│       ├── grid-layout/       # kbn-grid-layout (from Kibana)
+│       ├── hooks/             # Dashboard config polling
+│       └── theme.ts           # Borealis palette
+├── .cursor/mcp.json           # Cursor MCP configuration
+├── .cursorrules               # AI assistant instructions
+└── eslint.config.js           # Linting (no-explicit-any enforced)
+```
+
+### Scripts
+
+```bash
+npm run dev:preview   # Start preview app (Vite dev server)
+npm run build         # Build both server and preview
+npm run lint          # ESLint check
+npm run typecheck     # TypeScript check (both projects)
+```
+

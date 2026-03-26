@@ -238,7 +238,7 @@ export function translatePanelToLens(panel: PanelConfig): {
       result = translateHeatmap(panel as HeatmapConfig, layerId);
       break;
     default:
-      throw new Error(`Unsupported chart type: ${panel.chartType}`);
+      throw new Error(`Unsupported chart type: ${(panel as PanelConfig).chartType}`);
   }
 
   const esqlQuery = 'esqlQuery' in panel ? panel.esqlQuery : '';

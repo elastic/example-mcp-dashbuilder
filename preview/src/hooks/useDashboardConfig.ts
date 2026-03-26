@@ -74,7 +74,7 @@ export function useDashboardConfig(): DashboardConfig {
           // Strip gridLayout and updatedAt from comparison so user drag/resize
           // doesn't trigger re-renders via the poll
           const parsed = JSON.parse(text);
-          const { gridLayout, updatedAt, ...comparable } = parsed;
+          const { gridLayout: _gridLayout, updatedAt: _updatedAt, ...comparable } = parsed;
           const compareKey = JSON.stringify(comparable);
           if (compareKey !== lastJsonRef.current) {
             lastJsonRef.current = compareKey;

@@ -60,7 +60,7 @@ export function registerSectionTools(server: McpServer): void {
       },
     },
     async (args) => {
-      const dashboard = movePanelToSection(args.panelId as string, args.sectionId as string);
+      movePanelToSection(args.panelId as string, args.sectionId as string);
       return {
         content: [{ type: 'text', text: `Panel "${args.panelId}" moved to section "${args.sectionId}".` }],
       };
@@ -78,7 +78,7 @@ export function registerSectionTools(server: McpServer): void {
       },
     },
     async (args) => {
-      const dashboard = removeSection(args.sectionId as string);
+      removeSection(args.sectionId as string);
       return {
         content: [{ type: 'text', text: `Section "${args.sectionId}" removed.` }],
       };

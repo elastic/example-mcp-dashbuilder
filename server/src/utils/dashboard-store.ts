@@ -1,4 +1,4 @@
-import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
 import { resolve, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import type { DashboardConfig, PanelConfig, SectionConfig } from '../types.js';
@@ -122,7 +122,6 @@ export function switchDashboard(id: string): DashboardConfig {
 export function deleteDashboard(id: string): void {
   const path = getDashboardPath(id);
   if (existsSync(path)) {
-    const { unlinkSync } = require('fs');
     unlinkSync(path);
   }
   // If we deleted the active dashboard, switch to another or create default

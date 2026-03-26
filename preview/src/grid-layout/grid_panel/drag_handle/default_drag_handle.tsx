@@ -44,7 +44,7 @@ const styles = ({ euiTheme }: UseEuiTheme) =>
     marginLeft: euiTheme.size.s,
     border: `1px solid ${euiTheme.border.color}`,
     borderBottom: 'none',
-    backgroundColor: euiTheme.colors.backgroundBasePlain,
+    backgroundColor: euiTheme.colors.emptyShade,
     borderRadius: `${euiTheme.border.radius.medium} ${euiTheme.border.radius.medium} 0 0`,
     transition: `${euiTheme.animation.slow} opacity`,
     '.kbnGridPanel:hover &, .kbnGridPanel:focus-within &, &:active, &:focus': {

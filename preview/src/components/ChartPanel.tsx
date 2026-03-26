@@ -197,7 +197,7 @@ function XYChartPanel({ config }: { config: XYChartConfig }) {
           <Partition
             id={id}
             data={chartData}
-            layout={PartitionLayout.pie}
+            layout={PartitionLayout.sunburst}
             valueAccessor={(d: Record<string, unknown>) => Number(d[yFields[0]]) || 0}
             layers={[
               {

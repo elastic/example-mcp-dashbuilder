@@ -4,6 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
+    "jsxImportSource": "@emotion/react",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

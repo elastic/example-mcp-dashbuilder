@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import type { DashboardConfig, PanelConfig, SectionConfig } from '../types.js';
+import type { DashboardConfig, PanelConfig } from '../types.js';
 import { translatePanelToLens } from './lens-translator.js';
 
 const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
@@ -93,13 +93,31 @@ export function translateDashboardToSavedObject(config: DashboardConfig): {
   }
 
   let allPanels: SavedDashboardPanel[];
-  let sectionsArray: Array<{ title: string; collapsed: boolean; gridData: { y: number; i: string } }> = [];
+  const sectionsArray: Array<{ title: string; collapsed: boolean; gridData: { y: number; i: string } }> = [];
 
   if (gridLayout) {
     // Use positions from user's drag/resize in the preview app
     allPanels = [];
 
-    for (const [widgetId, widget] of Object.entries(gridLayout) as Array<[string, any]>) {
+    interface GridPanel {
+      type: 'panel';
+      column: number;
+      row: number;
+      width: number;
+      height: number;
+    }
+
+    interface GridSection {
+      type: 'section';
+      title: string;
+      isCollapsed?: boolean;
+      row: number;
+      panels?: Record<string, { column: number; row: number; width: number; height: number }>;
+    }
+
+    type GridWidget = GridPanel | GridSection;
+
+    for (const [widgetId, widget] of Object.entries(gridLayout) as Array<[string, GridWidget]>) {
       if (widget.type === 'panel') {
         const chart = chartMap.get(widgetId);
         if (chart) {
@@ -115,7 +133,7 @@ export function translateDashboardToSavedObject(config: DashboardConfig): {
         });
 
         if (widget.panels) {
-          for (const [panelId, panel] of Object.entries(widget.panels) as Array<[string, any]>) {
+          for (const [panelId, panel] of Object.entries(widget.panels)) {
             const chart = chartMap.get(panelId);
             if (chart) {
               allPanels.push(buildSavedPanel(chart, {
