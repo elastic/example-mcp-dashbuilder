@@ -72,23 +72,9 @@ One-click export to Kibana as Lens visualizations
 npm install
 ```
 
-### 2. Build the MCP App (for inline dashboard preview in Cursor)
+This also auto-builds the MCP App (the inline dashboard preview for Cursor's chat).
 
-```bash
-cd preview && npm run build:mcp-app
-```
-
-This builds the dashboard app into a single self-contained HTML file that renders directly inside Cursor's chat.
-
-### 3. Start the preview app
-
-```bash
-npm run dev:preview
-```
-
-This starts the live preview at [http://localhost:5173](http://localhost:5173). Also needed for the MCP App to fetch dashboard data.
-
-### 4. Configure Cursor
+### 2. Configure Cursor
 
 The MCP server is configured in `.cursor/mcp.json`. Update the environment variables if your Elasticsearch/Kibana setup differs:
 
@@ -110,9 +96,11 @@ The MCP server is configured in `.cursor/mcp.json`. Update the environment varia
 }
 ```
 
-### 5. Open the project in Cursor
+### 3. Open the project in Cursor
 
-Open the `elastic-dashbuilder` folder in Cursor. The MCP server will auto-connect. You should see it listed in Cursor Settings > MCP.
+Open the `elastic-dashbuilder` folder in Cursor. The MCP server will auto-connect and start the preview server automatically. You should see it listed in Cursor Settings > MCP.
+
+The live preview is available at [http://localhost:5173](http://localhost:5173) for browser-based development.
 
 ## Usage
 
@@ -237,11 +225,11 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 
 The MCP App (inline dashboard in Cursor) is a pre-built single HTML file. The Vite dev server handles API endpoints and serves `dashboard.json`.
 
-| What changed                                                                                  | What to do                                                    |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Frontend code (`App.tsx`, `ChartPanel.tsx`, `PanelChrome.tsx`, `main.tsx`, grid-layout, etc.) | Rebuild: `cd preview && npm run build:mcp-app`                |
-| Server/API code (`vite.config.ts` — requery endpoint, field_caps, etc.)                       | Restart `npm run dev:preview` (auto-restarts on save)         |
-| `dashboard.json` (new charts, layout changes)                                                 | Nothing — the MCP App polls this from the dev server every 2s |
+| What changed                                                                                  | What to do                                                        |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Frontend code (`App.tsx`, `ChartPanel.tsx`, `PanelChrome.tsx`, `main.tsx`, grid-layout, etc.) | Rebuild: `cd preview && npm run build:mcp-app`                    |
+| Server/API code (`vite.config.ts` — requery endpoint, field_caps, etc.)                       | Restart the MCP server in Cursor (auto-restarts Vite)             |
+| `dashboard.json` (new charts, layout changes)                                                 | Nothing — the MCP App polls this from the preview server every 2s |
 
 ### Scripts
 

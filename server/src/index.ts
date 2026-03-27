@@ -1,3 +1,7 @@
+import { spawn } from 'child_process';
+import type { ChildProcess } from 'child_process';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerRunEsql } from './tools/run-esql.js';
@@ -12,6 +16,21 @@ import { registerViewDashboard } from './tools/view-dashboard.js';
 import { closeBrowser } from './utils/chart-renderer.js';
 import { DATAVIZ_GUIDELINES } from './resources/dataviz-guidelines.js';
 import { buildEsqlReference } from './resources/esql-reference.js';
+
+// Start the Vite preview server as a background child process.
+// The MCP app and Puppeteer renderer need it for API endpoints and dashboard.json.
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const previewDir = resolve(__dirname, '..', '..', 'preview');
+let viteProcess: ChildProcess | undefined;
+
+function startViteServer() {
+  viteProcess = spawn('npx', ['vite', '--port', '5173'], {
+    cwd: previewDir,
+    stdio: ['ignore', 'ignore', 'ignore'],
+    detached: false,
+  });
+  viteProcess.on('error', () => {}); // swallow — non-critical
+}
 
 const server = new McpServer({
   name: 'elastic-dashbuilder',
@@ -72,15 +91,17 @@ registerManageDashboard(server);
 registerExportToKibana(server);
 registerViewDashboard(server);
 
-// Clean up browser on shutdown
-process.on('SIGINT', async () => {
+// Start preview server automatically
+startViteServer();
+
+// Clean up on shutdown
+async function shutdown() {
+  viteProcess?.kill();
   await closeBrowser();
   process.exit(0);
-});
-process.on('SIGTERM', async () => {
-  await closeBrowser();
-  process.exit(0);
-});
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
 // Connect via stdio (Cursor spawns this process)
 const transport = new StdioServerTransport();
