@@ -89,7 +89,6 @@ export function registerCreateChart(server: McpServer): void {
         xField,
         yFields,
         splitField,
-        data,
       };
 
       const dashboard = addChart(chart);

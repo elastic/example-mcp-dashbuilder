@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { BASE_URL } from '../utils/base-url';
 
 interface ChartConfig {
   id: string;
@@ -8,7 +9,6 @@ interface ChartConfig {
   xField: string;
   yFields: string[];
   splitField?: string;
-  data: Record<string, unknown>[];
 }
 
 interface MetricConfig {
@@ -17,14 +17,14 @@ interface MetricConfig {
   chartType: 'metric';
   subtitle?: string;
   color?: string;
-  value: number;
+  valueField?: string;
   valuePrefix?: string;
   valueSuffix?: string;
   esqlQuery: string;
-  trend?: {
-    data: Array<{ x: number; y: number }>;
-    shape: 'area' | 'bars';
-  };
+  trendEsqlQuery?: string;
+  trendXField?: string;
+  trendYField?: string;
+  trendShape?: 'area' | 'bars';
 }
 
 interface HeatmapConfig {
@@ -35,7 +35,6 @@ interface HeatmapConfig {
   xField: string;
   yField: string;
   valueField: string;
-  data: Record<string, unknown>[];
 }
 
 export type PanelConfig = ChartConfig | MetricConfig | HeatmapConfig;
@@ -68,12 +67,7 @@ export function useDashboardConfig(): DashboardConfig {
   useEffect(() => {
     async function fetchConfig() {
       try {
-        // Use absolute URL when running inside MCP App sandbox (different origin)
-        const baseUrl =
-          window.location.protocol === 'https:' || window.location.hostname !== 'localhost'
-            ? 'http://localhost:5173'
-            : '';
-        const res = await fetch(`${baseUrl}/dashboard.json?t=${Date.now()}`);
+        const res = await fetch(`${BASE_URL}/dashboard.json?t=${Date.now()}`);
         if (res.ok) {
           const text = await res.text();
           // Strip gridLayout and updatedAt from comparison so user drag/resize

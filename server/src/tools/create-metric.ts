@@ -115,25 +115,17 @@ export function registerCreateMetric(server: McpServer): void {
         };
       }
 
-      // Execute the optional trend query
-      let trend: MetricConfig['trend'] | undefined;
+      // Validate the optional trend query
+      let trendRowCount = 0;
       if (trendEsqlQuery && trendXField && trendYField) {
         try {
           const trendResponse = (await client.esql.query({
             query: trendEsqlQuery,
             format: 'json',
           })) as unknown as ESQLResponse;
-          const trendRows = columnarToRows(trendResponse);
-
-          trend = {
-            data: trendRows.map((row) => ({
-              x: new Date(row[trendXField] as string).getTime(),
-              y: Number(row[trendYField]) || 0,
-            })),
-            shape: trendShape,
-          };
-        } catch (err) {
-          console.error('Trend query failed:', err);
+          trendRowCount = columnarToRows(trendResponse).length;
+        } catch {
+          // Trend query failed — metric still works without it
         }
       }
 
@@ -143,11 +135,14 @@ export function registerCreateMetric(server: McpServer): void {
         chartType: 'metric',
         subtitle,
         color: color || '#54B399',
-        value,
+        valueField,
         valuePrefix,
         valueSuffix,
         esqlQuery,
-        trend,
+        trendEsqlQuery,
+        trendXField,
+        trendYField,
+        trendShape,
       };
 
       const dashboard = addChart(metric);
@@ -155,7 +150,7 @@ export function registerCreateMetric(server: McpServer): void {
       const formattedValue = `${valuePrefix || ''}${value.toLocaleString()}${valueSuffix || ''}`;
       const statusText =
         `Metric "${title}" added to dashboard: ${formattedValue}` +
-        (trend ? ` (with ${trend.data.length}-point ${trend.shape} sparkline)` : '') +
+        (trendRowCount > 0 ? ` (with ${trendRowCount}-point ${trendShape} sparkline)` : '') +
         `. Dashboard now has ${dashboard.charts.length} panel(s).\n` +
         `Preview: http://localhost:5173`;
 

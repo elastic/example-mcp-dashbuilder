@@ -147,7 +147,7 @@ function translateMetric(config: MetricConfig, layerId: string) {
 
   // Handle trend line if present
   let trendLayerId: string | undefined;
-  if (config.trend) {
+  if (config.trendEsqlQuery) {
     trendLayerId = randomUUID();
     const trendTimeColumnId = randomUUID();
     const trendValueColumnId = randomUUID();

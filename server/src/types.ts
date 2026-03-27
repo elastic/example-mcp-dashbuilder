@@ -18,7 +18,6 @@ export interface ChartConfig {
   xField: string;
   yFields: string[];
   splitField?: string;
-  data: Record<string, unknown>[];
 }
 
 export type TrendShape = 'area' | 'bars';
@@ -29,14 +28,14 @@ export interface MetricConfig {
   chartType: 'metric';
   subtitle?: string;
   color?: string;
-  value: number;
+  valueField: string;
   valuePrefix?: string;
   valueSuffix?: string;
   esqlQuery: string;
-  trend?: {
-    data: Array<{ x: number; y: number }>;
-    shape: TrendShape;
-  };
+  trendEsqlQuery?: string;
+  trendXField?: string;
+  trendYField?: string;
+  trendShape?: TrendShape;
 }
 
 export interface HeatmapConfig {
@@ -47,7 +46,6 @@ export interface HeatmapConfig {
   xField: string;
   yField: string;
   valueField: string;
-  data: Record<string, unknown>[];
 }
 
 export type PanelConfig = ChartConfig | MetricConfig | HeatmapConfig;

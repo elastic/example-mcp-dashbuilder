@@ -76,7 +76,6 @@ export function registerCreateHeatmap(server: McpServer): void {
         xField,
         yField,
         valueField,
-        data,
       };
 
       const dashboard = addChart(heatmap);

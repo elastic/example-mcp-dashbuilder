@@ -26,7 +26,7 @@ interface XYChartConfig {
   xField: string;
   yFields: string[];
   splitField?: string;
-  data: Record<string, unknown>[];
+  data?: Record<string, unknown>[];
 }
 
 interface MetricPanelConfig {
@@ -35,10 +35,14 @@ interface MetricPanelConfig {
   chartType: 'metric';
   subtitle?: string;
   color?: string;
-  value: number;
+  valueField?: string;
   valuePrefix?: string;
   valueSuffix?: string;
   data?: Record<string, unknown>[];
+  trendEsqlQuery?: string;
+  trendXField?: string;
+  trendYField?: string;
+  trendShape?: 'area' | 'bars';
   trend?: {
     data: Array<{ x: number; y: number }>;
     shape: 'area' | 'bars';
@@ -52,7 +56,7 @@ interface HeatmapPanelConfig {
   xField: string;
   yField: string;
   valueField: string;
-  data: Record<string, unknown>[];
+  data?: Record<string, unknown>[];
 }
 
 type PanelConfig = XYChartConfig | MetricPanelConfig | HeatmapPanelConfig;
@@ -85,10 +89,13 @@ export function ChartPanel({ config }: { config: PanelConfig }) {
 // ── Metric ──
 
 function MetricPanel({ config }: { config: MetricPanelConfig }) {
-  const { id, title, subtitle, color, value, valuePrefix, valueSuffix, data, trend } = config;
+  const { id, title, subtitle, color, valueField, valuePrefix, valueSuffix, data, trend } = config;
 
-  // Derive value from query data if available, fall back to static value
-  const displayValue = data && data.length > 0 ? Number(Object.values(data[0])[0]) || 0 : value;
+  // Derive value from query data using valueField
+  const displayValue =
+    data && data.length > 0
+      ? Number(valueField ? data[0][valueField] : Object.values(data[0])[0]) || 0
+      : 0;
 
   const metricDatum: MetricDatum = {
     color: color || KIBANA_PALETTE[0],
@@ -148,7 +155,7 @@ function buildColorScale(values: number[], steps = 8): HeatmapBandsColorScale {
 }
 
 function HeatmapPanel({ config }: { config: HeatmapPanelConfig }) {
-  const { id, data, xField, yField, valueField } = config;
+  const { id, data = [], xField, yField, valueField } = config;
 
   const colorScale = useMemo(() => {
     const values = data.map((d) => Number(d[valueField])).filter((v) => !isNaN(v));
@@ -212,7 +219,7 @@ function isLikelyTimeValue(value: unknown): boolean {
 }
 
 function XYChartPanel({ config }: { config: XYChartConfig }) {
-  const { id, chartType, data, xField, yFields, splitField } = config;
+  const { id, chartType, data = [], xField, yFields, splitField } = config;
 
   if (data.length === 0) return <p>No data</p>;
 

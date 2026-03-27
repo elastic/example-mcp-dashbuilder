@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { EuiSuperDatePicker, EuiFlexGroup, EuiFlexItem, EuiButtonEmpty } from '@elastic/eui';
 interface DurationRange {
   end: string;
@@ -25,10 +25,13 @@ const COMMONLY_USED_RANGES: DurationRange[] = [
 import { GridLayout } from './grid-layout';
 import type { GridLayoutData, GridSettings } from './grid-layout';
 import type { GridPanelData } from './grid-layout';
-import { PanelChrome } from './components/PanelChrome';
+import { DashboardPanel } from './components/DashboardPanel';
 import { ChartPanel } from './components/ChartPanel';
 import { useDashboardConfig } from './hooks/useDashboardConfig';
 import type { PanelConfig, SectionConfig } from './hooks/useDashboardConfig';
+import { TimeRangeProvider, useTimeRange } from './context/TimeRangeContext';
+import { useEsqlQuery } from './hooks/useEsqlQuery';
+import { BASE_URL } from './utils/base-url';
 
 const GRID_SETTINGS: GridSettings = {
   gutterSize: 8,
@@ -133,46 +136,35 @@ function getDashboardKey(charts: PanelConfig[], sections: SectionConfig[]): stri
 }
 
 export function App() {
+  return (
+    <TimeRangeProvider>
+      <AppInner />
+    </TimeRangeProvider>
+  );
+}
+
+function AppInner() {
   const dashboard = useDashboardConfig();
   const hasCharts = dashboard.charts.length > 0;
+  const { setTimeRange } = useTimeRange();
 
   const [isAllData, setIsAllData] = useState(true);
   const [start, setStart] = useState('now-15m');
   const [end, setEnd] = useState('now');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Clear loading when polled data arrives
-  useEffect(() => {
-    if (isLoading) setIsLoading(false);
-  }, [dashboard.updatedAt]);
-
-  const requery = useCallback((s: string, e: string) => {
-    const baseUrl =
-      window.location.protocol === 'https:' || window.location.hostname !== 'localhost'
-        ? 'http://localhost:5173'
-        : '';
-
-    setIsLoading(true);
-    fetch(`${baseUrl}/api/requery`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ start: s, end: e }),
-    }).catch(() => setIsLoading(false));
-  }, []);
 
   const onTimeChange = useCallback(
     ({ start: s, end: e }: OnTimeChangeProps) => {
       if (s === ALL_DATA_SENTINEL) {
         setIsAllData(true);
-        requery('', '');
+        setTimeRange(null);
         return;
       }
       setIsAllData(false);
       setStart(s);
       setEnd(e);
-      requery(s, e);
+      setTimeRange({ start: s, end: e });
     },
-    [requery]
+    [setTimeRange]
   );
 
   const params = new URLSearchParams(window.location.search);
@@ -197,11 +189,7 @@ export function App() {
   }
 
   const handleLayoutChange = useCallback((newLayout: GridLayoutData) => {
-    const baseUrl =
-      window.location.protocol === 'https:' || window.location.hostname !== 'localhost'
-        ? 'http://localhost:5173'
-        : '';
-    fetch(`${baseUrl}/api/save-layout`, {
+    fetch(`${BASE_URL}/api/save-layout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newLayout),
@@ -212,13 +200,9 @@ export function App() {
     (panelId: string) => {
       const config = chartMap[panelId];
       if (!config) return <div>Panel not found</div>;
-      return (
-        <PanelChrome title={config.title} isLoading={isLoading}>
-          <ChartPanel config={config} />
-        </PanelChrome>
-      );
+      return <DashboardPanel config={config} />;
     },
-    [chartMap, isLoading]
+    [chartMap]
   );
 
   if (renderChartId) {
@@ -230,20 +214,7 @@ export function App() {
         </div>
       );
     }
-    return (
-      <div
-        id="render-ready"
-        data-status="ok"
-        style={{
-          width: 600,
-          height: chart.chartType === 'metric' ? 200 : 350,
-          padding: 16,
-          background: '#fff',
-        }}
-      >
-        <ChartPanel config={chart} />
-      </div>
-    );
+    return <RenderSingleChart config={chart} />;
   }
 
   return (
@@ -279,7 +250,6 @@ export function App() {
                 start={start}
                 end={end}
                 onTimeChange={onTimeChange}
-                isLoading={isLoading}
                 commonlyUsedRanges={COMMONLY_USED_RANGES}
                 showUpdateButton={false}
                 showTimeWindowButtons={true}
@@ -310,6 +280,29 @@ export function App() {
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+function RenderSingleChart({ config }: { config: PanelConfig }) {
+  const { timeRange } = useTimeRange();
+  const { data, isLoading } = useEsqlQuery(config.esqlQuery, timeRange);
+
+  const liveConfig = { ...config, data };
+  const ready = !isLoading;
+
+  return (
+    <div
+      id="render-ready"
+      data-status={ready ? 'ok' : 'loading'}
+      style={{
+        width: 600,
+        height: config.chartType === 'metric' ? 200 : 350,
+        padding: 16,
+        background: '#fff',
+      }}
+    >
+      <ChartPanel config={liveConfig} />
     </div>
   );
 }

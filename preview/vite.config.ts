@@ -8,6 +8,10 @@ import type { ESQLSource } from '@elastic/esql/types';
 const ES_NODE = process.env.ES_NODE || 'http://localhost:9200';
 const ES_USERNAME = process.env.ES_USERNAME || 'elastic';
 const ES_PASSWORD = process.env.ES_PASSWORD || 'changeme';
+const AUTH_HEADER = 'Basic ' + Buffer.from(`${ES_USERNAME}:${ES_PASSWORD}`).toString('base64');
+
+// Cache time field detection per index pattern (persists across requests)
+const timeFieldCache = new Map<string, string | undefined>();
 
 function readBody(req: any): Promise<string> {
   return new Promise((resolve) => {
@@ -19,10 +23,32 @@ function readBody(req: any): Promise<string> {
   });
 }
 
+/** Handle CORS preflight + reject non-POST. Returns true if the request was handled. */
+function handleCorsAndMethod(req: any, res: any): boolean {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.statusCode = 204;
+    res.end();
+    return true;
+  }
+  if (req.method !== 'POST') {
+    res.statusCode = 405;
+    res.end('Method not allowed');
+    return true;
+  }
+  return false;
+}
+
+function setCorsHeaders(res: any) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+}
+
 /**
  * Vite plugin that adds API endpoints for the preview app:
  * - POST /api/save-layout — persist grid layout changes
- * - POST /api/requery — re-run all ES|QL queries with a new time range
+ * - POST /api/esql — proxy ES|QL queries to Elasticsearch with optional time filter
  */
 function dashboardApiPlugin() {
   const dashboardPath = path.resolve(__dirname, 'public', 'dashboard.json');
@@ -32,19 +58,7 @@ function dashboardApiPlugin() {
     configureServer(server: any) {
       // Save layout changes
       server.middlewares.use('/api/save-layout', async (req: any, res: any) => {
-        if (req.method === 'OPTIONS') {
-          res.setHeader('Access-Control-Allow-Origin', '*');
-          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-          res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-          res.statusCode = 204;
-          res.end();
-          return;
-        }
-        if (req.method !== 'POST') {
-          res.statusCode = 405;
-          res.end('Method not allowed');
-          return;
-        }
+        if (handleCorsAndMethod(req, res)) return;
 
         try {
           const body = await readBody(req);
@@ -53,7 +67,6 @@ function dashboardApiPlugin() {
           dashboard.gridLayout = gridLayout;
           dashboard.updatedAt = new Date().toISOString();
           const json = JSON.stringify(dashboard, null, 2);
-          // Write to active dashboard.json (for the preview app)
           fs.writeFileSync(dashboardPath, json);
           // Also write to the dashboards folder copy (for the export tool)
           const dashboardsDir = path.resolve(__dirname, 'public', 'dashboards');
@@ -63,7 +76,7 @@ function dashboardApiPlugin() {
             fs.writeFileSync(path.resolve(dashboardsDir, `${activeId}.json`), json);
           }
           res.setHeader('Content-Type', 'application/json');
-          res.setHeader('Access-Control-Allow-Origin', '*');
+          setCorsHeaders(res);
           res.end(JSON.stringify({ ok: true }));
         } catch {
           res.statusCode = 400;
@@ -71,109 +84,69 @@ function dashboardApiPlugin() {
         }
       });
 
-      // Re-run all ES|QL queries with a new time range
-      server.middlewares.use('/api/requery', async (req: any, res: any) => {
-        // Handle CORS preflight from MCP App webview
-        if (req.method === 'OPTIONS') {
-          res.setHeader('Access-Control-Allow-Origin', '*');
-          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-          res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-          res.statusCode = 204;
-          res.end();
-          return;
-        }
-        if (req.method !== 'POST') {
-          res.statusCode = 405;
-          res.end('Method not allowed');
-          return;
-        }
+      // Proxy a single ES|QL query to Elasticsearch, with optional time filter
+      server.middlewares.use('/api/esql', async (req: any, res: any) => {
+        if (handleCorsAndMethod(req, res)) return;
 
         try {
           const body = await readBody(req);
-          const { start, end } = JSON.parse(body);
-          const dashboard = JSON.parse(fs.readFileSync(dashboardPath, 'utf-8'));
+          const { query, start, end } = JSON.parse(body);
 
-          const authHeader =
-            'Basic ' + Buffer.from(`${ES_USERNAME}:${ES_PASSWORD}`).toString('base64');
+          if (!query) {
+            res.statusCode = 400;
+            setCorsHeaders(res);
+            res.end(JSON.stringify({ error: 'Missing query' }));
+            return;
+          }
 
-          let updated = false;
-
-          // Detect time field per index pattern via field_caps, cached
-          const timeFieldCache = new Map<string, string | undefined>();
-
-          for (const chart of dashboard.charts) {
-            if (!chart.esqlQuery) continue;
-
-            try {
-              // Resolve time field for this chart's index (one field_caps call per unique index)
-              const index = parseIndexPattern(chart.esqlQuery);
-              let timeField: string | undefined;
-              if (index) {
-                if (timeFieldCache.has(index)) {
-                  timeField = timeFieldCache.get(index);
-                } else {
-                  timeField = await fetchTimeField(index, authHeader);
-                  timeFieldCache.set(index, timeField);
-                }
+          // Detect time field and build DSL filter
+          let filter: Record<string, unknown> | undefined;
+          if (start && end) {
+            const index = parseIndexPattern(query);
+            if (index) {
+              if (!timeFieldCache.has(index)) {
+                timeFieldCache.set(index, await fetchTimeField(index));
               }
-
-              const filter =
-                timeField && start && end
-                  ? { range: { [timeField]: { gte: start, lte: end } } }
-                  : undefined;
-
-              const esResponse = await fetch(`${ES_NODE}/_query`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: authHeader,
-                },
-                body: JSON.stringify({ query: chart.esqlQuery, ...(filter && { filter }) }),
-              });
-
-              if (!esResponse.ok) continue;
-
-              const result = (await esResponse.json()) as {
-                columns: Array<{ name: string; type: string }>;
-                values: unknown[][];
-              };
-
-              // Convert columnar to rows
-              const rows = result.values.map((row: unknown[]) => {
-                const obj: Record<string, unknown> = {};
-                result.columns.forEach((col: { name: string }, i: number) => {
-                  obj[col.name] = row[i];
-                });
-                return obj;
-              });
-
-              chart.data = rows;
-
-              updated = true;
-            } catch {
-              // Skip failed queries, keep existing data
+              const timeField = timeFieldCache.get(index);
+              if (timeField) {
+                filter = { range: { [timeField]: { gte: start, lte: end } } };
+              }
             }
           }
 
-          if (updated) {
-            dashboard.updatedAt = new Date().toISOString();
-            const json = JSON.stringify(dashboard, null, 2);
-            fs.writeFileSync(dashboardPath, json);
-            // Also write to the dashboards folder copy
-            const dashboardsDir = path.resolve(__dirname, 'public', 'dashboards');
-            const activeIdPath = path.resolve(dashboardsDir, '.active');
-            if (fs.existsSync(activeIdPath)) {
-              const activeId = fs.readFileSync(activeIdPath, 'utf-8').trim();
-              fs.writeFileSync(path.resolve(dashboardsDir, `${activeId}.json`), json);
-            }
+          const esResponse = await fetch(`${ES_NODE}/_query`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: AUTH_HEADER },
+            body: JSON.stringify({ query, ...(filter && { filter }) }),
+          });
+
+          if (!esResponse.ok) {
+            const errText = await esResponse.text();
+            res.statusCode = 502;
+            setCorsHeaders(res);
+            res.end(JSON.stringify({ error: errText }));
+            return;
           }
+
+          const result = (await esResponse.json()) as {
+            columns: Array<{ name: string; type: string }>;
+            values: unknown[][];
+          };
+
+          const rows = result.values.map((row: unknown[]) => {
+            const obj: Record<string, unknown> = {};
+            result.columns.forEach((col: { name: string }, i: number) => {
+              obj[col.name] = row[i];
+            });
+            return obj;
+          });
 
           res.setHeader('Content-Type', 'application/json');
-          res.setHeader('Access-Control-Allow-Origin', '*');
-          res.end(JSON.stringify({ ok: true, updated }));
+          setCorsHeaders(res);
+          res.end(JSON.stringify({ rows, columns: result.columns }));
         } catch (err) {
           res.statusCode = 500;
-          res.setHeader('Access-Control-Allow-Origin', '*');
+          setCorsHeaders(res);
           res.end(JSON.stringify({ error: String(err) }));
         }
       });
@@ -204,11 +177,11 @@ function parseIndexPattern(query: string): string | undefined {
  * Use the field capabilities API to find the time field for an index.
  * Priority: @timestamp > timestamp > first date field.
  */
-async function fetchTimeField(index: string, authHeader: string): Promise<string | undefined> {
+async function fetchTimeField(index: string): Promise<string | undefined> {
   try {
     const response = await fetch(
       `${ES_NODE}/${encodeURIComponent(index)}/_field_caps?fields=*&types=date,date_nanos`,
-      { headers: { Authorization: authHeader } }
+      { headers: { Authorization: AUTH_HEADER } }
     );
     if (!response.ok) return undefined;
 
