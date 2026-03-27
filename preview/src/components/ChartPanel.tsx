@@ -57,6 +57,19 @@ interface HeatmapPanelConfig {
 
 type PanelConfig = XYChartConfig | MetricPanelConfig | HeatmapPanelConfig;
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatDateTime(d: Date): string {
+  const month = MONTHS[d.getMonth()];
+  const day = d.getDate();
+  const year = d.getFullYear();
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  const ms = String(d.getMilliseconds()).padStart(3, '0');
+  return `${month} ${day}, ${year} @ ${h}:${m}:${s}.${ms}`;
+}
+
 // ── Router ──
 
 export function ChartPanel({ config }: { config: PanelConfig }) {
@@ -239,7 +252,12 @@ function XYChartPanel({ config }: { config: XYChartConfig }) {
           />
         ) : (
           <>
-            <Axis id="bottom" position={Position.Bottom} title={xField} />
+            <Axis
+              id="bottom"
+              position={Position.Bottom}
+              title={xField}
+              tickFormat={isTimeBased ? (v) => formatDateTime(new Date(v)) : undefined}
+            />
             <Axis
               id="left"
               position={Position.Left}
