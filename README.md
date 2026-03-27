@@ -233,6 +233,16 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 └── eslint.config.js           # Linting (no-explicit-any enforced)
 ```
 
+### Applying changes to the MCP App
+
+The MCP App (inline dashboard in Cursor) is a pre-built single HTML file. The Vite dev server handles API endpoints and serves `dashboard.json`.
+
+| What changed                                                                                  | What to do                                                    |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Frontend code (`App.tsx`, `ChartPanel.tsx`, `PanelChrome.tsx`, `main.tsx`, grid-layout, etc.) | Rebuild: `cd preview && npm run build:mcp-app`                |
+| Server/API code (`vite.config.ts` — requery endpoint, field_caps, etc.)                       | Restart `npm run dev:preview` (auto-restarts on save)         |
+| `dashboard.json` (new charts, layout changes)                                                 | Nothing — the MCP App polls this from the dev server every 2s |
+
 ### Scripts
 
 ```bash

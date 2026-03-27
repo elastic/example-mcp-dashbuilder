@@ -211,12 +211,39 @@
     apache-arrow "18.x - 21.x"
     tslib "^2.4.0"
 
-"@elastic/eui@^99.0.0":
-  version "99.4.0"
-  resolved "https://registry.npmjs.org/@elastic/eui/-/eui-99.4.0.tgz"
-  integrity sha512-xz1YofwBUBogMy09sSdrXAIKKLDOeCN6861VwKGu3cd2dUm/G7vMDqTwiXZfAaS0ni/PwmOY6QJwEcOrNVPvbg==
+"@elastic/esql@^1.6.0":
+  version "1.6.0"
+  resolved "https://registry.npmjs.org/@elastic/esql/-/esql-1.6.0.tgz"
+  integrity sha512-2pyj6bWNSf5XuaP3LfwHdoYW+VyejgMnmaDMmbNKLJ9F16n7ySaHRDEVk8riSwRPdSlgGwiRvYgrcNz8ccOo0A==
   dependencies:
-    "@elastic/prismjs-esql" "^1.0.0"
+    antlr4 "4.13.2"
+    tree-dump "1.1.0"
+    tslib "2.8.1"
+
+"@elastic/eui-theme-borealis@7.0.0":
+  version "7.0.0"
+  resolved "https://registry.npmjs.org/@elastic/eui-theme-borealis/-/eui-theme-borealis-7.0.0.tgz"
+  integrity sha512-UiwpCmMxx7fWosNUi2JMnR+bAQBppHHOI0lIfLBrP7uYqDg+3JFV5Mhg8Wc3kdfaxoVaW1/IUMmLxJ5eTulSnA==
+  dependencies:
+    "@elastic/eui-theme-common" "9.0.0"
+    chroma-js "^2.4.2"
+
+"@elastic/eui-theme-common@9.0.0":
+  version "9.0.0"
+  resolved "https://registry.npmjs.org/@elastic/eui-theme-common/-/eui-theme-common-9.0.0.tgz"
+  integrity sha512-0Vxu6coC2KccsU3HLPhDhqJam0PCwyVZpqS9hJ65mFst/jutVYVx8RBKNGq10R2qr0wgO20aJLA5OzaniJ56/A==
+  dependencies:
+    "@types/lodash" "^4.14.202"
+    chroma-js "^2.4.2"
+    lodash "^4.17.21"
+
+"@elastic/eui@^114.0.0":
+  version "114.0.0"
+  resolved "https://registry.npmjs.org/@elastic/eui/-/eui-114.0.0.tgz"
+  integrity sha512-wozSyxPpDTM5oMoldWBds6NdjCa+nf0FilTl0BoL3rgYaEGGvbEg3rWR7ff2P7SKWI40GPbKE6pGCaX66swq7A==
+  dependencies:
+    "@elastic/eui-theme-common" "9.0.0"
+    "@elastic/prismjs-esql" "^1.1.2"
     "@hello-pangea/dnd" "^16.6.0"
     "@types/lodash" "^4.14.202"
     "@types/numeral" "^2.0.5"
@@ -248,10 +275,11 @@
     unified "^9.2.2"
     unist-util-visit "^2.0.3"
     url-parse "^1.5.10"
+    use-sync-external-store "^1.6.0"
     uuid "^8.3.0"
     vfile "^4.2.1"
 
-"@elastic/prismjs-esql@^1.0.0":
+"@elastic/prismjs-esql@^1.1.2":
   version "1.1.3"
   resolved "https://registry.npmjs.org/@elastic/prismjs-esql/-/prismjs-esql-1.1.3.tgz"
   integrity sha512-t7dqrtxs8JDuSgmH7cqxAvudbOtgEyKk8Qb3WzViklxyyasZruyA7+ZfnrjU3g9D+i55AOzCqHLOUzfNXs3W9g==
@@ -737,7 +765,7 @@
   resolved "https://registry.npmjs.org/@types/prop-types/-/prop-types-15.7.15.tgz"
   integrity sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==
 
-"@types/react-dom@^16.8 || ^17.0 || ^18.0", "@types/react-dom@^16.9 || ^17.0 || ^18.0", "@types/react-dom@^18.3.0":
+"@types/react-dom@^16.8 || ^17.0 || ^18.0", "@types/react-dom@^17.0 || ^18.0", "@types/react-dom@^18.3.0":
   version "18.3.7"
   resolved "https://registry.npmjs.org/@types/react-dom/-/react-dom-18.3.7.tgz"
   integrity sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==
@@ -759,7 +787,7 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*", "@types/react@^16.8 || ^17.0 || ^18.0", "@types/react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "@types/react@^16.9 || ^17.0 || ^18.0", "@types/react@^18.0.0", "@types/react@^18.3.0":
+"@types/react@*", "@types/react@^16.8 || ^17.0 || ^18.0", "@types/react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "@types/react@^17.0 || ^18.0", "@types/react@^18.0.0", "@types/react@^18.3.0":
   version "18.3.28"
   resolved "https://registry.npmjs.org/@types/react/-/react-18.3.28.tgz"
   integrity sha512-z9VXpC7MWrhfWipitjNdgCauoMLRdIILQsAEV+ZesIzBq/oUlxk0m3ApZuMFCXdnS4U7KrI+l3WRUEGQ8K1QKw==
@@ -982,6 +1010,11 @@ ansi-styles@^6.2.1:
   version "6.2.3"
   resolved "https://registry.npmjs.org/ansi-styles/-/ansi-styles-6.2.3.tgz"
   integrity sha512-4Dj6M28JB+oAH8kFkTLUo+a2jwOFkuqb3yucU0CANcRRUbxS0cP0nZYCGjcc3BNXwRIsUVmDGgzawme7zvJHvg==
+
+antlr4@4.13.2:
+  version "4.13.2"
+  resolved "https://registry.npmjs.org/antlr4/-/antlr4-4.13.2.tgz"
+  integrity sha512-QiVbZhyy4xAZ17UPEuG3YTOt8ZaoeOR1CvEAqrEsDBsOqINslaB147i9xqljZqoyf5S+EUlGStaj+t22LT9MOg==
 
 "apache-arrow@18.x - 21.x":
   version "21.1.0"
@@ -2681,6 +2714,7 @@ math-intrinsics@^1.1.0:
   resolved "file:preview"
   dependencies:
     "@elastic/charts" "^67.0.0"
+    "@elastic/esql" "^1.6.0"
     "@elastic/eui" "^99.0.0"
     "@emotion/css" "^11.13.0"
     "@emotion/react" "^11.14.0"
@@ -2697,7 +2731,7 @@ math-intrinsics@^1.1.0:
   resolved "file:server"
   dependencies:
     "@elastic/elasticsearch" "^9.0.0"
-    "@modelcontextprotocol/ext-apps" "^0.1.0"
+    "@modelcontextprotocol/ext-apps" "^1.3.1"
     "@modelcontextprotocol/sdk" "^1.12.0"
     puppeteer "^24.0.0"
     zod "^3.24.0"
@@ -3202,7 +3236,7 @@ react-clientside-effect@^1.2.7:
   dependencies:
     "@babel/runtime" "^7.12.13"
 
-"react-dom@^0.14.8 || ^15.0.1 || ^16.0.0 || ^17.0.1 || ^18.0.0", "react-dom@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^15.3.0 || ^16.0.0-alpha || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.12 || ^17.0 || ^18.0", "react-dom@^16.8 || ^17.0 || ^18.0", "react-dom@^16.8.5 || ^17.0.0 || ^18.0.0", "react-dom@^17.0.0 || ^18.0.0 || ^19.0.0", react-dom@^18.3.0, "react-dom@16.8.0 - 18":
+"react-dom@^0.14.8 || ^15.0.1 || ^16.0.0 || ^17.0.1 || ^18.0.0", "react-dom@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^15.3.0 || ^16.0.0-alpha || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom@^16.12 || ^17.0 || ^18.0", "react-dom@^16.8 || ^17.0 || ^18.0", "react-dom@^16.8.5 || ^17.0.0 || ^18.0.0", "react-dom@^17.0 || ^18.0", "react-dom@^17.0.0 || ^18.0.0 || ^19.0.0", react-dom@^18.3.0, "react-dom@16.8.0 - 18":
   version "18.3.1"
   resolved "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz"
   integrity sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==
@@ -3346,7 +3380,7 @@ react-window@^1.8.10:
     "@babel/runtime" "^7.0.0"
     memoize-one ">=3.1.1 <6"
 
-"react@^0.14.8 || ^15.0.1 || ^16.0.0 || ^17.0.1 || ^18.0.0", "react@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^15.3.0 || ^16.0.0-alpha || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.12 || ^17.0 || ^18.0", "react@^16.8 || ^17.0 || ^18.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.3 || ^17 || ^18", "react@^16.8.5 || ^17.0.0 || ^18.0.0", "react@^17.0.0 || ^18.0.0 || ^19.0.0", react@^18.3.0, react@^18.3.1, "react@>= 16.8", react@>=16.8.0, "react@16.8.0 - 18":
+"react@^0.14.8 || ^15.0.1 || ^16.0.0 || ^17.0.1 || ^18.0.0", "react@^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^15.3.0 || ^16.0.0-alpha || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.12 || ^17.0 || ^18.0", "react@^16.8 || ^17.0 || ^18.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc", "react@^16.8.3 || ^17 || ^18", "react@^16.8.5 || ^17.0.0 || ^18.0.0", "react@^17.0 || ^18.0", "react@^17.0.0 || ^18.0.0 || ^19.0.0", react@^18.3.0, react@^18.3.1, "react@>= 16.8", react@>=16.8.0, "react@16.8.0 - 18":
   version "18.3.1"
   resolved "https://registry.npmjs.org/react/-/react-18.3.1.tgz"
   integrity sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==
@@ -3900,6 +3934,11 @@ toidentifier@~1.0.1:
   resolved "https://registry.npmjs.org/toidentifier/-/toidentifier-1.0.1.tgz"
   integrity sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==
 
+tree-dump@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.npmjs.org/tree-dump/-/tree-dump-1.1.0.tgz"
+  integrity sha512-rMuvhU4MCDbcbnleZTFezWsaZXRFemSqAM+7jPnzUl1fo9w3YEKOxAeui0fz3OI4EU4hf23iyA7uQRVko+UaBA==
+
 trim-trailing-lines@^1.0.0:
   version "1.1.4"
   resolved "https://registry.npmjs.org/trim-trailing-lines/-/trim-trailing-lines-1.1.4.tgz"
@@ -3925,7 +3964,7 @@ tslib@^1.9.3:
   resolved "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz"
   integrity sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==
 
-tslib@^2.0.0, tslib@^2.0.1, tslib@^2.0.3, tslib@^2.1.0, tslib@^2.3.1, tslib@^2.4.0, tslib@^2.6.2, tslib@^2.8.0, tslib@^2.8.1:
+tslib@^2.0.0, tslib@^2.0.1, tslib@^2.0.3, tslib@^2.1.0, tslib@^2.3.1, tslib@^2.4.0, tslib@^2.6.2, tslib@^2.8.0, tslib@^2.8.1, tslib@2, tslib@2.8.1:
   version "2.8.1"
   resolved "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz"
   integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
@@ -4141,7 +4180,7 @@ use-sidecar@^1.1.3:
     detect-node-es "^1.1.0"
     tslib "^2.0.0"
 
-use-sync-external-store@^1.0.0:
+use-sync-external-store@^1.0.0, use-sync-external-store@^1.6.0:
   version "1.6.0"
   resolved "https://registry.npmjs.org/use-sync-external-store/-/use-sync-external-store-1.6.0.tgz"
   integrity sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==

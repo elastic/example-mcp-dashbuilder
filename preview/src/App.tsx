@@ -1,4 +1,18 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EuiSuperDatePicker, EuiFlexGroup, EuiFlexItem, EuiButtonEmpty } from '@elastic/eui';
+import type { DurationRange, OnTimeChangeProps } from '@elastic/eui';
+
+const ALL_DATA_SENTINEL = '__all_data__';
+
+const COMMONLY_USED_RANGES: DurationRange[] = [
+  { start: ALL_DATA_SENTINEL, end: 'now', label: 'All data' },
+  { start: 'now-15m', end: 'now', label: 'Last 15 minutes' },
+  { start: 'now-1h', end: 'now', label: 'Last 1 hour' },
+  { start: 'now-24h', end: 'now', label: 'Last 24 hours' },
+  { start: 'now-7d', end: 'now', label: 'Last 7 days' },
+  { start: 'now-30d', end: 'now', label: 'Last 30 days' },
+  { start: 'now-1y', end: 'now', label: 'Last 1 year' },
+];
 import { GridLayout } from './grid-layout';
 import type { GridLayoutData, GridSettings } from './grid-layout';
 import type { GridPanelData } from './grid-layout';
@@ -113,6 +127,45 @@ export function App() {
   const dashboard = useDashboardConfig();
   const hasCharts = dashboard.charts.length > 0;
 
+  const [isAllData, setIsAllData] = useState(true);
+  const [start, setStart] = useState('now-15m');
+  const [end, setEnd] = useState('now');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Clear loading when polled data arrives
+  useEffect(() => {
+    if (isLoading) setIsLoading(false);
+  }, [dashboard.updatedAt]);
+
+  const requery = useCallback((s: string, e: string) => {
+    const baseUrl =
+      window.location.protocol === 'https:' || window.location.hostname !== 'localhost'
+        ? 'http://localhost:5173'
+        : '';
+
+    setIsLoading(true);
+    fetch(`${baseUrl}/api/requery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start: s, end: e }),
+    }).catch(() => setIsLoading(false));
+  }, []);
+
+  const onTimeChange = useCallback(
+    ({ start: s, end: e }: OnTimeChangeProps) => {
+      if (s === ALL_DATA_SENTINEL) {
+        setIsAllData(true);
+        requery('', '');
+        return;
+      }
+      setIsAllData(false);
+      setStart(s);
+      setEnd(e);
+      requery(s, e);
+    },
+    [requery]
+  );
+
   const params = new URLSearchParams(window.location.search);
   const renderChartId = params.get('render');
 
@@ -148,12 +201,12 @@ export function App() {
       const config = chartMap[panelId];
       if (!config) return <div>Panel not found</div>;
       return (
-        <PanelChrome title={config.title}>
+        <PanelChrome title={config.title} isLoading={isLoading}>
           <ChartPanel config={config} />
         </PanelChrome>
       );
     },
-    [chartMap]
+    [chartMap, isLoading]
   );
 
   if (renderChartId) {
@@ -192,16 +245,36 @@ export function App() {
       }}
     >
       <header style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: '#1A1C21' }}>
-          {dashboard.title}
-        </h1>
-        {hasCharts && (
-          <p style={{ color: '#666', marginTop: 4, fontSize: 14 }}>
-            {dashboard.charts.length} chart(s)
-            {sections.length > 0 && ` · ${sections.length} section(s)`} · Last updated:{' '}
-            {new Date(dashboard.updatedAt).toLocaleTimeString()}
-          </p>
-        )}
+        <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false}>
+          <EuiFlexItem grow={false}>
+            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: '#1A1C21' }}>
+              {dashboard.title}
+            </h1>
+            {hasCharts && (
+              <p style={{ color: '#666', marginTop: 4, fontSize: 14 }}>
+                {dashboard.charts.length} chart(s)
+                {sections.length > 0 && ` · ${sections.length} section(s)`}
+              </p>
+            )}
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            {isAllData ? (
+              <EuiButtonEmpty iconType="calendar" onClick={() => setIsAllData(false)}>
+                All data
+              </EuiButtonEmpty>
+            ) : (
+              <EuiSuperDatePicker
+                start={start}
+                end={end}
+                onTimeChange={onTimeChange}
+                isLoading={isLoading}
+                commonlyUsedRanges={COMMONLY_USED_RANGES}
+                showUpdateButton={false}
+                showTimeWindowButtons={true}
+              />
+            )}
+          </EuiFlexItem>
+        </EuiFlexGroup>
       </header>
 
       {hasCharts && layoutRef.current ? (

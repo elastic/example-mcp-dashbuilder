@@ -38,6 +38,7 @@ interface MetricPanelConfig {
   value: number;
   valuePrefix?: string;
   valueSuffix?: string;
+  data?: Record<string, unknown>[];
   trend?: {
     data: Array<{ x: number; y: number }>;
     shape: 'area' | 'bars';
@@ -71,13 +72,16 @@ export function ChartPanel({ config }: { config: PanelConfig }) {
 // ── Metric ──
 
 function MetricPanel({ config }: { config: MetricPanelConfig }) {
-  const { id, title, subtitle, color, value, valuePrefix, valueSuffix, trend } = config;
+  const { id, title, subtitle, color, value, valuePrefix, valueSuffix, data, trend } = config;
+
+  // Derive value from query data if available, fall back to static value
+  const displayValue = data && data.length > 0 ? Number(Object.values(data[0])[0]) || 0 : value;
 
   const metricDatum: MetricDatum = {
     color: color || KIBANA_PALETTE[0],
     title,
     subtitle: subtitle || '',
-    value,
+    value: displayValue,
     valueFormatter: (v: number) => `${valuePrefix || ''}${v.toLocaleString()}${valueSuffix || ''}`,
     ...(trend && trend.data.length > 0
       ? {
@@ -181,13 +185,26 @@ function HeatmapPanel({ config }: { config: HeatmapPanelConfig }) {
 
 // ── XY Charts (bar, line, area, pie) ──
 
+/** True when x values should use a time scale. Avoids Date.parse on category labels — many strings
+ * (e.g. "synthtrace-high-cardinality-0", "host-0") parse as valid dates in JS and break bar charts. */
+function isLikelyTimeValue(value: unknown): boolean {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value > 1e12;
+  }
+  if (typeof value !== 'string') return false;
+  const s = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}/.test(s)) return false;
+  const t = Date.parse(s);
+  return !Number.isNaN(t);
+}
+
 function XYChartPanel({ config }: { config: XYChartConfig }) {
   const { id, chartType, data, xField, yFields, splitField } = config;
 
   if (data.length === 0) return <p>No data</p>;
 
   const firstXValue = data[0]?.[xField];
-  const isTimeBased = typeof firstXValue === 'string' && !isNaN(Date.parse(firstXValue as string));
+  const isTimeBased = isLikelyTimeValue(firstXValue);
   const xScaleType = isTimeBased ? ScaleType.Time : ScaleType.Ordinal;
 
   const chartData = isTimeBased
