@@ -223,13 +223,15 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 
 ### Applying changes to the MCP App
 
-The MCP App (inline dashboard in Cursor) is a pre-built single HTML file. The Vite dev server handles API endpoints and serves `dashboard.json`.
+The MCP App sandbox does not allow loading external scripts, so the MCP App always uses the pre-built bundle.
 
 | What changed                                                                                  | What to do                                                        |
 | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Frontend code (`App.tsx`, `ChartPanel.tsx`, `PanelChrome.tsx`, `main.tsx`, grid-layout, etc.) | Rebuild: `cd preview && npm run build:mcp-app`                    |
 | Server/API code (`vite.config.ts` — requery endpoint, field_caps, etc.)                       | Restart the MCP server in Cursor (auto-restarts Vite)             |
 | `dashboard.json` (new charts, layout changes)                                                 | Nothing — the MCP App polls this from the preview server every 2s |
+
+For frontend development, use the browser preview at `http://localhost:5173` which has HMR.
 
 ### Scripts
 

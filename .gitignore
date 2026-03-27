@@ -4,3 +4,4 @@ dist-mcp-app/
 *.tsbuildinfo
 preview/public/dashboards/
 preview/public/dashboard.json
+.claude/
