@@ -1,5 +1,15 @@
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import type { PanelConfig, ChartConfig, MetricConfig, HeatmapConfig } from '../types.js';
+
+export interface TimeFieldContext {
+  indexPattern: string;
+  timeField: string;
+}
+
+/** Generate a deterministic ID for an ad-hoc data view (same approach as Kibana). */
+function dataViewId(indexPattern: string): string {
+  return createHash('sha256').update(indexPattern).digest('hex');
+}
 
 /**
  * Generate a Lens-compatible column definition from a field name.
@@ -18,23 +28,38 @@ function makeColumn(columnId: string, fieldName: string, meta?: { type: string }
 function buildTextBasedDatasource(
   layerId: string,
   esqlQuery: string,
-  columns: Array<{ columnId: string; fieldName: string; meta?: { type: string } }>
+  columns: Array<{ columnId: string; fieldName: string; meta?: { type: string } }>,
+  ctx?: TimeFieldContext
 ) {
+  const dvId = ctx ? dataViewId(ctx.indexPattern) : '';
+
   return {
     layers: {
       [layerId]: {
-        index: '',
+        index: dvId,
         query: { esql: esqlQuery },
         columns: columns.map((col) => makeColumn(col.columnId, col.fieldName, col.meta)),
+        ...(ctx ? { timeField: ctx.timeField } : {}),
       },
     },
+    ...(ctx
+      ? {
+          indexPatternRefs: [
+            {
+              id: dvId,
+              title: ctx.indexPattern,
+              timeField: ctx.timeField,
+            },
+          ],
+        }
+      : {}),
   };
 }
 
 /**
  * Translate a bar/line/area chart config to a Lens XY visualization.
  */
-function translateXY(config: ChartConfig, layerId: string) {
+function translateXY(config: ChartConfig, layerId: string, ctx?: TimeFieldContext) {
   const xColumnId = randomUUID();
   const yColumnIds = config.yFields.map(() => randomUUID());
   const splitColumnId = config.splitField ? randomUUID() : undefined;
@@ -75,7 +100,7 @@ function translateXY(config: ChartConfig, layerId: string) {
   };
 
   const datasourceStates = {
-    textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns),
+    textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns, ctx),
   };
 
   return { visualization, datasourceStates, visualizationType: 'lnsXY' };
@@ -84,7 +109,7 @@ function translateXY(config: ChartConfig, layerId: string) {
 /**
  * Translate a pie chart config to a Lens Partition visualization.
  */
-function translatePie(config: ChartConfig, layerId: string) {
+function translatePie(config: ChartConfig, layerId: string, ctx?: TimeFieldContext) {
   const groupColumnId = randomUUID();
   const metricColumnId = randomUUID();
 
@@ -109,7 +134,7 @@ function translatePie(config: ChartConfig, layerId: string) {
   };
 
   const datasourceStates = {
-    textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns),
+    textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns, ctx),
   };
 
   return { visualization, datasourceStates, visualizationType: 'lnsPie' };
@@ -118,7 +143,7 @@ function translatePie(config: ChartConfig, layerId: string) {
 /**
  * Translate a metric config to a Lens Metric visualization.
  */
-function translateMetric(config: MetricConfig, layerId: string) {
+function translateMetric(config: MetricConfig, layerId: string, ctx?: TimeFieldContext) {
   const metricColumnId = randomUUID();
 
   // Find the value field name from the ES|QL query
@@ -159,7 +184,7 @@ function translateMetric(config: MetricConfig, layerId: string) {
   }
 
   const datasourceStates = {
-    textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns),
+    textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns, ctx),
   };
 
   return { visualization, datasourceStates, visualizationType: 'lnsMetric' };
@@ -168,7 +193,7 @@ function translateMetric(config: MetricConfig, layerId: string) {
 /**
  * Translate a heatmap config to a Lens Heatmap visualization.
  */
-function translateHeatmap(config: HeatmapConfig, layerId: string) {
+function translateHeatmap(config: HeatmapConfig, layerId: string, ctx?: TimeFieldContext) {
   const xColumnId = randomUUID();
   const yColumnId = randomUUID();
   const valueColumnId = randomUUID();
@@ -202,7 +227,7 @@ function translateHeatmap(config: HeatmapConfig, layerId: string) {
   };
 
   const datasourceStates = {
-    textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns),
+    textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns, ctx),
   };
 
   return { visualization, datasourceStates, visualizationType: 'lnsHeatmap' };
@@ -211,7 +236,10 @@ function translateHeatmap(config: HeatmapConfig, layerId: string) {
 /**
  * Translate a panel config to a Lens attributes object (by-value).
  */
-export function translatePanelToLens(panel: PanelConfig): {
+export function translatePanelToLens(
+  panel: PanelConfig,
+  ctx?: TimeFieldContext
+): {
   visualizationType: string;
   attributes: Record<string, unknown>;
 } {
@@ -227,22 +255,40 @@ export function translatePanelToLens(panel: PanelConfig): {
     case 'bar':
     case 'line':
     case 'area':
-      result = translateXY(panel as ChartConfig, layerId);
+      result = translateXY(panel as ChartConfig, layerId, ctx);
       break;
     case 'pie':
-      result = translatePie(panel as ChartConfig, layerId);
+      result = translatePie(panel as ChartConfig, layerId, ctx);
       break;
     case 'metric':
-      result = translateMetric(panel as MetricConfig, layerId);
+      result = translateMetric(panel as MetricConfig, layerId, ctx);
       break;
     case 'heatmap':
-      result = translateHeatmap(panel as HeatmapConfig, layerId);
+      result = translateHeatmap(panel as HeatmapConfig, layerId, ctx);
       break;
     default:
       throw new Error(`Unsupported chart type: ${(panel as PanelConfig).chartType}`);
   }
 
   const esqlQuery = 'esqlQuery' in panel ? panel.esqlQuery : '';
+
+  // Build ad-hoc data view so Kibana knows the time field
+  const adHocDataViews: Record<string, unknown> = {};
+  if (ctx) {
+    const dvId = dataViewId(ctx.indexPattern);
+    adHocDataViews[dvId] = {
+      id: dvId,
+      title: ctx.indexPattern,
+      timeFieldName: ctx.timeField,
+      sourceFilters: [],
+      type: 'esql',
+      fieldFormats: {},
+      runtimeFieldMap: {},
+      allowNoIndex: false,
+      name: ctx.indexPattern,
+      allowHidden: false,
+    };
+  }
 
   return {
     visualizationType: result.visualizationType,
@@ -256,6 +302,7 @@ export function translatePanelToLens(panel: PanelConfig): {
         filters: [],
       },
       references: [],
+      ...(ctx ? { adHocDataViews } : {}),
     },
   };
 }

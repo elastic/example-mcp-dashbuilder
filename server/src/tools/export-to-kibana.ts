@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getDashboard } from '../utils/dashboard-store.js';
+import { getESClient } from '../utils/es-client.js';
 import { translateDashboardToSavedObject } from '../utils/dashboard-translator.js';
 import { registerTool } from '../utils/register-tool.js';
 
@@ -76,8 +77,36 @@ export function registerExportToKibana(server: McpServer): void {
         dashboard.title = args.title as string;
       }
 
+      // Detect time fields per index pattern via field_caps
+      const timeFieldMap = new Map<string, string>();
+      const client = getESClient();
+      const seenIndices = new Set<string>();
+      for (const chart of dashboard.charts) {
+        if (!chart.esqlQuery) continue;
+        const fromMatch = chart.esqlQuery.match(/FROM\s+([^\s|,]+)/i);
+        const index = fromMatch?.[1];
+        if (!index || seenIndices.has(index)) continue;
+        seenIndices.add(index);
+        try {
+          const caps = await client.fieldCaps({
+            index,
+            fields: '*',
+            types: ['date', 'date_nanos'],
+          });
+          const dateFields = Object.keys(caps.fields || {});
+          const timeField = dateFields.includes('@timestamp')
+            ? '@timestamp'
+            : dateFields.includes('timestamp')
+              ? 'timestamp'
+              : dateFields[0];
+          if (timeField) timeFieldMap.set(index, timeField);
+        } catch {
+          // Index might not exist — skip
+        }
+      }
+
       // Translate to Kibana saved object format
-      const { attributes, references } = translateDashboardToSavedObject(dashboard);
+      const { attributes, references } = translateDashboardToSavedObject(dashboard, timeFieldMap);
 
       // Discover base path
       const authHeader = 'Basic ' + Buffer.from(`${ES_USERNAME}:${ES_PASSWORD}`).toString('base64');

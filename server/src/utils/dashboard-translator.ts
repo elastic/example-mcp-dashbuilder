@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import type { DashboardConfig, PanelConfig } from '../types.js';
 import { translatePanelToLens } from './lens-translator.js';
+import type { TimeFieldContext } from './lens-translator.js';
 
 const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   bar: { w: 24, h: 15 },
@@ -21,10 +22,11 @@ interface SavedDashboardPanel {
 function buildSavedPanel(
   chart: PanelConfig,
   grid: { x: number; y: number; w: number; h: number },
-  sectionId?: string
+  sectionId?: string,
+  ctx?: TimeFieldContext
 ): SavedDashboardPanel {
   const panelIndex = randomUUID();
-  const { attributes } = translatePanelToLens(chart);
+  const { attributes } = translatePanelToLens(chart, ctx);
 
   return {
     panelIndex,
@@ -44,7 +46,8 @@ function buildSavedPanel(
 function autoPlacePanels(
   charts: PanelConfig[],
   startRow: number = 0,
-  sectionId?: string
+  sectionId?: string,
+  ctxFn?: (chart: PanelConfig) => TimeFieldContext | undefined
 ): { panels: SavedDashboardPanel[]; nextRow: number } {
   const panels: SavedDashboardPanel[] = [];
   let nextRow = startRow;
@@ -61,13 +64,9 @@ function autoPlacePanels(
     panels.push(
       buildSavedPanel(
         chart,
-        {
-          x: colOffset,
-          y: nextRow,
-          w: size.w,
-          h: size.h,
-        },
-        sectionId
+        { x: colOffset, y: nextRow, w: size.w, h: size.h },
+        sectionId,
+        ctxFn?.(chart)
       )
     );
     colOffset += size.w;
@@ -86,13 +85,27 @@ function autoPlacePanels(
  * Translate the MCP dashboard config into the saved_objects API format.
  * Uses grid positions from dashboard.json if the user has dragged/resized panels.
  */
-export function translateDashboardToSavedObject(config: DashboardConfig): {
+export function translateDashboardToSavedObject(
+  config: DashboardConfig,
+  timeFieldMap?: Map<string, string>
+): {
   attributes: Record<string, unknown>;
   references: Array<{ name: string; type: string; id: string }>;
 } {
   const sections = config.sections || [];
   const chartMap = new Map(config.charts.map((c) => [c.id, c]));
   const gridLayout = config.gridLayout;
+
+  // Build TimeFieldContext for a chart from the index→timeField map
+  function getCtx(chart: PanelConfig): TimeFieldContext | undefined {
+    if (!timeFieldMap || !chart.esqlQuery) return undefined;
+    const fromMatch = chart.esqlQuery.match(/FROM\s+([^\s|,]+)/i);
+    const index = fromMatch?.[1];
+    if (!index) return undefined;
+    const timeField = timeFieldMap.get(index);
+    if (!timeField) return undefined;
+    return { indexPattern: index, timeField };
+  }
 
   const assignedPanelIds = new Set<string>();
   for (const section of sections) {
@@ -135,12 +148,12 @@ export function translateDashboardToSavedObject(config: DashboardConfig): {
         const chart = chartMap.get(widgetId);
         if (chart) {
           allPanels.push(
-            buildSavedPanel(chart, {
-              x: widget.column,
-              y: widget.row,
-              w: widget.width,
-              h: widget.height,
-            })
+            buildSavedPanel(
+              chart,
+              { x: widget.column, y: widget.row, w: widget.width, h: widget.height },
+              undefined,
+              getCtx(chart)
+            )
           );
         }
       } else if (widget.type === 'section') {
@@ -157,13 +170,9 @@ export function translateDashboardToSavedObject(config: DashboardConfig): {
               allPanels.push(
                 buildSavedPanel(
                   chart,
-                  {
-                    x: panel.column,
-                    y: panel.row,
-                    w: panel.width,
-                    h: panel.height,
-                  },
-                  widgetId
+                  { x: panel.column, y: panel.row, w: panel.width, h: panel.height },
+                  widgetId,
+                  getCtx(chart)
                 )
               );
             }
@@ -174,7 +183,12 @@ export function translateDashboardToSavedObject(config: DashboardConfig): {
   } else {
     // Fallback: auto-place
     const unassignedCharts = config.charts.filter((c) => !assignedPanelIds.has(c.id));
-    const { panels: topLevelPanels, nextRow: afterTopLevel } = autoPlacePanels(unassignedCharts, 0);
+    const { panels: topLevelPanels, nextRow: afterTopLevel } = autoPlacePanels(
+      unassignedCharts,
+      0,
+      undefined,
+      getCtx
+    );
     allPanels = [...topLevelPanels];
 
     let sectionRow = afterTopLevel;
@@ -183,7 +197,7 @@ export function translateDashboardToSavedObject(config: DashboardConfig): {
         .map((id) => chartMap.get(id))
         .filter((c): c is PanelConfig => c !== undefined);
 
-      const { panels: sectionPanels } = autoPlacePanels(sectionCharts, 0, section.id);
+      const { panels: sectionPanels } = autoPlacePanels(sectionCharts, 0, section.id, getCtx);
       sectionsArray.push({
         title: section.title,
         collapsed: section.collapsed,
