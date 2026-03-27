@@ -1,6 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EuiSuperDatePicker, EuiFlexGroup, EuiFlexItem, EuiButtonEmpty } from '@elastic/eui';
-import type { DurationRange, OnTimeChangeProps } from '@elastic/eui';
+interface DurationRange {
+  end: string;
+  label?: string;
+  start: string;
+}
+
+interface OnTimeChangeProps extends DurationRange {
+  isInvalid: boolean;
+  isQuickSelection: boolean;
+}
 
 const ALL_DATA_SENTINEL = '__all_data__';
 
