@@ -197,8 +197,11 @@ export function App() {
   }
 
   const handleLayoutChange = useCallback((newLayout: GridLayoutData) => {
-    // Persist layout changes so the export tool can read them
-    fetch('/api/save-layout', {
+    const baseUrl =
+      window.location.protocol === 'https:' || window.location.hostname !== 'localhost'
+        ? 'http://localhost:5173'
+        : '';
+    fetch(`${baseUrl}/api/save-layout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newLayout),

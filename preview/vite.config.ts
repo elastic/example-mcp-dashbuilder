@@ -32,6 +32,14 @@ function dashboardApiPlugin() {
     configureServer(server: any) {
       // Save layout changes
       server.middlewares.use('/api/save-layout', async (req: any, res: any) => {
+        if (req.method === 'OPTIONS') {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
         if (req.method !== 'POST') {
           res.statusCode = 405;
           res.end('Method not allowed');
@@ -44,8 +52,18 @@ function dashboardApiPlugin() {
           const dashboard = JSON.parse(fs.readFileSync(dashboardPath, 'utf-8'));
           dashboard.gridLayout = gridLayout;
           dashboard.updatedAt = new Date().toISOString();
-          fs.writeFileSync(dashboardPath, JSON.stringify(dashboard, null, 2));
+          const json = JSON.stringify(dashboard, null, 2);
+          // Write to active dashboard.json (for the preview app)
+          fs.writeFileSync(dashboardPath, json);
+          // Also write to the dashboards folder copy (for the export tool)
+          const dashboardsDir = path.resolve(__dirname, 'public', 'dashboards');
+          const activeIdPath = path.resolve(dashboardsDir, '.active');
+          if (fs.existsSync(activeIdPath)) {
+            const activeId = fs.readFileSync(activeIdPath, 'utf-8').trim();
+            fs.writeFileSync(path.resolve(dashboardsDir, `${activeId}.json`), json);
+          }
           res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Access-Control-Allow-Origin', '*');
           res.end(JSON.stringify({ ok: true }));
         } catch {
           res.statusCode = 400;
@@ -139,7 +157,15 @@ function dashboardApiPlugin() {
 
           if (updated) {
             dashboard.updatedAt = new Date().toISOString();
-            fs.writeFileSync(dashboardPath, JSON.stringify(dashboard, null, 2));
+            const json = JSON.stringify(dashboard, null, 2);
+            fs.writeFileSync(dashboardPath, json);
+            // Also write to the dashboards folder copy
+            const dashboardsDir = path.resolve(__dirname, 'public', 'dashboards');
+            const activeIdPath = path.resolve(dashboardsDir, '.active');
+            if (fs.existsSync(activeIdPath)) {
+              const activeId = fs.readFileSync(activeIdPath, 'utf-8').trim();
+              fs.writeFileSync(path.resolve(dashboardsDir, `${activeId}.json`), json);
+            }
           }
 
           res.setHeader('Content-Type', 'application/json');
