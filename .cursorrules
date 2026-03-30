@@ -1,16 +1,34 @@
 This project is an MCP (Model Context Protocol) dashboard app that creates Elasticsearch visualizations using ES|QL and Elastic Charts.
 
-## How to use this project
+## CRITICAL RULES
 
-You have MCP tools available — use them directly instead of reading/writing code files.
+1. **NEVER edit, create, or modify any source code files.** This is a tool-based app — interact ONLY through the MCP tools listed below.
+2. **ALWAYS read both MCP resources** (`dataviz://guidelines` and `esql://reference`) before creating any charts or dashboards.
+3. **ALWAYS call `view_dashboard`** after creating charts to show the live preview.
 
-**IMPORTANT:**
-- Before creating any charts or dashboards, ALWAYS read both MCP resources first:
-  1. Read `dataviz://guidelines` for chart selection and dashboard composition best practices
-  2. Read `esql://reference` for correct ES|QL query syntax and patterns
-- After creating all charts, ALWAYS call `view_dashboard` to show the live preview inline in the chat
+## What this app CAN do
 
-### Available MCP tools:
+- Create dashboards with bar, line, area, pie, metric, and heatmap charts
+- Execute ES|QL queries against Elasticsearch
+- Explore indices and field mappings
+- Organize panels into collapsible sections
+- Apply custom color palettes to charts and heatmaps
+- Apply custom colors to metric panels
+- Export dashboards to Kibana as real Lens visualizations
+- Import existing Kibana dashboards (ES|QL-based panels only)
+- Show interactive dashboard previews inline in chat
+- Manage multiple dashboards (create, switch, delete)
+
+## What this app CANNOT do
+
+- Create visualizations from non-ES|QL data sources (index patterns, SQL, etc.)
+- Create chart types other than: bar, line, area, pie, metric, heatmap
+- Create Kibana alerts, rules, or saved searches
+- Modify Kibana settings or spaces
+- Create maps or geographic visualizations
+- Import dashboards that use index-pattern-based (formBased) queries — only ES|QL panels are supported
+
+## Available MCP tools
 
 **Dashboard management:**
 - `create_dashboard` — Create a new dashboard (previous ones are preserved)
@@ -27,9 +45,9 @@ You have MCP tools available — use them directly instead of reading/writing co
 - `get_fields` — Get field mappings for an index
 
 **Visualization creation:**
-- `create_chart` — Create bar, line, area, or pie charts
-- `create_metric` — Create metric/KPI panels with optional trend sparklines
-- `create_heatmap` — Create heatmap visualizations
+- `create_chart` — Create bar, line, area, or pie charts. Supports optional `palette` for custom colors.
+- `create_metric` — Create metric/KPI panels with optional trend sparklines. Supports `color` for custom background.
+- `create_heatmap` — Create heatmap visualizations. Supports optional `colorRamp` for custom gradients.
 
 **Layout & organization:**
 - `create_section` — Create collapsible dashboard sections
@@ -37,27 +55,31 @@ You have MCP tools available — use them directly instead of reading/writing co
 - `remove_section` — Remove a section
 - `remove_chart` — Remove a chart
 
-**Export & preview:**
+**Export & import:**
 - `export_to_kibana` — Export the active dashboard to Kibana as real Lens visualizations
-- `view_dashboard` — Display the live dashboard preview inline in the chat (interactive iframe)
+- `import_from_kibana` — Import an existing Kibana dashboard by ID or URL (ES|QL panels only)
+- `view_dashboard` — Display the live dashboard preview inline in the chat
 
-### Available MCP resources:
-- `dataviz://guidelines` — Data visualization best practices. Read this before building dashboards.
-- `esql://reference` — ES|QL language reference with commands, functions, and common query patterns. Read this when writing ES|QL queries.
+## Available MCP resources
 
-### Workflow:
-1. Create a new dashboard with `create_dashboard` (or use the active one)
-2. Read the dataviz guidelines resource
+- `dataviz://guidelines` — Data visualization best practices, chart selection, dashboard composition, anti-patterns. **Read this before building dashboards.**
+- `esql://reference` — ES|QL language reference with commands, functions, and common query patterns. **Read this when writing ES|QL queries.**
+
+## Workflow
+
+1. Read the dataviz guidelines and ES|QL reference resources
+2. Create a new dashboard with `create_dashboard` (or use the active one)
 3. Use `list_indices` and `get_fields` to explore available data
-4. Use `run_esql` to test queries
+4. Use `run_esql` to test queries before creating charts
 5. Create visualizations with `create_chart`, `create_metric`, `create_heatmap`
 6. Organize with `create_section` and `move_panel_to_section`
-7. Export with `export_to_kibana`
-8. Each chart creation returns a preview link at http://localhost:5173
+7. Call `view_dashboard` to show the interactive preview
+8. Export with `export_to_kibana` when ready
 
-### Important:
-- Do NOT edit source code files to create dashboards — use the MCP tools
-- Multiple dashboards are supported — each is preserved when you create a new one
-- The preview app runs at http://localhost:5173
-- Kibana is at http://localhost:5601
-- Elasticsearch is at http://localhost:9200
+## Tips for the AI
+
+- When the user asks for a "themed" dashboard (e.g. "pink themed"), pass matching hex colors via the `palette`, `colorRamp`, and `color` parameters
+- Pie charts should have max 6 slices — use `| SORT value DESC | LIMIT 6` in the query
+- For time series, always use `BUCKET(@timestamp, interval)` and `SORT` by the time field
+- Metric panels benefit from a subtitle for context (e.g. "Last 7 days", "All documents")
+- When importing from Kibana, panels using index-pattern queries (not ES|QL) will be skipped — inform the user
