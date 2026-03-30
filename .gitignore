@@ -5,3 +5,4 @@ dist-mcp-app/
 preview/public/dashboards/
 preview/public/dashboard.json
 .claude/
+.env

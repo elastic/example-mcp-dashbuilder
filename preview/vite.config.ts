@@ -5,6 +5,17 @@ import path from 'path';
 import { Parser } from '@elastic/esql';
 import type { ESQLSource } from '@elastic/esql/types';
 
+// Load .env from project root
+const envPath = path.resolve(__dirname, '..', '.env');
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+    const match = line.match(/^([A-Z_]+)=(.*)$/);
+    if (match && !process.env[match[1]]) {
+      process.env[match[1]] = match[2];
+    }
+  }
+}
+
 const ES_NODE = process.env.ES_NODE || 'http://localhost:9200';
 const ES_USERNAME = process.env.ES_USERNAME || 'elastic';
 const ES_PASSWORD = process.env.ES_PASSWORD || 'changeme';

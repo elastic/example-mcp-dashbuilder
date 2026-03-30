@@ -1,7 +1,20 @@
 import { spawn } from 'child_process';
 import type { ChildProcess } from 'child_process';
+import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+// Load .env file if it exists (before any other imports that read env vars)
+const __root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const envPath = resolve(__root, '.env');
+if (existsSync(envPath)) {
+  for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
+    const match = line.match(/^([A-Z_]+)=(.*)$/);
+    if (match && !process.env[match[1]]) {
+      process.env[match[1]] = match[2];
+    }
+  }
+}
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerRunEsql } from './tools/run-esql.js';

@@ -26,6 +26,7 @@ interface XYChartConfig {
   xField: string;
   yFields: string[];
   splitField?: string;
+  palette?: string[];
   data?: Record<string, unknown>[];
 }
 
@@ -56,6 +57,7 @@ interface HeatmapPanelConfig {
   xField: string;
   yField: string;
   valueField: string;
+  colorRamp?: string[];
   data?: Record<string, unknown>[];
 }
 
@@ -123,9 +125,13 @@ function MetricPanel({ config }: { config: MetricPanelConfig }) {
 
 // ── Heatmap ──
 
-function buildColorScale(values: number[], steps = 8): HeatmapBandsColorScale {
-  // Borealis temperature palette — euiPaletteForTemperature(8) from Kibana's EUI
-  const ramp = [
+function buildColorScale(
+  values: number[],
+  steps = 8,
+  customRamp?: string[]
+): HeatmapBandsColorScale {
+  const ramp = customRamp || [
+    // Borealis temperature palette — euiPaletteForTemperature(8) from Kibana's EUI
     '#61A2FF',
     '#9AC2FF',
     '#CFE1FF',
@@ -155,12 +161,12 @@ function buildColorScale(values: number[], steps = 8): HeatmapBandsColorScale {
 }
 
 function HeatmapPanel({ config }: { config: HeatmapPanelConfig }) {
-  const { id, data = [], xField, yField, valueField } = config;
+  const { id, data = [], xField, yField, valueField, colorRamp } = config;
 
   const colorScale = useMemo(() => {
     const values = data.map((d) => Number(d[valueField])).filter((v) => !isNaN(v));
-    return buildColorScale(values);
-  }, [data, valueField]);
+    return buildColorScale(values, 8, colorRamp);
+  }, [data, valueField, colorRamp]);
 
   if (data.length === 0) return <p>No data</p>;
 
@@ -219,7 +225,8 @@ function isLikelyTimeValue(value: unknown): boolean {
 }
 
 function XYChartPanel({ config }: { config: XYChartConfig }) {
-  const { id, chartType, data = [], xField, yFields, splitField } = config;
+  const { id, chartType, data = [], xField, yFields, splitField, palette } = config;
+  const colors = palette || KIBANA_PALETTE;
 
   if (data.length === 0) return <p>No data</p>;
 
@@ -252,7 +259,7 @@ function XYChartPanel({ config }: { config: XYChartConfig }) {
                 nodeLabel: (d: unknown) => String(d),
                 shape: {
                   fillColor: (_key: unknown, sortIndex: number) =>
-                    KIBANA_PALETTE[sortIndex % KIBANA_PALETTE.length],
+                    colors[sortIndex % colors.length],
                 },
               },
             ]}
@@ -270,7 +277,7 @@ function XYChartPanel({ config }: { config: XYChartConfig }) {
               position={Position.Left}
               title={yFields.length === 1 ? yFields[0] : undefined}
             />
-            {yFields.map((yField) => {
+            {yFields.map((yField, i) => {
               const Series =
                 chartType === 'line' ? LineSeries : chartType === 'area' ? AreaSeries : BarSeries;
               return (
@@ -278,6 +285,7 @@ function XYChartPanel({ config }: { config: XYChartConfig }) {
                   key={`${id}-${yField}`}
                   id={`${id}-${yField}`}
                   name={yField}
+                  color={palette ? colors[i % colors.length] : undefined}
                   data={chartData}
                   xAccessor={xField}
                   xScaleType={xScaleType}

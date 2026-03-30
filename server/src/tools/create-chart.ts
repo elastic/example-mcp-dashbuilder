@@ -44,6 +44,12 @@ export function registerCreateChart(server: McpServer): void {
           .describe(
             'Optional column name to split the data into multiple series (for grouped/stacked charts)'
           ),
+        palette: z
+          .array(z.string())
+          .optional()
+          .describe(
+            'Optional array of hex colors for series/slices, e.g. ["#E91E63", "#FF5252"]. Defaults to Kibana Borealis palette.'
+          ),
       },
     },
     async (args) => {
@@ -54,6 +60,7 @@ export function registerCreateChart(server: McpServer): void {
       const xField = args.xField as string;
       const yFields = args.yFields as string[];
       const splitField = args.splitField as string | undefined;
+      const palette = args.palette as string[] | undefined;
 
       const client = getESClient();
 
@@ -89,6 +96,7 @@ export function registerCreateChart(server: McpServer): void {
         xField,
         yFields,
         splitField,
+        palette,
       };
 
       const dashboard = addChart(chart);

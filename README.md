@@ -74,9 +74,19 @@ npm install
 
 This also auto-builds the MCP App (the inline dashboard preview for Cursor's chat).
 
-### 2. Configure Cursor
+### 2. Configure Elasticsearch connection
 
-The MCP server is configured in `.cursor/mcp.json`. Update the environment variables if your Elasticsearch/Kibana setup differs:
+Run the setup wizard to configure your Elasticsearch and Kibana credentials:
+
+```bash
+npm run setup
+```
+
+This will prompt for your Elasticsearch URL, credentials, and Kibana URL, test the connection, and save to a `.env` file.
+
+### 3. Configure Cursor
+
+The MCP server is configured in `.cursor/mcp.json`. No environment variables are needed if you ran `npm run setup` — credentials are loaded from `.env` automatically:
 
 ```json
 {
@@ -84,13 +94,7 @@ The MCP server is configured in `.cursor/mcp.json`. Update the environment varia
     "elastic-dashbuilder": {
       "type": "stdio",
       "command": "npx",
-      "args": ["tsx", "server/src/index.ts"],
-      "env": {
-        "ES_NODE": "http://localhost:9200",
-        "ES_USERNAME": "elastic",
-        "ES_PASSWORD": "changeme",
-        "KIBANA_URL": "http://localhost:5601"
-      }
+      "args": ["tsx", "server/src/index.ts"]
     }
   }
 }

@@ -37,6 +37,12 @@ export function registerCreateHeatmap(server: McpServer): void {
         valueField: z
           .string()
           .describe('Column name for the cell values (color intensity), e.g. "order_count"'),
+        colorRamp: z
+          .array(z.string())
+          .optional()
+          .describe(
+            'Optional array of hex colors for the heatmap gradient (low to high), e.g. ["#FCE4EC", "#E91E63"]. Defaults to Borealis temperature palette.'
+          ),
       },
     },
     async (args) => {
@@ -46,6 +52,7 @@ export function registerCreateHeatmap(server: McpServer): void {
       const xField = args.xField as string;
       const yField = args.yField as string;
       const valueField = args.valueField as string;
+      const colorRamp = args.colorRamp as string[] | undefined;
 
       const client = getESClient();
 
@@ -76,6 +83,7 @@ export function registerCreateHeatmap(server: McpServer): void {
         xField,
         yField,
         valueField,
+        colorRamp,
       };
 
       const dashboard = addChart(heatmap);

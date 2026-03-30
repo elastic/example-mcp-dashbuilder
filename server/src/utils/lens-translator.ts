@@ -84,19 +84,27 @@ function translateXY(config: ChartConfig, layerId: string, ctx?: TimeFieldContex
   const seriesType =
     config.chartType === 'area' ? 'area' : config.chartType === 'line' ? 'line' : 'bar';
 
+  const layer: Record<string, unknown> = {
+    layerId,
+    accessors: yColumnIds,
+    layerType: 'data',
+    seriesType,
+    xAccessor: xColumnId,
+    ...(splitColumnId ? { splitAccessors: [splitColumnId] } : {}),
+  };
+
+  // Apply custom palette as per-series colors
+  if (config.palette && config.palette.length > 0) {
+    layer.yConfig = yColumnIds.map((colId, i) => ({
+      forAccessor: colId,
+      color: config.palette![i % config.palette!.length],
+    }));
+  }
+
   const visualization = {
     preferredSeriesType: seriesType,
     legend: { isVisible: true, position: 'right' },
-    layers: [
-      {
-        layerId,
-        accessors: yColumnIds,
-        layerType: 'data',
-        seriesType,
-        xAccessor: xColumnId,
-        ...(splitColumnId ? { splitAccessors: [splitColumnId] } : {}),
-      },
-    ],
+    layers: [layer],
   };
 
   const datasourceStates = {
@@ -204,7 +212,7 @@ function translateHeatmap(config: HeatmapConfig, layerId: string, ctx?: TimeFiel
     { columnId: valueColumnId, fieldName: config.valueField, meta: { type: 'number' } },
   ];
 
-  const visualization = {
+  const visualization: Record<string, unknown> = {
     layerId,
     layerType: 'data',
     shape: 'heatmap',
@@ -225,6 +233,31 @@ function translateHeatmap(config: HeatmapConfig, layerId: string, ctx?: TimeFiel
       isXAxisTitleVisible: true,
     },
   };
+
+  if (config.colorRamp && config.colorRamp.length >= 2) {
+    const steps = config.colorRamp.length;
+    const stepSize = 100 / steps;
+    visualization.palette = {
+      name: 'custom',
+      type: 'palette',
+      params: {
+        steps,
+        continuity: 'above',
+        name: 'custom',
+        rangeMin: 0,
+        rangeMax: null,
+        colorStops: config.colorRamp.map((color, i) => ({
+          color,
+          stop: Math.round(stepSize * i),
+        })),
+        stops: config.colorRamp.map((color, i) => ({
+          color,
+          stop: Math.round(stepSize * (i + 1)),
+        })),
+      },
+      accessor: valueColumnId,
+    };
+  }
 
   const datasourceStates = {
     textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns, ctx),
