@@ -136,13 +136,19 @@ Only bar, line, area, pie, metric, and heatmap are supported today. Lens also su
 
 Adding these would increase the coverage of dashboards that can be round-tripped between the MCP app and Kibana.
 
+**7. Testing**
+No tests exist currently. Unit tests for the Lens translator/reverse-translator and integration tests for the export/import round-trip are the highest priority.
+
+**8. Elastic Cloud support**
+Currently only tested with local Elasticsearch. Marketplace users on Elastic Cloud need Cloud ID support and API key authentication (the ES client already supports API keys, but the setup wizard and Vite proxy only handle username/password).
+
+**9. Error UX in the preview**
+When an ES|QL query fails, panels show "No data" with no explanation. The preview should display the actual error message so users can debug query issues without checking the console.
+
 ### Nice to Have
 
-**7. Collaborative editing**
+**10. Collaborative editing**
 Multiple users working on the same dashboard via shared MCP server state.
 
-**8. Template library**
+**11. Template library**
 Pre-built dashboard templates for common Elastic data sources (logs, APM, security, ecommerce).
-
-**9. Chart type auto-detection**
-AI could analyze query result shape and automatically choose the best chart type instead of requiring explicit selection.
