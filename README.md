@@ -122,9 +122,11 @@ The live preview is available at [http://localhost:5173](http://localhost:5173) 
 
 > "Explore the kibana_sample_data_logs index and build me the most insightful dashboard you can"
 
-**Export:**
+**Export / Import:**
 
 > "Export the current dashboard to Kibana"
+
+> "Import the Kibana dashboard at http://localhost:5601/app/dashboards#/view/abc-123"
 
 **Multi-dashboard:**
 
@@ -132,22 +134,23 @@ The live preview is available at [http://localhost:5173](http://localhost:5173) 
 
 ### Available MCP tools
 
-| Tool                    | Description                                        |
-| ----------------------- | -------------------------------------------------- |
-| `create_dashboard`      | Create a new dashboard                             |
-| `list_dashboards`       | List all saved dashboards                          |
-| `switch_dashboard`      | Switch to a different dashboard                    |
-| `delete_dashboard`      | Delete a dashboard                                 |
-| `run_esql`              | Execute ES\|QL queries                             |
-| `list_indices`          | Discover available indices                         |
-| `get_fields`            | Get field mappings for an index                    |
-| `create_chart`          | Create bar, line, area, or pie charts              |
-| `create_metric`         | Create metric/KPI panels with trend sparklines     |
-| `create_heatmap`        | Create heatmap visualizations                      |
-| `create_section`        | Create collapsible dashboard sections              |
-| `move_panel_to_section` | Assign panels to sections                          |
-| `export_to_kibana`      | Export to Kibana as Lens visualizations            |
-| `view_dashboard`        | Display the full dashboard inline in Cursor's chat |
+| Tool                    | Description                                         |
+| ----------------------- | --------------------------------------------------- |
+| `create_dashboard`      | Create a new dashboard                              |
+| `list_dashboards`       | List all saved dashboards                           |
+| `switch_dashboard`      | Switch to a different dashboard                     |
+| `delete_dashboard`      | Delete a dashboard                                  |
+| `run_esql`              | Execute ES\|QL queries                              |
+| `list_indices`          | Discover available indices                          |
+| `get_fields`            | Get field mappings for an index                     |
+| `create_chart`          | Create bar, line, area, or pie charts               |
+| `create_metric`         | Create metric/KPI panels with trend sparklines      |
+| `create_heatmap`        | Create heatmap visualizations                       |
+| `create_section`        | Create collapsible dashboard sections               |
+| `move_panel_to_section` | Assign panels to sections                           |
+| `export_to_kibana`      | Export to Kibana as Lens visualizations             |
+| `import_from_kibana`    | Import an existing Kibana dashboard (ES\|QL panels) |
+| `view_dashboard`        | Display the full dashboard inline in Cursor's chat  |
 
 ### Available MCP resources
 

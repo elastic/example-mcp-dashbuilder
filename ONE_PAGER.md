@@ -24,7 +24,7 @@ The AI then:
 
 **Data pipeline:** Dynamic ES|QL queries (no static data stored) | Automatic time field detection via field_caps | DSL time range filtering | Per-panel loading indicators
 
-**Kibana export:** Translates each panel to a Lens visualization | Preserves grid positions 1:1 | Generates ad-hoc data views with time field mapping | Exported dashboards respond to Kibana's time picker immediately
+**Kibana integration:** Export to Kibana as Lens visualizations | Import existing Kibana dashboards for AI-assisted editing | Preserves grid positions, custom colors, and time field mapping | Round-trip: import → modify → re-export
 
 **AI integration:** 13 MCP tools for the full workflow | Built-in dataviz best practices resource | Built-in ES|QL reference resource | Inline chart screenshots via Puppeteer | Interactive MCP App preview in Cursor's chat
 
@@ -118,23 +118,16 @@ The grid layout code carries Elastic License 2.0 + SSPL headers from Kibana. Pub
 
 ### Should Do
 
-**3. Dashboard import (not just export)**
-Currently one-way: MCP App -> Kibana. Adding import would allow users to:
-
-- Pull existing Kibana dashboards into the MCP App
-- Modify them via AI conversation
-- Re-export with changes
-
-**4. Metric trend sparklines via dynamic queries**
+**3. Metric trend sparklines via dynamic queries**
 The refactored architecture supports trend sparklines (second ES|QL query per metric panel), but the DashboardPanel component needs to handle this for the Puppeteer screenshot path too.
 
 ### Nice to Have
 
-**5. Collaborative editing**
+**4. Collaborative editing**
 Multiple users working on the same dashboard via shared MCP server state.
 
-**6. Template library**
+**5. Template library**
 Pre-built dashboard templates for common Elastic data sources (logs, APM, security, ecommerce).
 
-**7. Chart type auto-detection**
+**6. Chart type auto-detection**
 AI could analyze query result shape and automatically choose the best chart type instead of requiring explicit selection.

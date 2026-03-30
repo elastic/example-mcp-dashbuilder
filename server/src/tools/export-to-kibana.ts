@@ -4,32 +4,7 @@ import { getDashboard } from '../utils/dashboard-store.js';
 import { getESClient } from '../utils/es-client.js';
 import { translateDashboardToSavedObject } from '../utils/dashboard-translator.js';
 import { registerTool } from '../utils/register-tool.js';
-
-const KIBANA_URL = process.env.KIBANA_URL || 'http://localhost:5601';
-const ES_USERNAME = process.env.ES_USERNAME;
-const ES_PASSWORD = process.env.ES_PASSWORD;
-
-/**
- * Discover Kibana's base path by following the redirect from /api/status.
- */
-async function getKibanaBasePath(authHeader: string): Promise<string> {
-  try {
-    const res = await fetch(`${KIBANA_URL}/api/status`, {
-      redirect: 'manual',
-      headers: { Authorization: authHeader },
-    });
-    const location = res.headers.get('location');
-    if (location && res.status >= 300 && res.status < 400) {
-      // Location is like /fzd/status — extract the base path
-      const url = new URL(location, KIBANA_URL);
-      const path = url.pathname.replace(/\/status$/, '');
-      return path;
-    }
-  } catch {
-    // Fall through to empty base path
-  }
-  return '';
-}
+import { KIBANA_URL, getKibanaAuthHeader, getKibanaBasePath } from '../utils/kibana-client.js';
 
 export function registerExportToKibana(server: McpServer): void {
   registerTool(
@@ -52,7 +27,10 @@ export function registerExportToKibana(server: McpServer): void {
       },
     },
     async (args) => {
-      if (!ES_USERNAME || !ES_PASSWORD) {
+      let authHeader: string;
+      try {
+        authHeader = getKibanaAuthHeader();
+      } catch {
         return {
           content: [
             {
@@ -108,9 +86,7 @@ export function registerExportToKibana(server: McpServer): void {
       // Translate to Kibana saved object format
       const { attributes, references } = translateDashboardToSavedObject(dashboard, timeFieldMap);
 
-      // Discover base path
-      const authHeader = 'Basic ' + Buffer.from(`${ES_USERNAME}:${ES_PASSWORD}`).toString('base64');
-      const basePath = await getKibanaBasePath(authHeader);
+      const basePath = await getKibanaBasePath();
 
       // Create dashboard via saved_objects API
       let response: Response;

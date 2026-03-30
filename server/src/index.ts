@@ -25,6 +25,7 @@ import { registerCreateHeatmap } from './tools/create-heatmap.js';
 import { registerSectionTools } from './tools/create-section.js';
 import { registerManageDashboard } from './tools/manage-dashboard.js';
 import { registerExportToKibana } from './tools/export-to-kibana.js';
+import { registerImportFromKibana } from './tools/import-from-kibana.js';
 import { registerViewDashboard } from './tools/view-dashboard.js';
 import { closeBrowser } from './utils/chart-renderer.js';
 import { DATAVIZ_GUIDELINES } from './resources/dataviz-guidelines.js';
@@ -102,6 +103,7 @@ registerCreateHeatmap(server);
 registerSectionTools(server);
 registerManageDashboard(server);
 registerExportToKibana(server);
+registerImportFromKibana(server);
 registerViewDashboard(server);
 
 // Start preview server automatically
