@@ -288,8 +288,28 @@ function RenderSingleChart({ config }: { config: PanelConfig }) {
   const { timeRange } = useTimeRange();
   const { data, isLoading } = useEsqlQuery(config.esqlQuery, timeRange);
 
-  const liveConfig = { ...config, data };
-  const ready = !isLoading;
+  // Fetch trend data for metrics (same logic as DashboardPanel)
+  const trendQuery = config.chartType === 'metric' ? config.trendEsqlQuery : undefined;
+  const { data: trendData, isLoading: trendLoading } = useEsqlQuery(trendQuery, timeRange);
+
+  const liveConfig = useMemo(() => {
+    const base = { ...config, data };
+    if (config.chartType === 'metric' && trendData.length > 0) {
+      return {
+        ...base,
+        trend: {
+          data: trendData.map((row) => ({
+            x: new Date(row[config.trendXField!] as string).getTime(),
+            y: Number(row[config.trendYField!]) || 0,
+          })),
+          shape: config.trendShape || 'area',
+        },
+      };
+    }
+    return base;
+  }, [config, data, trendData]);
+
+  const ready = !isLoading && !trendLoading;
 
   return (
     <div

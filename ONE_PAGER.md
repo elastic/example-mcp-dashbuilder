@@ -116,18 +116,13 @@ The grid layout is currently vendored (copy-pasted) from the Kibana repository. 
 **2. Resolve licensing for vendored code**
 The grid layout code carries Elastic License 2.0 + SSPL headers from Kibana. Publishing as a separate npm package with clear licensing is required.
 
-### Should Do
-
-**3. Metric trend sparklines via dynamic queries**
-The refactored architecture supports trend sparklines (second ES|QL query per metric panel), but the DashboardPanel component needs to handle this for the Puppeteer screenshot path too.
-
 ### Nice to Have
 
-**4. Collaborative editing**
+**3. Collaborative editing**
 Multiple users working on the same dashboard via shared MCP server state.
 
-**5. Template library**
+**4. Template library**
 Pre-built dashboard templates for common Elastic data sources (logs, APM, security, ecommerce).
 
-**6. Chart type auto-detection**
+**5. Chart type auto-detection**
 AI could analyze query result shape and automatically choose the best chart type instead of requiring explicit selection.
