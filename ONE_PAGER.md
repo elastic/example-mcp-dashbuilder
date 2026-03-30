@@ -106,23 +106,43 @@ Elasticsearch <--> Kibana
 
 ### Must Do
 
-**1. Publish `kbn-grid-layout` as an npm package**
+**1. Code review and hardening**
+Significant portions of this app were written with LLM assistance. The codebase needs thorough human review, refactoring, and hardening before production use — particularly error handling, edge cases, and security.
+
+**2. Publish `kbn-grid-layout` as an npm package**
 The grid layout is currently vendored (copy-pasted) from the Kibana repository. For marketplace distribution, it needs to be:
 
 - Published as `@elastic/kbn-grid-layout` (or similar) on npm
 - Versioned and maintained alongside Kibana releases
 - Installed via `npm install` instead of copied into the project
 
-**2. Resolve licensing for vendored code**
+**3. Resolve licensing for vendored code**
 The grid layout code carries Elastic License 2.0 + SSPL headers from Kibana. Publishing as a separate npm package with clear licensing is required.
+
+**4. Migrate from Saved Objects API to Dashboard API**
+The export/import currently uses the legacy `api/saved_objects/dashboard` endpoint. This should be migrated to the new Kibana Dashboard API for better compatibility and forward-proofing.
+
+**5. Align visualization capabilities with Lens**
+Currently the app can create Elastic Charts configurations that have no equivalent in Lens. The AI should be instructed with Lens-specific constraints so that every chart it creates can be faithfully exported to Kibana. The dataviz guidelines resource should document what Lens supports and what it doesn't.
+
+**6. Support more Lens chart types**
+Only bar, line, area, pie, metric, and heatmap are supported today. Lens also supports:
+
+- Gauge
+- Donut (partition variant)
+- Treemap / Mosaic
+- Datatable
+- Tag cloud
+
+Adding these would increase the coverage of dashboards that can be round-tripped between the MCP app and Kibana.
 
 ### Nice to Have
 
-**3. Collaborative editing**
+**7. Collaborative editing**
 Multiple users working on the same dashboard via shared MCP server state.
 
-**4. Template library**
+**8. Template library**
 Pre-built dashboard templates for common Elastic data sources (logs, APM, security, ecommerce).
 
-**5. Chart type auto-detection**
+**9. Chart type auto-detection**
 AI could analyze query result shape and automatically choose the best chart type instead of requiring explicit selection.
