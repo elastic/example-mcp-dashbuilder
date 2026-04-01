@@ -19,11 +19,25 @@ function ask(question: string, defaultValue?: string): Promise<string> {
   });
 }
 
-async function testConnection(node: string, username: string, password: string): Promise<string> {
-  const client = new Client({
-    node,
-    auth: username ? { username, password } : undefined,
-  });
+interface ConnectionConfig {
+  cloudId?: string;
+  node?: string;
+  apiKey?: string;
+  username?: string;
+  password?: string;
+}
+
+async function testConnection(config: ConnectionConfig): Promise<string> {
+  const auth = config.apiKey
+    ? { apiKey: config.apiKey }
+    : config.username
+      ? { username: config.username, password: config.password || '' }
+      : undefined;
+
+  const client = config.cloudId
+    ? new Client({ cloud: { id: config.cloudId }, auth })
+    : new Client({ node: config.node || 'http://localhost:9200', auth });
+
   const info = await client.info();
   return info.cluster_name;
 }
@@ -41,15 +55,53 @@ async function main() {
     }
   }
 
-  const esNode = await ask('Elasticsearch URL', existing.ES_NODE || 'http://localhost:9200');
-  const esUsername = await ask('Username', existing.ES_USERNAME || 'elastic');
-  const esPassword = await ask('Password', existing.ES_PASSWORD || 'changeme');
-  const kibanaUrl = await ask('Kibana URL', existing.KIBANA_URL || 'http://localhost:5601');
+  // Choose connection type
+  const connectionType = await ask(
+    'Connection type (local / cloud)',
+    existing.ES_CLOUD_ID ? 'cloud' : 'local'
+  );
+  const isCloud = connectionType.toLowerCase() === 'cloud';
+
+  let cloudId = '';
+  let esNode = '';
+  if (isCloud) {
+    cloudId = await ask('Cloud ID', existing.ES_CLOUD_ID || '');
+  } else {
+    esNode = await ask('Elasticsearch URL', existing.ES_NODE || 'http://localhost:9200');
+  }
+
+  // Choose auth type
+  const authType = await ask(
+    'Auth type (password / apikey)',
+    existing.ES_API_KEY ? 'apikey' : 'password'
+  );
+  const useApiKey = authType.toLowerCase() === 'apikey';
+
+  let apiKey = '';
+  let esUsername = '';
+  let esPassword = '';
+  if (useApiKey) {
+    apiKey = await ask('API Key', existing.ES_API_KEY || '');
+  } else {
+    esUsername = await ask('Username', existing.ES_USERNAME || 'elastic');
+    esPassword = await ask('Password', existing.ES_PASSWORD || 'changeme');
+  }
+
+  const kibanaUrl = await ask(
+    'Kibana URL',
+    existing.KIBANA_URL || (isCloud ? '' : 'http://localhost:5601')
+  );
 
   // Test the connection
   process.stdout.write('\n  Testing connection... ');
   try {
-    const clusterName = await testConnection(esNode, esUsername, esPassword);
+    const clusterName = await testConnection({
+      cloudId: cloudId || undefined,
+      node: esNode || undefined,
+      apiKey: apiKey || undefined,
+      username: esUsername || undefined,
+      password: esPassword || undefined,
+    });
     console.log(`Connected! (cluster: ${clusterName})\n`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -62,16 +114,17 @@ async function main() {
     console.log();
   }
 
-  // Write .env
-  const envContent = [
-    `ES_NODE=${esNode}`,
-    `ES_USERNAME=${esUsername}`,
-    `ES_PASSWORD=${esPassword}`,
-    `KIBANA_URL=${kibanaUrl}`,
-    '',
-  ].join('\n');
+  // Write .env — only include non-empty values
+  const envLines: string[] = [];
+  if (cloudId) envLines.push(`ES_CLOUD_ID=${cloudId}`);
+  if (esNode) envLines.push(`ES_NODE=${esNode}`);
+  if (apiKey) envLines.push(`ES_API_KEY=${apiKey}`);
+  if (esUsername) envLines.push(`ES_USERNAME=${esUsername}`);
+  if (esPassword) envLines.push(`ES_PASSWORD=${esPassword}`);
+  if (kibanaUrl) envLines.push(`KIBANA_URL=${kibanaUrl}`);
+  envLines.push('');
 
-  writeFileSync(ENV_PATH, envContent);
+  writeFileSync(ENV_PATH, envLines.join('\n'));
   console.log(`  Saved to ${ENV_PATH}\n`);
 
   rl.close();

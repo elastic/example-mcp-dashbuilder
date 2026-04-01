@@ -139,16 +139,16 @@ Adding these would increase the coverage of dashboards that can be round-tripped
 **7. Testing**
 No tests exist currently. Unit tests for the Lens translator/reverse-translator and integration tests for the export/import round-trip are the highest priority.
 
-**8. Elastic Cloud support**
-Currently only tested with local Elasticsearch. Marketplace users on Elastic Cloud need Cloud ID support and API key authentication (the ES client already supports API keys, but the setup wizard and Vite proxy only handle username/password).
-
-**9. Error UX in the preview**
+**8. Error UX in the preview**
 When an ES|QL query fails, panels show "No data" with no explanation. The preview should display the actual error message so users can debug query issues without checking the console.
+
+**9. Secure credential storage**
+Credentials are currently stored in plaintext in a `.env` file (gitignored). For marketplace distribution, consider using the system keychain (e.g. `keytar`) or delegating to the MCP client's credential management.
 
 ### Nice to Have
 
 **10. Collaborative editing**
 Multiple users working on the same dashboard via shared MCP server state.
 
-**11. Template library**
+**10. Template library**
 Pre-built dashboard templates for common Elastic data sources (logs, APM, security, ecommerce).

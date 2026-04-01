@@ -16,10 +16,27 @@ if (fs.existsSync(envPath)) {
   }
 }
 
+const ES_CLOUD_ID = process.env.ES_CLOUD_ID;
 const ES_NODE = process.env.ES_NODE || 'http://localhost:9200';
+const ES_API_KEY = process.env.ES_API_KEY;
 const ES_USERNAME = process.env.ES_USERNAME || 'elastic';
 const ES_PASSWORD = process.env.ES_PASSWORD || 'changeme';
-const AUTH_HEADER = 'Basic ' + Buffer.from(`${ES_USERNAME}:${ES_PASSWORD}`).toString('base64');
+
+const AUTH_HEADER = ES_API_KEY
+  ? `ApiKey ${ES_API_KEY}`
+  : 'Basic ' + Buffer.from(`${ES_USERNAME}:${ES_PASSWORD}`).toString('base64');
+
+// Resolve the ES endpoint — Cloud ID encodes the endpoint
+function resolveEsEndpoint(): string {
+  if (ES_CLOUD_ID) {
+    const decoded = Buffer.from(ES_CLOUD_ID.split(':')[1] || '', 'base64').toString();
+    const [host, esId] = decoded.split('$');
+    return `https://${esId}.${host}`;
+  }
+  return ES_NODE;
+}
+
+const ES_ENDPOINT = resolveEsEndpoint();
 
 // Cache time field detection per index pattern (persists across requests)
 const timeFieldCache = new Map<string, string | undefined>();
@@ -125,7 +142,7 @@ function dashboardApiPlugin() {
             }
           }
 
-          const esResponse = await fetch(`${ES_NODE}/_query`, {
+          const esResponse = await fetch(`${ES_ENDPOINT}/_query`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: AUTH_HEADER },
             body: JSON.stringify({ query, ...(filter && { filter }) }),
@@ -191,7 +208,7 @@ function parseIndexPattern(query: string): string | undefined {
 async function fetchTimeField(index: string): Promise<string | undefined> {
   try {
     const response = await fetch(
-      `${ES_NODE}/${encodeURIComponent(index)}/_field_caps?fields=*&types=date,date_nanos`,
+      `${ES_ENDPOINT}/${encodeURIComponent(index)}/_field_caps?fields=*&types=date,date_nanos`,
       { headers: { Authorization: AUTH_HEADER } }
     );
     if (!response.ok) return undefined;

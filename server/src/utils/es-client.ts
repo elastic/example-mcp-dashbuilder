@@ -4,6 +4,7 @@ let client: Client | null = null;
 
 export function getESClient(): Client {
   if (!client) {
+    const cloudId = process.env.ES_CLOUD_ID;
     const node = process.env.ES_NODE || 'http://localhost:9200';
     const auth = process.env.ES_API_KEY
       ? { apiKey: process.env.ES_API_KEY }
@@ -11,7 +12,7 @@ export function getESClient(): Client {
         ? { username: process.env.ES_USERNAME, password: process.env.ES_PASSWORD || '' }
         : undefined;
 
-    client = new Client({ node, auth });
+    client = cloudId ? new Client({ cloud: { id: cloudId }, auth }) : new Client({ node, auth });
   }
   return client;
 }

@@ -60,9 +60,9 @@ One-click export to Kibana as Lens visualizations
 ## Prerequisites
 
 - Node.js 20+
-- Elasticsearch running on `localhost:9200`
-- Kibana running on `localhost:5601` (for export)
-- [Cursor](https://cursor.com) editor (v2.6+ for MCP Apps inline preview)
+- Elasticsearch (local or Elastic Cloud)
+- Kibana (for export/import)
+- An MCP client: [Cursor](https://cursor.com) (v2.6+ for MCP Apps inline preview), [Claude Desktop](https://claude.ai/download), [Claude Code](https://claude.ai/claude-code), or [VS Code Copilot](https://code.visualstudio.com/)
 
 ## Setup
 
@@ -82,7 +82,12 @@ Run the setup wizard to configure your Elasticsearch and Kibana credentials:
 npm run setup
 ```
 
-This will prompt for your Elasticsearch URL, credentials, and Kibana URL, test the connection, and save to a `.env` file.
+The wizard supports both local and Elastic Cloud deployments:
+
+- **Local:** Elasticsearch URL + username/password
+- **Elastic Cloud:** Cloud ID + username/password or API key
+
+Credentials are saved to a `.env` file (gitignored).
 
 ### 3. Configure Cursor
 
