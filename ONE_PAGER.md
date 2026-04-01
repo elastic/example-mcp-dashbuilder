@@ -104,50 +104,41 @@ Elasticsearch <--> Kibana
 
 ## What's Needed for Marketplace
 
-### Must Do
+### Should Do Before Publishing
 
 **1. Code review and hardening**
 Significant portions of this app were written with LLM assistance. The codebase needs thorough human review, refactoring, and hardening before production use — particularly error handling, edge cases, and security.
 
-**2. Publish `kbn-grid-layout` as an npm package**
-The grid layout is currently vendored (copy-pasted) from the Kibana repository. For marketplace distribution, it needs to be:
+**2. Migrate from Saved Objects API to Dashboard API**
+The export/import currently uses the legacy `api/saved_objects/dashboard` endpoint. This should be migrated to the new Kibana Dashboard API for better compatibility and forward-proofing.
+
+**3. Secure credential storage**
+Credentials are currently stored in plaintext in a `.env` file (gitignored). For marketplace distribution, consider using the system keychain (e.g. `keytar`) or delegating to the MCP client's credential management.
+
+### Should Do After Publishing
+
+**4. Publish `kbn-grid-layout` as an npm package**
+The grid layout is currently vendored (copy-pasted) from the Kibana repository. It needs to be:
 
 - Published as `@elastic/kbn-grid-layout` (or similar) on npm
 - Versioned and maintained alongside Kibana releases
 - Installed via `npm install` instead of copied into the project
 
-**3. Resolve licensing for vendored code**
+**5. Resolve licensing for vendored code**
 The grid layout code carries Elastic License 2.0 + SSPL headers from Kibana. Publishing as a separate npm package with clear licensing is required.
 
-**4. Migrate from Saved Objects API to Dashboard API**
-The export/import currently uses the legacy `api/saved_objects/dashboard` endpoint. This should be migrated to the new Kibana Dashboard API for better compatibility and forward-proofing.
-
-**5. Align visualization capabilities with Lens**
+**6. Align visualization capabilities with Lens**
 Currently the app can create Elastic Charts configurations that have no equivalent in Lens. The AI should be instructed with Lens-specific constraints so that every chart it creates can be faithfully exported to Kibana. The dataviz guidelines resource should document what Lens supports and what it doesn't.
 
-**6. Support more Lens chart types**
-Only bar, line, area, pie, metric, and heatmap are supported today. Lens also supports:
-
-- Gauge
-- Donut (partition variant)
-- Treemap / Mosaic
-- Datatable
-- Tag cloud
-
-Adding these would increase the coverage of dashboards that can be round-tripped between the MCP app and Kibana.
-
-**7. Testing**
-No tests exist currently. Unit tests for the Lens translator/reverse-translator and integration tests for the export/import round-trip are the highest priority.
+**7. Support more Lens chart types**
+Only bar, line, area, pie, metric, and heatmap are supported today. Lens also supports gauge, donut, treemap/mosaic, datatable, and tag cloud. Adding these would increase the coverage of dashboards that can be round-tripped between the MCP app and Kibana.
 
 **8. Error UX in the preview**
-When an ES|QL query fails, panels show "No data" with no explanation. The preview should display the actual error message so users can debug query issues without checking the console.
-
-**9. Secure credential storage**
-Credentials are currently stored in plaintext in a `.env` file (gitignored). For marketplace distribution, consider using the system keychain (e.g. `keytar`) or delegating to the MCP client's credential management.
+When an ES|QL query fails, panels show a basic error message. The preview should display more detailed error information to help users debug query issues.
 
 ### Nice to Have
 
-**10. Collaborative editing**
+**9. Collaborative editing**
 Multiple users working on the same dashboard via shared MCP server state.
 
 **10. Template library**

@@ -29,7 +29,11 @@ One-click export to Kibana as Lens visualizations
 - **Inline chart screenshots** — see rendered chart images directly in Cursor via Puppeteer
 - **Collapsible sections** — organize panels into groups
 - **Export to Kibana** — creates real Kibana dashboards with Lens visualizations
+- **Import from Kibana** — import existing ES|QL-based Kibana dashboards for AI-assisted editing
+- **Custom color themes** — apply custom palettes to charts, heatmaps, and metrics
+- **Time picker** — filter data by time range with automatic time field detection
 - **Multiple dashboards** — create, switch between, and manage multiple dashboards
+- **Elastic Cloud support** — works with local Elasticsearch and Elastic Cloud (Cloud ID + API key)
 - **Dataviz best practices** — built-in guidelines for chart selection and dashboard composition
 - **ES|QL reference** — built-in language reference for correct query syntax
 
@@ -89,9 +93,11 @@ The wizard supports both local and Elastic Cloud deployments:
 
 Credentials are saved to a `.env` file (gitignored).
 
-### 3. Configure Cursor
+### 3. Configure your MCP client
 
-The MCP server is configured in `.cursor/mcp.json`. No environment variables are needed if you ran `npm run setup` — credentials are loaded from `.env` automatically:
+No environment variables are needed if you ran `npm run setup` — credentials are loaded from `.env` automatically.
+
+**Cursor** (`.cursor/mcp.json`):
 
 ```json
 {
@@ -105,7 +111,36 @@ The MCP server is configured in `.cursor/mcp.json`. No environment variables are
 }
 ```
 
-### 3. Open the project in Cursor
+**Claude Code** (`.mcp.json` in project root — already included):
+
+```json
+{
+  "mcpServers": {
+    "elastic-dashbuilder": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["tsx", "server/src/index.ts"]
+    }
+  }
+}
+```
+
+**Claude Desktop** (`claude_desktop_config.json` — found in `~/Library/Application Support/Claude/` on macOS or `%APPDATA%\Claude\` on Windows):
+
+```json
+{
+  "mcpServers": {
+    "elastic-dashbuilder": {
+      "command": "npx",
+      "args": ["tsx", "/absolute/path/to/elastic-dashbuilder/server/src/index.ts"]
+    }
+  }
+}
+```
+
+Note: Claude Desktop requires an absolute path to the server entry point.
+
+### 4. Open the project in Cursor
 
 Open the `elastic-dashbuilder` folder in Cursor. The MCP server will auto-connect and start the preview server automatically. You should see it listed in Cursor Settings > MCP.
 
@@ -189,8 +224,8 @@ The `view_dashboard` tool renders the full interactive dashboard directly inside
 
 **Requirements:**
 
-- Cursor v2.6+ (MCP Apps support)
-- Preview dev server running (`npm run dev:preview`) for dashboard data
+- Cursor v2.6+ (MCP Apps support) — also supported by Claude Desktop, Claude.ai, VS Code Copilot
+- The preview server starts automatically when the MCP server launches
 
 ## Export to Kibana
 
@@ -203,7 +238,7 @@ The export tool translates each panel to a Lens visualization:
 | metric            | Metric           |
 | heatmap           | Heatmap          |
 
-Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer directly.
+Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer directly. Time fields are auto-detected via field_caps so Kibana's time picker works immediately. Custom colors (series palettes, metric backgrounds, heatmap ramps) are preserved on export.
 
 ## Development
 
@@ -248,8 +283,10 @@ For frontend development, use the browser preview at `http://localhost:5173` whi
 ### Scripts
 
 ```bash
+npm run setup                  # Interactive setup wizard (ES credentials)
 npm run dev:preview            # Start preview app (Vite dev server)
 npm run build                  # Build both server and preview
+npm run test                   # Run all tests (server + preview)
 npm run lint                   # ESLint check
 npm run typecheck              # TypeScript check (both projects)
 npm run format                 # Format all files with Prettier
@@ -257,6 +294,20 @@ npm run format:check           # Check formatting without writing
 npm run check                  # Run all checks (format + lint + typecheck)
 cd preview && npm run build:mcp-app  # Build single-file MCP App
 ```
+
+### Testing
+
+Tests use [Vitest](https://vitest.dev/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/).
+
+```bash
+npm test                       # Run all tests
+npm run test --workspace=server   # Server tests only
+npm run test --workspace=preview  # Preview tests only
+```
+
+**Server tests** cover pure utility functions (ES|QL transforms, index pattern parsing, time field detection, slugify), the Lens forward/reverse translators, round-trip export-then-import fidelity, and dashboard translation.
+
+**Preview tests** cover chart component rendering (correct chart type for each config), the `useEsqlQuery` hook (fetch, loading, error, abort, time range), and empty data states.
 
 ### Code quality
 
