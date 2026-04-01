@@ -44,10 +44,17 @@ export function registerCreateHeatmap(server: McpServer): void {
           .describe(
             'Optional array of hex colors for the heatmap gradient (low to high), e.g. ["#FCE4EC", "#E91E63"]. Defaults to Borealis temperature palette.'
           ),
+        timeField: z
+          .string()
+          .optional()
+          .describe(
+            'Optional date field for time filtering, e.g. "@timestamp". ' +
+              'Set this when the index has multiple date fields.'
+          ),
       },
     },
     async (args) => {
-      const { id, title, esqlQuery, xField, yField, valueField, colorRamp } = args;
+      const { id, title, esqlQuery, xField, yField, valueField, colorRamp, timeField } = args;
 
       const client = getESClient();
 
@@ -84,6 +91,7 @@ export function registerCreateHeatmap(server: McpServer): void {
         yField,
         valueField,
         colorRamp,
+        timeField,
       };
 
       const dashboard = addChart(heatmap);

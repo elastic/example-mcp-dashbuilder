@@ -63,6 +63,13 @@ export function registerCreateMetric(server: McpServer): void {
           .optional()
           .default('area')
           .describe('Sparkline shape: "area" (default) or "bars"'),
+        timeField: z
+          .string()
+          .optional()
+          .describe(
+            'Optional date field for time filtering, e.g. "@timestamp". ' +
+              'Set this when the index has multiple date fields.'
+          ),
       },
     },
     async (args) => {
@@ -78,6 +85,7 @@ export function registerCreateMetric(server: McpServer): void {
         trendEsqlQuery,
         trendXField,
         trendYField,
+        timeField,
       } = args;
       const trendShape = args.trendShape || 'area';
 
@@ -156,6 +164,7 @@ export function registerCreateMetric(server: McpServer): void {
         trendXField,
         trendYField,
         trendShape,
+        timeField,
       };
 
       const dashboard = addChart(metric);

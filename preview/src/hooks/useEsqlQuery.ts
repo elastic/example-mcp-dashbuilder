@@ -10,7 +10,8 @@ interface UseEsqlQueryResult {
 
 export function useEsqlQuery(
   query: string | undefined,
-  timeRange: TimeRange | null
+  timeRange: TimeRange | null,
+  timeField?: string
 ): UseEsqlQueryResult {
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +36,9 @@ export function useEsqlQuery(
     if (timeRange) {
       body.start = timeRange.start;
       body.end = timeRange.end;
+    }
+    if (timeField) {
+      body.timeField = timeField;
     }
 
     fetch(`${BASE_URL}/api/esql`, {
@@ -61,7 +65,7 @@ export function useEsqlQuery(
       });
 
     return () => controller.abort();
-  }, [query, timeRange]);
+  }, [query, timeRange, timeField]);
 
   return { data, isLoading, error };
 }

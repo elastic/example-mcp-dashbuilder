@@ -19,6 +19,7 @@ export interface ChartConfig {
   yFields: string[];
   splitField?: string;
   palette?: string[];
+  timeField?: string;
 }
 
 export type TrendShape = 'area' | 'bars';
@@ -37,6 +38,7 @@ export interface MetricConfig {
   trendXField?: string;
   trendYField?: string;
   trendShape?: TrendShape;
+  timeField?: string;
 }
 
 export interface HeatmapConfig {
@@ -48,6 +50,7 @@ export interface HeatmapConfig {
   yField: string;
   valueField: string;
   colorRamp?: string[];
+  timeField?: string;
 }
 
 export type PanelConfig = ChartConfig | MetricConfig | HeatmapConfig;

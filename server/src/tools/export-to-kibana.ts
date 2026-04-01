@@ -1,11 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getDashboard } from '../utils/dashboard-store.js';
-import { getESClient } from '../utils/es-client.js';
 import { translateDashboardToSavedObject } from '../utils/dashboard-translator.js';
 import { registerTool } from '../utils/register-tool.js';
 import { KIBANA_URL, getKibanaAuthHeader, getKibanaBasePath } from '../utils/kibana-client.js';
 import { parseIndexPattern } from '../utils/esql-parser.js';
+import { detectTimeField } from '../utils/time-field.js';
 
 export function registerExportToKibana(server: McpServer): void {
   registerTool(
@@ -56,30 +56,20 @@ export function registerExportToKibana(server: McpServer): void {
         dashboard.title = String(args.title);
       }
 
-      // Detect time fields per index pattern via field_caps
+      // Build time field map: use explicit chart.timeField if set, otherwise detect via field_caps
       const timeFieldMap = new Map<string, string>();
-      const client = getESClient();
       const seenIndices = new Set<string>();
       for (const chart of dashboard.charts) {
         if (!chart.esqlQuery) continue;
         const index = parseIndexPattern(chart.esqlQuery);
         if (!index || seenIndices.has(index)) continue;
         seenIndices.add(index);
-        try {
-          const caps = await client.fieldCaps({
-            index,
-            fields: '*',
-            types: ['date', 'date_nanos'],
-          });
-          const dateFields = Object.keys(caps.fields || {});
-          const timeField = dateFields.includes('@timestamp')
-            ? '@timestamp'
-            : dateFields.includes('timestamp')
-              ? 'timestamp'
-              : dateFields[0];
-          if (timeField) timeFieldMap.set(index, timeField);
-        } catch {
-          // Index might not exist — skip
+
+        if (chart.timeField) {
+          timeFieldMap.set(index, chart.timeField);
+        } else {
+          const detected = await detectTimeField(index);
+          if (detected) timeFieldMap.set(index, detected);
         }
       }
 

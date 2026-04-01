@@ -51,10 +51,18 @@ export function registerCreateChart(server: McpServer): void {
           .describe(
             'Optional array of hex colors for series/slices, e.g. ["#E91E63", "#FF5252"]. Defaults to Kibana Borealis palette.'
           ),
+        timeField: z
+          .string()
+          .optional()
+          .describe(
+            'Optional date field for time filtering, e.g. "@timestamp" or "order_date". ' +
+              'Set this when the index has multiple date fields to ensure the time picker filters correctly.'
+          ),
       },
     },
     async (args) => {
-      const { id, title, chartType, esqlQuery, xField, yFields, splitField, palette } = args;
+      const { id, title, chartType, esqlQuery, xField, yFields, splitField, palette, timeField } =
+        args;
 
       const client = getESClient();
 
@@ -100,6 +108,7 @@ export function registerCreateChart(server: McpServer): void {
         yFields,
         splitField,
         palette,
+        timeField,
       };
 
       const dashboard = addChart(chart);

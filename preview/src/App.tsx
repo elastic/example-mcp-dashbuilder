@@ -255,11 +255,15 @@ function AppInner() {
 
 function RenderSingleChart({ config }: { config: PanelConfig }) {
   const { timeRange } = useTimeRange();
-  const { data, isLoading } = useEsqlQuery(config.esqlQuery, timeRange);
+  const { data, isLoading } = useEsqlQuery(config.esqlQuery, timeRange, config.timeField);
 
   // Fetch trend data for metrics (same logic as DashboardPanel)
   const trendQuery = config.chartType === 'metric' ? config.trendEsqlQuery : undefined;
-  const { data: trendData, isLoading: trendLoading } = useEsqlQuery(trendQuery, timeRange);
+  const { data: trendData, isLoading: trendLoading } = useEsqlQuery(
+    trendQuery,
+    timeRange,
+    config.timeField
+  );
 
   const liveConfig = useMemo(() => {
     const base = { ...config, data };

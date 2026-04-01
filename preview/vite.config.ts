@@ -125,7 +125,7 @@ function dashboardApiPlugin() {
 
         try {
           const body = await readBody(req);
-          const { query, start, end } = JSON.parse(body);
+          const { query, start, end, timeField: explicitTimeField } = JSON.parse(body);
 
           if (!query) {
             res.statusCode = 400;
@@ -134,18 +134,26 @@ function dashboardApiPlugin() {
             return;
           }
 
-          // Detect time field and build DSL filter
+          // Build DSL time filter. Use explicit timeField if provided,
+          // otherwise detect via field_caps (only @timestamp/timestamp are safe defaults).
           let filter: Record<string, unknown> | undefined;
           if (start && end) {
-            const index = parseIndexPattern(query);
-            if (index) {
-              if (!timeFieldCache.has(index)) {
-                timeFieldCache.set(index, await fetchTimeField(index));
+            let resolvedTimeField = explicitTimeField;
+            if (!resolvedTimeField) {
+              const index = parseIndexPattern(query);
+              if (index) {
+                if (!timeFieldCache.has(index)) {
+                  timeFieldCache.set(index, await fetchTimeField(index));
+                }
+                const detected = timeFieldCache.get(index);
+                // Only auto-apply for well-known time fields to avoid wrong filtering
+                if (detected === '@timestamp' || detected === 'timestamp') {
+                  resolvedTimeField = detected;
+                }
               }
-              const timeField = timeFieldCache.get(index);
-              if (timeField) {
-                filter = { range: { [timeField]: { gte: start, lte: end } } };
-              }
+            }
+            if (resolvedTimeField) {
+              filter = { range: { [resolvedTimeField]: { gte: start, lte: end } } };
             }
           }
 

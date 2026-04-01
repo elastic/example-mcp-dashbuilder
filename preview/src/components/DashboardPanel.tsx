@@ -7,11 +7,11 @@ import type { PanelConfig } from '../types';
 
 export function DashboardPanel({ config }: { config: PanelConfig }) {
   const { timeRange } = useTimeRange();
-  const { data, isLoading, error } = useEsqlQuery(config.esqlQuery, timeRange);
+  const { data, isLoading, error } = useEsqlQuery(config.esqlQuery, timeRange, config.timeField);
 
   // Fetch trend data for metrics with a trend query
   const trendQuery = config.chartType === 'metric' ? config.trendEsqlQuery : undefined;
-  const { data: trendData } = useEsqlQuery(trendQuery, timeRange);
+  const { data: trendData } = useEsqlQuery(trendQuery, timeRange, config.timeField);
 
   const liveConfig = useMemo(() => {
     const base = { ...config, data };
