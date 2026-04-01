@@ -131,25 +131,7 @@ export function translateDashboardToSavedObject(
     // Use positions from user's drag/resize in the preview app
     allPanels = [];
 
-    interface GridPanel {
-      type: 'panel';
-      column: number;
-      row: number;
-      width: number;
-      height: number;
-    }
-
-    interface GridSection {
-      type: 'section';
-      title: string;
-      isCollapsed?: boolean;
-      row: number;
-      panels?: Record<string, { column: number; row: number; width: number; height: number }>;
-    }
-
-    type GridWidget = GridPanel | GridSection;
-
-    for (const [widgetId, widget] of Object.entries(gridLayout) as Array<[string, GridWidget]>) {
+    for (const [widgetId, widget] of Object.entries(gridLayout)) {
       if (widget.type === 'panel') {
         const chart = chartMap.get(widgetId);
         if (chart) {

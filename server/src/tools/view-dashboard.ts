@@ -1,6 +1,4 @@
 import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   registerAppTool,
@@ -8,19 +6,9 @@ import {
   RESOURCE_MIME_TYPE,
 } from '@modelcontextprotocol/ext-apps/server';
 import { getDashboard } from '../utils/dashboard-store.js';
-import { PREVIEW_URL } from '../utils/config.js';
+import { PREVIEW_URL, MCP_APP_HTML_PATH } from '../utils/config.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const RESOURCE_URI = 'ui://elastic-dashbuilder/dashboard.html';
-const MCP_APP_HTML_PATH = resolve(
-  __dirname,
-  '..',
-  '..',
-  '..',
-  'preview',
-  'dist-mcp-app',
-  'index.html'
-);
 
 function loadMcpAppHtml(): string {
   try {

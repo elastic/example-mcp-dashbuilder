@@ -25,7 +25,7 @@ export function registerRunEsql(server: McpServer): void {
     },
     async (args) => {
       try {
-        const query = args.query as string;
+        const { query } = args;
         const client = getESClient();
         const response = (await client.esql.query({
           query,

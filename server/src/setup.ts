@@ -1,14 +1,21 @@
 #!/usr/bin/env node
 import { createInterface } from 'readline';
 import { writeFileSync, existsSync, readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve } from 'path';
 import { Client } from '@elastic/elasticsearch';
+import { DEFAULT_ES_NODE, DEFAULT_KIBANA_URL, PROJECT_ROOT } from './utils/config.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ENV_PATH = resolve(__dirname, '..', '..', '.env');
+const ENV_PATH = resolve(PROJECT_ROOT, '.env');
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+interface ConnectionConfig {
+  cloudId?: string;
+  node?: string;
+  apiKey?: string;
+  username?: string;
+  password?: string;
+}
 
 function ask(question: string, defaultValue?: string): Promise<string> {
   const prompt = defaultValue ? `${question} [${defaultValue}]: ` : `${question}: `;
@@ -17,14 +24,6 @@ function ask(question: string, defaultValue?: string): Promise<string> {
       resolve(answer.trim() || defaultValue || '');
     });
   });
-}
-
-interface ConnectionConfig {
-  cloudId?: string;
-  node?: string;
-  apiKey?: string;
-  username?: string;
-  password?: string;
 }
 
 async function testConnection(config: ConnectionConfig): Promise<string> {
@@ -36,7 +35,7 @@ async function testConnection(config: ConnectionConfig): Promise<string> {
 
   const client = config.cloudId
     ? new Client({ cloud: { id: config.cloudId }, auth })
-    : new Client({ node: config.node || 'http://localhost:9200', auth });
+    : new Client({ node: config.node || DEFAULT_ES_NODE, auth });
 
   const info = await client.info();
   return info.cluster_name;
@@ -67,7 +66,7 @@ async function main() {
   if (isCloud) {
     cloudId = await ask('Cloud ID', existing.ES_CLOUD_ID || '');
   } else {
-    esNode = await ask('Elasticsearch URL', existing.ES_NODE || 'http://localhost:9200');
+    esNode = await ask('Elasticsearch URL', existing.ES_NODE || DEFAULT_ES_NODE);
   }
 
   // Choose auth type
@@ -89,7 +88,7 @@ async function main() {
 
   const kibanaUrl = await ask(
     'Kibana URL',
-    existing.KIBANA_URL || (isCloud ? '' : 'http://localhost:5601')
+    existing.KIBANA_URL || (isCloud ? '' : DEFAULT_KIBANA_URL)
   );
 
   // Test the connection

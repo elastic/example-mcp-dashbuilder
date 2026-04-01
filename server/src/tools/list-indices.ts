@@ -22,7 +22,7 @@ export function registerListIndices(server: McpServer): void {
     },
     async (args) => {
       try {
-        const pattern = (args.pattern as string) || '*';
+        const { pattern } = args;
         const client = getESClient();
         const indices = await client.cat.indices({
           index: pattern,
@@ -58,7 +58,7 @@ export function registerListIndices(server: McpServer): void {
     },
     async (args) => {
       try {
-        const index = args.index as string;
+        const { index } = args;
         const client = getESClient();
         const mapping = await client.indices.getMapping({ index });
 

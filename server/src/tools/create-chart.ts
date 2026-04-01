@@ -5,7 +5,7 @@ import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart } from '../utils/dashboard-store.js';
 import { renderChartToImage } from '../utils/chart-renderer.js';
 import { registerTool } from '../utils/register-tool.js';
-import type { ChartConfig, ChartType, ESQLResponse } from '../types.js';
+import type { ChartConfig, ESQLResponse } from '../types.js';
 import { PREVIEW_URL } from '../utils/config.js';
 
 export function registerCreateChart(server: McpServer): void {
@@ -54,14 +54,7 @@ export function registerCreateChart(server: McpServer): void {
       },
     },
     async (args) => {
-      const id = args.id as string;
-      const title = args.title as string;
-      const chartType = args.chartType as ChartType;
-      const esqlQuery = args.esqlQuery as string;
-      const xField = args.xField as string;
-      const yFields = args.yFields as string[];
-      const splitField = args.splitField as string | undefined;
-      const palette = args.palette as string[] | undefined;
+      const { id, title, chartType, esqlQuery, xField, yFields, splitField, palette } = args;
 
       const client = getESClient();
 

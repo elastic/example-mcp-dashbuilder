@@ -1,11 +1,12 @@
 import { Client } from '@elastic/elasticsearch';
+import { DEFAULT_ES_NODE } from './config.js';
 
 let client: Client | null = null;
 
 export function getESClient(): Client {
   if (!client) {
     const cloudId = process.env.ES_CLOUD_ID;
-    const node = process.env.ES_NODE || 'http://localhost:9200';
+    const node = process.env.ES_NODE || DEFAULT_ES_NODE;
     const auth = process.env.ES_API_KEY
       ? { apiKey: process.env.ES_API_KEY }
       : process.env.ES_USERNAME

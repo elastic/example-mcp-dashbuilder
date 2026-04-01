@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { createDashboard, addChart, addSection } from '../utils/dashboard-store.js';
+import { createDashboard, addChart, addSection, slugify } from '../utils/dashboard-store.js';
 import { translateLensToPanel } from '../utils/lens-reverse-translator.js';
 import { registerTool } from '../utils/register-tool.js';
 import {
@@ -64,7 +64,7 @@ export function registerImportFromKibana(server: McpServer): void {
         };
       }
 
-      const id = parseDashboardId(args.dashboardId as string);
+      const id = parseDashboardId(args.dashboardId);
       const basePath = await getKibanaBasePath();
 
       // Fetch the dashboard from Kibana
@@ -103,7 +103,7 @@ export function registerImportFromKibana(server: McpServer): void {
       };
 
       const dashboardTitle =
-        (args.title as string) || savedObject.attributes.title || 'Imported Dashboard';
+        String(args.title) || savedObject.attributes.title || 'Imported Dashboard';
 
       // Parse panels
       let panels: KibanaPanel[];
@@ -117,11 +117,7 @@ export function registerImportFromKibana(server: McpServer): void {
       }
 
       // Create a new dashboard
-      const slugId = dashboardTitle
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-      createDashboard(dashboardTitle, slugId);
+      createDashboard(dashboardTitle, slugify(dashboardTitle));
 
       // Translate each panel
       const imported: string[] = [];
@@ -144,20 +140,17 @@ export function registerImportFromKibana(server: McpServer): void {
         }
 
         const panelTitle = (attrs.title as string) || panel.panelIndex;
-        const panelId = panelTitle
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '');
+        const panelId = slugify(panelTitle);
 
-        const config = translateLensToPanel(attrs, panelId);
-        if (!config) {
-          const visType = attrs.visualizationType || 'unknown';
-          skipped.push(`"${panelTitle}" (${visType})`);
+        // This is going to translate only the supported chart types, and only ES|QL-based panels are supported.
+        const result = translateLensToPanel(attrs, panelId);
+        if ('skip' in result) {
+          skipped.push(`"${panelTitle}" — ${result.skip}`);
           continue;
         }
 
-        addChart(config);
-        imported.push(`"${panelTitle}" (${config.chartType})`);
+        addChart(result.config);
+        imported.push(`"${panelTitle}" (${result.config.chartType})`);
 
         // Preserve grid position
         gridLayout[panelId] = {
@@ -177,11 +170,8 @@ export function registerImportFromKibana(server: McpServer): void {
           .filter((p) => p.gridData.sectionId === sectionId)
           .map((p) => {
             const attrs = p.embeddableConfig?.attributes;
-            const panelTitle = (attrs?.title as string) || p.panelIndex;
-            return panelTitle
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-|-$/g, '');
+            const panelTitle = String(attrs?.title) || p.panelIndex;
+            return slugify(panelTitle);
           });
 
         const sectionConfig: SectionConfig = {

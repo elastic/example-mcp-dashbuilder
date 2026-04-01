@@ -1,7 +1,13 @@
 import puppeteer, { type Browser } from 'puppeteer';
 
 import { PREVIEW_URL } from './config.js';
-const BROWSER_IDLE_TIMEOUT_MS = 60_000; // Close browser after 1 min of inactivity
+
+const VIEWPORT_WIDTH = 650;
+const VIEWPORT_HEIGHT = 420;
+const PAGE_LOAD_TIMEOUT_MS = 10_000;
+const CHART_RENDER_TIMEOUT_MS = 5_000;
+const ANIMATION_SETTLE_MS = 500;
+const BROWSER_IDLE_TIMEOUT_MS = 60_000;
 
 let browser: Browser | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -39,17 +45,19 @@ export async function renderChartToImage(chartId: string): Promise<string | null
     const b = await getBrowser();
     page = await b.newPage();
 
-    await page.setViewport({ width: 650, height: 420 });
+    await page.setViewport({ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT });
     await page.goto(`${PREVIEW_URL}?render=${encodeURIComponent(chartId)}`, {
       waitUntil: 'networkidle0',
-      timeout: 10000,
+      timeout: PAGE_LOAD_TIMEOUT_MS,
     });
 
     // Wait for the chart to be rendered — Elastic Charts renders async
-    await page.waitForSelector('#render-ready[data-status="ok"]', { timeout: 5000 });
+    await page.waitForSelector('#render-ready[data-status="ok"]', {
+      timeout: CHART_RENDER_TIMEOUT_MS,
+    });
 
     // Give Elastic Charts a moment to finish its animations
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, ANIMATION_SETTLE_MS));
 
     const element = await page.$('#render-ready');
     if (!element) {

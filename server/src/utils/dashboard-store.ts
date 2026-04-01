@@ -7,16 +7,12 @@ import {
   unlinkSync,
   renameSync,
 } from 'fs';
-import { resolve, dirname, basename } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve, basename } from 'path';
 import type { DashboardConfig, PanelConfig, SectionConfig } from '../types.js';
+import { PROJECT_ROOT } from './config.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// All dashboards are stored here
-const DASHBOARDS_DIR = resolve(__dirname, '..', '..', '..', 'preview', 'public', 'dashboards');
-// The active dashboard is symlinked/copied here for the preview app
-const ACTIVE_PATH = resolve(__dirname, '..', '..', '..', 'preview', 'public', 'dashboard.json');
+const DASHBOARDS_DIR = resolve(PROJECT_ROOT, 'preview', 'public', 'dashboards');
+const ACTIVE_PATH = resolve(PROJECT_ROOT, 'preview', 'public', 'dashboard.json');
 // Track which dashboard is active
 const ACTIVE_ID_PATH = resolve(DASHBOARDS_DIR, '.active');
 
@@ -26,7 +22,7 @@ function ensureDashboardsDir(): void {
   }
 }
 
-function slugify(title: string): string {
+export function slugify(title: string): string {
   return (
     title
       .toLowerCase()
@@ -68,12 +64,6 @@ function readDashboard(): DashboardConfig {
   const path = getDashboardPath(id);
   if (existsSync(path)) {
     const raw = JSON.parse(readFileSync(path, 'utf-8'));
-    if (!raw.sections) raw.sections = [];
-    return raw;
-  }
-  // Fallback: read legacy dashboard.json
-  if (existsSync(ACTIVE_PATH)) {
-    const raw = JSON.parse(readFileSync(ACTIVE_PATH, 'utf-8'));
     if (!raw.sections) raw.sections = [];
     return raw;
   }

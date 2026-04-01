@@ -31,15 +31,12 @@ export function registerManageDashboard(server: McpServer): void {
       },
     },
     async (args) => {
-      const { id, dashboard } = createDashboard(
-        args.title as string,
-        args.id as string | undefined
-      );
+      const { id: dashId, dashboard } = createDashboard(args.title, args.id);
       return {
         content: [
           {
             type: 'text',
-            text: `Dashboard "${dashboard.title}" created (id: ${id}) and set as active.\nPreview: ${PREVIEW_URL}`,
+            text: `Dashboard "${dashboard.title}" created (id: ${dashId}) and set as active.\nPreview: ${PREVIEW_URL}`,
           },
         ],
       };
@@ -82,7 +79,7 @@ export function registerManageDashboard(server: McpServer): void {
     },
     async (args) => {
       try {
-        const dashboard = switchDashboard(args.id as string);
+        const dashboard = switchDashboard(args.id);
         return {
           content: [
             {
@@ -111,7 +108,7 @@ export function registerManageDashboard(server: McpServer): void {
     },
     async (args) => {
       try {
-        deleteDashboard(args.id as string);
+        deleteDashboard(args.id);
         return { content: [{ type: 'text', text: `Dashboard "${args.id}" deleted.` }] };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -129,7 +126,7 @@ export function registerManageDashboard(server: McpServer): void {
       inputSchema: { title: z.string().describe('The dashboard title') },
     },
     async (args) => {
-      const dashboard = setDashboardTitle(args.title as string);
+      const dashboard = setDashboardTitle(args.title);
       return { content: [{ type: 'text', text: `Dashboard title set to "${dashboard.title}".` }] };
     }
   );
@@ -143,7 +140,7 @@ export function registerManageDashboard(server: McpServer): void {
       inputSchema: { chartId: z.string().describe('The id of the chart to remove') },
     },
     async (args) => {
-      const dashboard = removeChart(args.chartId as string);
+      const dashboard = removeChart(args.chartId);
       return {
         content: [
           {

@@ -59,18 +59,29 @@ export interface SectionConfig {
   panelIds: string[];
 }
 
-export interface GridPosition {
+export interface GridPanel {
+  type: 'panel';
   column: number;
   row: number;
   width: number;
   height: number;
 }
 
+export interface GridSection {
+  type: 'section';
+  title: string;
+  isCollapsed?: boolean;
+  row: number;
+  panels?: Record<string, { column: number; row: number; width: number; height: number }>;
+}
+
+export type GridWidget = GridPanel | GridSection;
+
 export interface DashboardConfig {
   title: string;
   charts: PanelConfig[];
   sections: SectionConfig[];
   /** Grid layout positions set by user drag/resize in the preview app */
-  gridLayout?: Record<string, GridPosition>;
+  gridLayout?: Record<string, GridWidget>;
   updatedAt: string;
 }

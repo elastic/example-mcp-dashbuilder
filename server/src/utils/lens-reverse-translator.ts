@@ -182,31 +182,31 @@ function reverseHeatmap(
 export function translateLensToPanel(
   embeddableAttributes: Record<string, unknown>,
   panelId: string
-): PanelConfig | null {
+): { config: PanelConfig } | { skip: string } {
   const visType = embeddableAttributes.visualizationType as string;
   const title = (embeddableAttributes.title as string) || panelId;
   const state = embeddableAttributes.state as Record<string, unknown> | undefined;
-  if (!state) return null;
+  if (!state) return { skip: 'no visualization state' };
 
   const esqlQuery = (state.query as { esql?: string })?.esql || '';
-  if (!esqlQuery) return null;
+  if (!esqlQuery) return { skip: 'not an ES|QL query' };
 
   const datasourceStates = (state.datasourceStates as Record<string, unknown>) || {};
-  if (!datasourceStates.textBased) return null; // Not an ES|QL panel
+  if (!datasourceStates.textBased) return { skip: 'uses index-pattern queries, not ES|QL' };
 
   const { columnMap, layers } = buildColumnMap(datasourceStates);
   const visualization = (state.visualization as Record<string, unknown>) || {};
 
   switch (visType) {
     case 'lnsXY':
-      return reverseXY(visualization, columnMap, esqlQuery, panelId, title);
+      return { config: reverseXY(visualization, columnMap, esqlQuery, panelId, title) };
     case 'lnsPie':
-      return reversePie(visualization, columnMap, esqlQuery, panelId, title);
+      return { config: reversePie(visualization, columnMap, esqlQuery, panelId, title) };
     case 'lnsMetric':
-      return reverseMetric(visualization, columnMap, layers, esqlQuery, panelId, title);
+      return { config: reverseMetric(visualization, columnMap, layers, esqlQuery, panelId, title) };
     case 'lnsHeatmap':
-      return reverseHeatmap(visualization, columnMap, esqlQuery, panelId, title);
+      return { config: reverseHeatmap(visualization, columnMap, esqlQuery, panelId, title) };
     default:
-      return null;
+      return { skip: `unsupported visualization type: ${visType}` };
   }
 }

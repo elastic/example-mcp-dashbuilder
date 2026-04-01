@@ -30,11 +30,11 @@ import { registerViewDashboard } from './tools/view-dashboard.js';
 import { closeBrowser } from './utils/chart-renderer.js';
 import { DATAVIZ_GUIDELINES } from './resources/dataviz-guidelines.js';
 import { buildEsqlReference } from './resources/esql-reference.js';
+import { PROJECT_ROOT } from './utils/config.js';
 
 // Start the Vite preview server as a background child process.
 // The MCP app and Puppeteer renderer need it for API endpoints and dashboard.json.
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const previewDir = resolve(__dirname, '..', '..', 'preview');
+const previewDir = resolve(PROJECT_ROOT, 'preview');
 let viteProcess: ChildProcess | undefined;
 
 function startViteServer() {

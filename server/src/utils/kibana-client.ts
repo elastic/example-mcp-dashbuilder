@@ -1,4 +1,6 @@
-export const KIBANA_URL = process.env.KIBANA_URL || 'http://localhost:5601';
+import { DEFAULT_KIBANA_URL } from './config.js';
+
+export const KIBANA_URL = process.env.KIBANA_URL || DEFAULT_KIBANA_URL;
 
 export function getKibanaAuthHeader(): string {
   const username = process.env.ES_USERNAME;

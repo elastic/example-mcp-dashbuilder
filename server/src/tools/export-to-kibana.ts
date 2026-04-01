@@ -53,7 +53,7 @@ export function registerExportToKibana(server: McpServer): void {
       }
 
       if (args.title) {
-        dashboard.title = args.title as string;
+        dashboard.title = String(args.title);
       }
 
       // Detect time fields per index pattern via field_caps
@@ -89,6 +89,7 @@ export function registerExportToKibana(server: McpServer): void {
       const basePath = await getKibanaBasePath();
 
       // Create dashboard via saved_objects API
+      // TODO: Use the new Dashboard API instead
       let response: Response;
       try {
         response = await fetch(`${KIBANA_URL}${basePath}/api/saved_objects/dashboard`, {

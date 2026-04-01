@@ -5,7 +5,7 @@ import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart } from '../utils/dashboard-store.js';
 import { renderChartToImage } from '../utils/chart-renderer.js';
 import { registerTool } from '../utils/register-tool.js';
-import type { MetricConfig, TrendShape, ESQLResponse } from '../types.js';
+import type { MetricConfig, ESQLResponse } from '../types.js';
 import { PREVIEW_URL } from '../utils/config.js';
 
 export function registerCreateMetric(server: McpServer): void {
@@ -66,18 +66,20 @@ export function registerCreateMetric(server: McpServer): void {
       },
     },
     async (args) => {
-      const id = args.id as string;
-      const title = args.title as string;
-      const subtitle = args.subtitle as string | undefined;
-      const color = args.color as string | undefined;
-      const esqlQuery = args.esqlQuery as string;
-      const valueField = args.valueField as string;
-      const valuePrefix = args.valuePrefix as string | undefined;
-      const valueSuffix = args.valueSuffix as string | undefined;
-      const trendEsqlQuery = args.trendEsqlQuery as string | undefined;
-      const trendXField = args.trendXField as string | undefined;
-      const trendYField = args.trendYField as string | undefined;
-      const trendShape = (args.trendShape as TrendShape) || 'area';
+      const {
+        id,
+        title,
+        subtitle,
+        color,
+        esqlQuery,
+        valueField,
+        valuePrefix,
+        valueSuffix,
+        trendEsqlQuery,
+        trendXField,
+        trendYField,
+      } = args;
+      const trendShape = args.trendShape || 'area';
 
       const client = getESClient();
       const statusWarnings: string[] = [];

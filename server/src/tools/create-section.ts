@@ -28,9 +28,7 @@ export function registerSectionTools(server: McpServer): void {
       },
     },
     async (args) => {
-      const id = args.id as string;
-      const title = args.title as string;
-      const panelIds = (args.panelIds as string[]) || [];
+      const { id, title, panelIds } = args;
 
       const dashboard = addSection({
         id,
@@ -63,11 +61,10 @@ export function registerSectionTools(server: McpServer): void {
       },
     },
     async (args) => {
-      movePanelToSection(args.panelId as string, args.sectionId as string);
+      const { panelId, sectionId } = args;
+      movePanelToSection(panelId, sectionId);
       return {
-        content: [
-          { type: 'text', text: `Panel "${args.panelId}" moved to section "${args.sectionId}".` },
-        ],
+        content: [{ type: 'text', text: `Panel "${panelId}" moved to section "${sectionId}".` }],
       };
     }
   );
@@ -83,9 +80,10 @@ export function registerSectionTools(server: McpServer): void {
       },
     },
     async (args) => {
-      removeSection(args.sectionId as string);
+      const { sectionId } = args;
+      removeSection(sectionId);
       return {
-        content: [{ type: 'text', text: `Section "${args.sectionId}" removed.` }],
+        content: [{ type: 'text', text: `Section "${sectionId}" removed.` }],
       };
     }
   );

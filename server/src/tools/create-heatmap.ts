@@ -47,13 +47,7 @@ export function registerCreateHeatmap(server: McpServer): void {
       },
     },
     async (args) => {
-      const id = args.id as string;
-      const title = args.title as string;
-      const esqlQuery = args.esqlQuery as string;
-      const xField = args.xField as string;
-      const yField = args.yField as string;
-      const valueField = args.valueField as string;
-      const colorRamp = args.colorRamp as string[] | undefined;
+      const { id, title, esqlQuery, xField, yField, valueField, colorRamp } = args;
 
       const client = getESClient();
 
