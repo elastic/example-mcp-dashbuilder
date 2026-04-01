@@ -270,6 +270,7 @@ cd preview && npm run build:mcp-app  # Build single-file MCP App
 ## Credits
 
 - [Elastic Charts](https://elastic.github.io/elastic-charts) for visualization rendering
+- [@elastic/esql](https://github.com/nicolo-ribaudo/elastic-esql-js) for ES|QL query parsing
 - [kbn-grid-layout](https://github.com/elastic/kibana) for the dashboard grid (adapted from Kibana)
 - [Model Context Protocol](https://modelcontextprotocol.io) for AI tool integration
 - [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) for inline UI rendering
