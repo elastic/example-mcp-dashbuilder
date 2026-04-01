@@ -273,9 +273,9 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 The MCP App sandbox does not allow loading external scripts, so the MCP App always uses the pre-built bundle.
 
 | What changed                                                                                  | What to do                                                        |
-| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------- |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Frontend code (`App.tsx`, `ChartPanel.tsx`, `PanelChrome.tsx`, `main.tsx`, grid-layout, etc.) | Rebuild: `cd preview && npm run build:mcp-app`                    |
-| Server/API code (`vite.config.ts` — ES                                                        | QL proxy, field_caps, etc.)                                       | Restart the MCP server in Cursor (auto-restarts Vite) |
+| Server/API code (`vite.config.ts` — ESQL proxy, field_caps, etc.)                             | Restart the MCP server in Cursor (auto-restarts Vite)             |
 | `dashboard.json` (new charts, layout changes)                                                 | Nothing — the MCP App polls this from the preview server every 2s |
 
 For frontend development, use the browser preview at `http://localhost:5173` which has HMR.
