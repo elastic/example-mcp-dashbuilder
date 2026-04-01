@@ -1,11 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
-import { columnarToRows } from '../utils/esql-transform.js';
+import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart } from '../utils/dashboard-store.js';
 import { renderChartToImage } from '../utils/chart-renderer.js';
 import { registerTool } from '../utils/register-tool.js';
 import type { ChartConfig, ChartType, ESQLResponse } from '../types.js';
+import { PREVIEW_URL } from '../utils/config.js';
 
 export function registerCreateChart(server: McpServer): void {
   registerTool(
@@ -45,7 +46,7 @@ export function registerCreateChart(server: McpServer): void {
             'Optional column name to split the data into multiple series (for grouped/stacked charts)'
           ),
         palette: z
-          .array(z.string())
+          .array(z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a hex color like #E91E63'))
           .optional()
           .describe(
             'Optional array of hex colors for series/slices, e.g. ["#E91E63", "#FF5252"]. Defaults to Kibana Borealis palette.'
@@ -88,6 +89,15 @@ export function registerCreateChart(server: McpServer): void {
         };
       }
 
+      const fieldError = validateFields(data, [
+        xField,
+        ...yFields,
+        ...(splitField ? [splitField] : []),
+      ]);
+      if (fieldError) {
+        return { content: [{ type: 'text', text: fieldError }], isError: true };
+      }
+
       const chart: ChartConfig = {
         id,
         title,
@@ -105,7 +115,7 @@ export function registerCreateChart(server: McpServer): void {
         `Chart "${title}" (${chartType}) added to dashboard. ` +
         `Data: ${data.length} rows, fields: [${Object.keys(data[0]).join(', ')}]. ` +
         `Dashboard now has ${dashboard.charts.length} chart(s).\n` +
-        `Preview: http://localhost:5173`;
+        `Preview: ${PREVIEW_URL}`;
 
       const imageBase64 = await renderChartToImage(id);
 
@@ -118,7 +128,7 @@ export function registerCreateChart(server: McpServer): void {
       } else {
         content.push({
           type: 'text',
-          text: '(Image preview unavailable — make sure the preview app is running on localhost:5173)',
+          text: `(Image preview unavailable — make sure the preview app is running on ${PREVIEW_URL})`,
         });
       }
 

@@ -41,13 +41,20 @@ const ES_ENDPOINT = resolveEsEndpoint();
 // Cache time field detection per index pattern (persists across requests)
 const timeFieldCache = new Map<string, string | undefined>();
 
+const MAX_BODY_SIZE = 1024 * 1024; // 1 MB
+
 function readBody(req: any): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', (chunk: string) => {
       body += chunk;
+      if (body.length > MAX_BODY_SIZE) {
+        req.destroy();
+        reject(new Error('Request body too large'));
+      }
     });
     req.on('end', () => resolve(body));
+    req.on('error', reject);
   });
 }
 
@@ -234,8 +241,5 @@ export default defineConfig({
   server: {
     port: 5173,
     cors: true,
-    watch: {
-      include: ['public/dashboard.json'],
-    },
   },
 });

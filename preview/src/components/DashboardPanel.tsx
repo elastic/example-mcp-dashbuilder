@@ -3,11 +3,11 @@ import { PanelChrome } from './PanelChrome';
 import { ChartPanel } from './ChartPanel';
 import { useEsqlQuery } from '../hooks/useEsqlQuery';
 import { useTimeRange } from '../context/TimeRangeContext';
-import type { PanelConfig } from '../hooks/useDashboardConfig';
+import type { PanelConfig } from '../types';
 
 export function DashboardPanel({ config }: { config: PanelConfig }) {
   const { timeRange } = useTimeRange();
-  const { data, isLoading } = useEsqlQuery(config.esqlQuery, timeRange);
+  const { data, isLoading, error } = useEsqlQuery(config.esqlQuery, timeRange);
 
   // Fetch trend data for metrics with a trend query
   const trendQuery = config.chartType === 'metric' ? config.trendEsqlQuery : undefined;
@@ -32,7 +32,13 @@ export function DashboardPanel({ config }: { config: PanelConfig }) {
 
   return (
     <PanelChrome title={config.title} isLoading={isLoading}>
-      <ChartPanel config={liveConfig} />
+      {error ? (
+        <div style={{ padding: 12, color: '#BD271E', fontSize: 13 }}>
+          <strong>Query error:</strong> {error}
+        </div>
+      ) : (
+        <ChartPanel config={liveConfig} />
+      )}
     </PanelChrome>
   );
 }

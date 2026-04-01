@@ -1,57 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { BASE_URL } from '../utils/base-url';
+import type { DashboardConfig } from '../types';
 
-interface ChartConfig {
-  id: string;
-  title: string;
-  chartType: 'bar' | 'line' | 'area' | 'pie';
-  esqlQuery: string;
-  xField: string;
-  yFields: string[];
-  splitField?: string;
-}
-
-interface MetricConfig {
-  id: string;
-  title: string;
-  chartType: 'metric';
-  subtitle?: string;
-  color?: string;
-  valueField?: string;
-  valuePrefix?: string;
-  valueSuffix?: string;
-  esqlQuery: string;
-  trendEsqlQuery?: string;
-  trendXField?: string;
-  trendYField?: string;
-  trendShape?: 'area' | 'bars';
-}
-
-interface HeatmapConfig {
-  id: string;
-  title: string;
-  chartType: 'heatmap';
-  esqlQuery: string;
-  xField: string;
-  yField: string;
-  valueField: string;
-}
-
-export type PanelConfig = ChartConfig | MetricConfig | HeatmapConfig;
-
-export interface SectionConfig {
-  id: string;
-  title: string;
-  collapsed: boolean;
-  panelIds: string[];
-}
-
-export interface DashboardConfig {
-  title: string;
-  charts: PanelConfig[];
-  sections: SectionConfig[];
-  updatedAt: string;
-}
+export type { PanelConfig, SectionConfig, DashboardConfig } from '../types';
 
 const EMPTY_DASHBOARD: DashboardConfig = {
   title: 'Untitled Dashboard',

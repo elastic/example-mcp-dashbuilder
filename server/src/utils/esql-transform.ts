@@ -24,3 +24,14 @@ export function columnarToRows(response: ESQLResponse): Record<string, unknown>[
 export function describeColumns(response: ESQLResponse): Array<{ name: string; type: string }> {
   return response.columns.map((col) => ({ name: col.name, type: col.type }));
 }
+
+/**
+ * Validate that expected fields exist in query results.
+ * Returns an error message string if fields are missing, or null if all present.
+ */
+export function validateFields(data: Record<string, unknown>[], fields: string[]): string | null {
+  const available = Object.keys(data[0]);
+  const missing = fields.filter((f) => !available.includes(f));
+  if (missing.length === 0) return null;
+  return `Field(s) not found in query results: ${missing.join(', ')}. Available fields: ${available.join(', ')}`;
+}

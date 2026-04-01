@@ -2,14 +2,21 @@ import { randomUUID } from 'crypto';
 import type { DashboardConfig, PanelConfig } from '../types.js';
 import { translatePanelToLens } from './lens-translator.js';
 import type { TimeFieldContext } from './lens-translator.js';
+import { parseIndexPattern } from './esql-parser.js';
+
+const HALF_WIDTH = 24;
+const THREE_QUARTER_WIDTH = 36;
+const QUARTER_WIDTH = 12;
+const DEFAULT_HEIGHT = 15;
+const METRIC_HEIGHT = 10;
 
 const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
-  bar: { w: 24, h: 15 },
-  line: { w: 24, h: 15 },
-  area: { w: 24, h: 15 },
-  pie: { w: 24, h: 15 },
-  metric: { w: 12, h: 10 },
-  heatmap: { w: 24, h: 15 },
+  bar: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
+  line: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
+  area: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
+  pie: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
+  metric: { w: QUARTER_WIDTH, h: METRIC_HEIGHT },
+  heatmap: { w: THREE_QUARTER_WIDTH, h: DEFAULT_HEIGHT },
 };
 
 interface SavedDashboardPanel {
@@ -55,7 +62,7 @@ function autoPlacePanels(
   let maxHeightInRow = 0;
 
   for (const chart of charts) {
-    const size = DEFAULT_SIZES[chart.chartType] || { w: 24, h: 15 };
+    const size = DEFAULT_SIZES[chart.chartType] || DEFAULT_SIZES.bar;
     if (colOffset + size.w > 48) {
       nextRow += maxHeightInRow;
       colOffset = 0;
@@ -99,8 +106,7 @@ export function translateDashboardToSavedObject(
   // Build TimeFieldContext for a chart from the index→timeField map
   function getCtx(chart: PanelConfig): TimeFieldContext | undefined {
     if (!timeFieldMap || !chart.esqlQuery) return undefined;
-    const fromMatch = chart.esqlQuery.match(/FROM\s+([^\s|,]+)/i);
-    const index = fromMatch?.[1];
+    const index = parseIndexPattern(chart.esqlQuery);
     if (!index) return undefined;
     const timeField = timeFieldMap.get(index);
     if (!timeField) return undefined;

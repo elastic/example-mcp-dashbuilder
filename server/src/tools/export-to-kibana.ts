@@ -5,6 +5,7 @@ import { getESClient } from '../utils/es-client.js';
 import { translateDashboardToSavedObject } from '../utils/dashboard-translator.js';
 import { registerTool } from '../utils/register-tool.js';
 import { KIBANA_URL, getKibanaAuthHeader, getKibanaBasePath } from '../utils/kibana-client.js';
+import { parseIndexPattern } from '../utils/esql-parser.js';
 
 export function registerExportToKibana(server: McpServer): void {
   registerTool(
@@ -61,8 +62,7 @@ export function registerExportToKibana(server: McpServer): void {
       const seenIndices = new Set<string>();
       for (const chart of dashboard.charts) {
         if (!chart.esqlQuery) continue;
-        const fromMatch = chart.esqlQuery.match(/FROM\s+([^\s|,]+)/i);
-        const index = fromMatch?.[1];
+        const index = parseIndexPattern(chart.esqlQuery);
         if (!index || seenIndices.has(index)) continue;
         seenIndices.add(index);
         try {

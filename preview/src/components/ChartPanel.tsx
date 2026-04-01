@@ -15,53 +15,16 @@ import {
   ScaleType,
 } from '@elastic/charts';
 import type { MetricDatum, HeatmapBandsColorScale } from '@elastic/charts';
+import { euiPaletteForTemperature } from '@elastic/eui';
 import { ELASTIC_CHARTS_THEME, KIBANA_PALETTE } from '../theme';
+import type {
+  RenderablePanelConfig,
+  XYChartPanelConfig,
+  MetricPanelConfig,
+  HeatmapPanelConfig,
+} from '../types';
 
-// ── Type definitions ──
-
-interface XYChartConfig {
-  id: string;
-  title: string;
-  chartType: 'bar' | 'line' | 'area' | 'pie';
-  xField: string;
-  yFields: string[];
-  splitField?: string;
-  palette?: string[];
-  data?: Record<string, unknown>[];
-}
-
-interface MetricPanelConfig {
-  id: string;
-  title: string;
-  chartType: 'metric';
-  subtitle?: string;
-  color?: string;
-  valueField?: string;
-  valuePrefix?: string;
-  valueSuffix?: string;
-  data?: Record<string, unknown>[];
-  trendEsqlQuery?: string;
-  trendXField?: string;
-  trendYField?: string;
-  trendShape?: 'area' | 'bars';
-  trend?: {
-    data: Array<{ x: number; y: number }>;
-    shape: 'area' | 'bars';
-  };
-}
-
-interface HeatmapPanelConfig {
-  id: string;
-  title: string;
-  chartType: 'heatmap';
-  xField: string;
-  yField: string;
-  valueField: string;
-  colorRamp?: string[];
-  data?: Record<string, unknown>[];
-}
-
-type PanelConfig = XYChartConfig | MetricPanelConfig | HeatmapPanelConfig;
+const TEMPERATURE_PALETTE = euiPaletteForTemperature(8);
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -78,14 +41,14 @@ function formatDateTime(d: Date): string {
 
 // ── Router ──
 
-export function ChartPanel({ config }: { config: PanelConfig }) {
+export function ChartPanel({ config }: { config: RenderablePanelConfig }) {
   if (config.chartType === 'metric') {
     return <MetricPanel config={config as MetricPanelConfig} />;
   }
   if (config.chartType === 'heatmap') {
     return <HeatmapPanel config={config as HeatmapPanelConfig} />;
   }
-  return <XYChartPanel config={config as XYChartConfig} />;
+  return <XYChartPanel config={config as XYChartPanelConfig} />;
 }
 
 // ── Metric ──
@@ -130,17 +93,7 @@ function buildColorScale(
   steps = 8,
   customRamp?: string[]
 ): HeatmapBandsColorScale {
-  const ramp = customRamp || [
-    // Borealis temperature palette — euiPaletteForTemperature(8) from Kibana's EUI
-    '#61A2FF',
-    '#9AC2FF',
-    '#CFE1FF',
-    '#F2F7FE',
-    '#FDF5F4',
-    '#FFD4CF',
-    '#FDA49C',
-    '#F6726A',
-  ];
+  const ramp = customRamp || TEMPERATURE_PALETTE;
 
   if (values.length === 0) {
     return { type: 'bands', bands: [{ start: 0, end: 1, color: ramp[0] }] };
@@ -224,7 +177,7 @@ function isLikelyTimeValue(value: unknown): boolean {
   return !Number.isNaN(t);
 }
 
-function XYChartPanel({ config }: { config: XYChartConfig }) {
+function XYChartPanel({ config }: { config: XYChartPanelConfig }) {
   const { id, chartType, data = [], xField, yFields, splitField, palette } = config;
   const colors = palette || KIBANA_PALETTE;
 

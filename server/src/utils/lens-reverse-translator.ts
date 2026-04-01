@@ -42,7 +42,13 @@ function buildColumnMap(datasourceStates: Record<string, unknown>): {
 
 function resolve(columnMap: Map<string, string>, id: string | undefined): string {
   if (!id) return '';
-  return columnMap.get(id) || id;
+  const fieldName = columnMap.get(id);
+  if (!fieldName) {
+    console.error(
+      `[import] Column ID "${id}" not found in datasource columns — using ID as fallback`
+    );
+  }
+  return fieldName || id;
 }
 
 function reverseXY(

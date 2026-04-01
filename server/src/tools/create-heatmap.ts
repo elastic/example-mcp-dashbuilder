@@ -1,11 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
-import { columnarToRows } from '../utils/esql-transform.js';
+import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart } from '../utils/dashboard-store.js';
 import { renderChartToImage } from '../utils/chart-renderer.js';
 import { registerTool } from '../utils/register-tool.js';
 import type { HeatmapConfig, ESQLResponse } from '../types.js';
+import { PREVIEW_URL } from '../utils/config.js';
 
 export function registerCreateHeatmap(server: McpServer): void {
   registerTool(
@@ -38,7 +39,7 @@ export function registerCreateHeatmap(server: McpServer): void {
           .string()
           .describe('Column name for the cell values (color intensity), e.g. "order_count"'),
         colorRamp: z
-          .array(z.string())
+          .array(z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a hex color like #E91E63'))
           .optional()
           .describe(
             'Optional array of hex colors for the heatmap gradient (low to high), e.g. ["#FCE4EC", "#E91E63"]. Defaults to Borealis temperature palette.'
@@ -75,6 +76,11 @@ export function registerCreateHeatmap(server: McpServer): void {
         return { content: [{ type: 'text', text: 'Query returned no results.' }], isError: true };
       }
 
+      const fieldError = validateFields(data, [xField, yField, valueField]);
+      if (fieldError) {
+        return { content: [{ type: 'text', text: fieldError }], isError: true };
+      }
+
       const heatmap: HeatmapConfig = {
         id,
         title,
@@ -96,7 +102,7 @@ export function registerCreateHeatmap(server: McpServer): void {
         `Heatmap "${title}" added to dashboard. ` +
         `Data: ${data.length} cells, x: ${xField}, y: ${yField}, value: ${valueField} (range: ${min}–${max}). ` +
         `Dashboard now has ${dashboard.charts.length} panel(s).\n` +
-        `Preview: http://localhost:5173`;
+        `Preview: ${PREVIEW_URL}`;
 
       const imageBase64 = await renderChartToImage(id);
 

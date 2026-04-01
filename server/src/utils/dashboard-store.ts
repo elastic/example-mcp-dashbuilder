@@ -1,4 +1,12 @@
-import { writeFileSync, readFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
+import {
+  writeFileSync,
+  readFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  unlinkSync,
+  renameSync,
+} from 'fs';
 import { resolve, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import type { DashboardConfig, PanelConfig, SectionConfig } from '../types.js';
@@ -72,15 +80,20 @@ function readDashboard(): DashboardConfig {
   return emptyDashboard();
 }
 
+/** Atomic write — write to temp file then rename to avoid partial reads. */
+function atomicWriteSync(filePath: string, data: string): void {
+  const tmp = `${filePath}.tmp`;
+  writeFileSync(tmp, data);
+  renameSync(tmp, filePath);
+}
+
 function writeDashboard(config: DashboardConfig): void {
   ensureDashboardsDir();
   config.updatedAt = new Date().toISOString();
   const id = getActiveDashboardId();
   const json = JSON.stringify(config, null, 2);
-  // Write to the dashboards folder
-  writeFileSync(getDashboardPath(id), json);
-  // Also write to the active path for the preview app
-  writeFileSync(ACTIVE_PATH, json);
+  atomicWriteSync(getDashboardPath(id), json);
+  atomicWriteSync(ACTIVE_PATH, json);
 }
 
 // ── Multi-dashboard management ──

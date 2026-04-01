@@ -1,8 +1,20 @@
 import puppeteer, { type Browser } from 'puppeteer';
 
-const PREVIEW_URL = process.env.PREVIEW_URL || 'http://localhost:5173';
+import { PREVIEW_URL } from './config.js';
+const BROWSER_IDLE_TIMEOUT_MS = 60_000; // Close browser after 1 min of inactivity
 
 let browser: Browser | null = null;
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+function resetIdleTimer() {
+  if (idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(async () => {
+    if (browser) {
+      await browser.close().catch(() => {});
+      browser = null;
+    }
+  }, BROWSER_IDLE_TIMEOUT_MS);
+}
 
 async function getBrowser(): Promise<Browser> {
   if (!browser || !browser.connected) {
@@ -11,6 +23,7 @@ async function getBrowser(): Promise<Browser> {
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
   }
+  resetIdleTimer();
   return browser;
 }
 
@@ -60,8 +73,9 @@ export async function renderChartToImage(chartId: string): Promise<string | null
  * Close the shared browser instance (call on server shutdown).
  */
 export async function closeBrowser(): Promise<void> {
+  if (idleTimer) clearTimeout(idleTimer);
   if (browser) {
-    await browser.close();
+    await browser.close().catch(() => {});
     browser = null;
   }
 }

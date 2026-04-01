@@ -8,9 +8,9 @@ import {
   RESOURCE_MIME_TYPE,
 } from '@modelcontextprotocol/ext-apps/server';
 import { getDashboard } from '../utils/dashboard-store.js';
+import { PREVIEW_URL } from '../utils/config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PREVIEW_URL = process.env.PREVIEW_URL || 'http://localhost:5173';
 const RESOURCE_URI = 'ui://elastic-dashbuilder/dashboard.html';
 const MCP_APP_HTML_PATH = resolve(
   __dirname,
@@ -44,8 +44,8 @@ export function registerViewDashboard(server: McpServer): void {
       _meta: {
         ui: {
           csp: {
-            connectDomains: [PREVIEW_URL, 'http://localhost:5173'],
-            resourceDomains: [PREVIEW_URL, 'http://localhost:5173'],
+            connectDomains: [PREVIEW_URL],
+            resourceDomains: [PREVIEW_URL],
           },
         },
       },
@@ -59,8 +59,8 @@ export function registerViewDashboard(server: McpServer): void {
           _meta: {
             ui: {
               csp: {
-                connectDomains: [PREVIEW_URL, 'http://localhost:5173'],
-                resourceDomains: [PREVIEW_URL, 'http://localhost:5173'],
+                connectDomains: [PREVIEW_URL],
+                resourceDomains: [PREVIEW_URL],
               },
             },
           },

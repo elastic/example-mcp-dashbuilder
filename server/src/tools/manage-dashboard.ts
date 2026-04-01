@@ -11,6 +11,7 @@ import {
   deleteDashboard,
 } from '../utils/dashboard-store.js';
 import { registerTool } from '../utils/register-tool.js';
+import { PREVIEW_URL } from '../utils/config.js';
 
 export function registerManageDashboard(server: McpServer): void {
   registerTool(
@@ -38,7 +39,7 @@ export function registerManageDashboard(server: McpServer): void {
         content: [
           {
             type: 'text',
-            text: `Dashboard "${dashboard.title}" created (id: ${id}) and set as active.\nPreview: http://localhost:5173`,
+            text: `Dashboard "${dashboard.title}" created (id: ${id}) and set as active.\nPreview: ${PREVIEW_URL}`,
           },
         ],
       };
@@ -86,7 +87,7 @@ export function registerManageDashboard(server: McpServer): void {
           content: [
             {
               type: 'text',
-              text: `Switched to dashboard "${dashboard.title}" (${(dashboard.charts || []).length} charts).\nPreview: http://localhost:5173`,
+              text: `Switched to dashboard "${dashboard.title}" (${(dashboard.charts || []).length} charts).\nPreview: ${PREVIEW_URL}`,
             },
           ],
         };

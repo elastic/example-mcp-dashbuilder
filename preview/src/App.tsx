@@ -1,53 +1,22 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { EuiSuperDatePicker, EuiFlexGroup, EuiFlexItem, EuiButtonEmpty } from '@elastic/eui';
-interface DurationRange {
-  end: string;
-  label?: string;
-  start: string;
-}
+import { GridLayout } from './grid-layout';
+import type { GridLayoutData } from './grid-layout';
+import type { GridPanelData } from './grid-layout';
+import { DashboardPanel } from './components/DashboardPanel';
+import { ChartPanel } from './components/ChartPanel';
+import { useDashboardConfig } from './hooks/useDashboardConfig';
+import type { PanelConfig, SectionConfig } from './types';
+import type { DurationRange } from './constants';
+import { ALL_DATA_SENTINEL, COMMONLY_USED_RANGES, GRID_SETTINGS, DEFAULT_SIZES } from './constants';
+import { TimeRangeProvider, useTimeRange } from './context/TimeRangeContext';
+import { useEsqlQuery } from './hooks/useEsqlQuery';
+import { BASE_URL } from './utils/base-url';
 
 interface OnTimeChangeProps extends DurationRange {
   isInvalid: boolean;
   isQuickSelection: boolean;
 }
-
-const ALL_DATA_SENTINEL = '__all_data__';
-
-const COMMONLY_USED_RANGES: DurationRange[] = [
-  { start: ALL_DATA_SENTINEL, end: 'now', label: 'All data' },
-  { start: 'now-15m', end: 'now', label: 'Last 15 minutes' },
-  { start: 'now-1h', end: 'now', label: 'Last 1 hour' },
-  { start: 'now-24h', end: 'now', label: 'Last 24 hours' },
-  { start: 'now-7d', end: 'now', label: 'Last 7 days' },
-  { start: 'now-30d', end: 'now', label: 'Last 30 days' },
-  { start: 'now-1y', end: 'now', label: 'Last 1 year' },
-];
-import { GridLayout } from './grid-layout';
-import type { GridLayoutData, GridSettings } from './grid-layout';
-import type { GridPanelData } from './grid-layout';
-import { DashboardPanel } from './components/DashboardPanel';
-import { ChartPanel } from './components/ChartPanel';
-import { useDashboardConfig } from './hooks/useDashboardConfig';
-import type { PanelConfig, SectionConfig } from './hooks/useDashboardConfig';
-import { TimeRangeProvider, useTimeRange } from './context/TimeRangeContext';
-import { useEsqlQuery } from './hooks/useEsqlQuery';
-import { BASE_URL } from './utils/base-url';
-
-const GRID_SETTINGS: GridSettings = {
-  gutterSize: 8,
-  rowHeight: 20,
-  columnCount: 48,
-  keyboardDragTopLimit: 0,
-};
-
-const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
-  bar: { w: 24, h: 15 },
-  line: { w: 24, h: 15 },
-  area: { w: 24, h: 15 },
-  pie: { w: 24, h: 15 },
-  metric: { w: 12, h: 10 },
-  heatmap: { w: 24, h: 15 },
-};
 
 function autoPlacePanels(
   charts: PanelConfig[],
@@ -60,7 +29,7 @@ function autoPlacePanels(
   let maxHeightInRow = 0;
 
   for (const chart of charts) {
-    const size = DEFAULT_SIZES[chart.chartType] || { w: 24, h: 15 };
+    const size = DEFAULT_SIZES[chart.chartType] || DEFAULT_SIZES.bar;
     if (colOffset + size.w > columnCount) {
       nextRow += maxHeightInRow;
       colOffset = 0;
@@ -193,7 +162,7 @@ function AppInner() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newLayout),
-    }).catch(() => {});
+    }).catch((err) => console.error('[save-layout]', err));
   }, []);
 
   const renderPanelContents = useCallback(

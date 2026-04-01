@@ -1,11 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
-import { columnarToRows } from '../utils/esql-transform.js';
+import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart } from '../utils/dashboard-store.js';
 import { renderChartToImage } from '../utils/chart-renderer.js';
 import { registerTool } from '../utils/register-tool.js';
 import type { MetricConfig, TrendShape, ESQLResponse } from '../types.js';
+import { PREVIEW_URL } from '../utils/config.js';
 
 export function registerCreateMetric(server: McpServer): void {
   registerTool(
@@ -26,6 +27,7 @@ export function registerCreateMetric(server: McpServer): void {
         subtitle: z.string().optional().describe('Optional subtitle, e.g. "Last 7 days"'),
         color: z
           .string()
+          .regex(/^#[0-9a-fA-F]{6}$/, 'Must be a hex color like #54B399')
           .optional()
           .describe(
             'Hex color for the metric background, e.g. "#54B399". Defaults to Kibana green.'
@@ -78,6 +80,7 @@ export function registerCreateMetric(server: McpServer): void {
       const trendShape = (args.trendShape as TrendShape) || 'area';
 
       const client = getESClient();
+      const statusWarnings: string[] = [];
 
       // Execute the main metric query
       let value: number;
@@ -93,6 +96,11 @@ export function registerCreateMetric(server: McpServer): void {
             content: [{ type: 'text', text: 'Metric query returned no results.' }],
             isError: true,
           };
+        }
+
+        const fieldError = validateFields(rows, [valueField]);
+        if (fieldError) {
+          return { content: [{ type: 'text', text: fieldError }], isError: true };
         }
 
         value = Number(rows[0][valueField]);
@@ -124,8 +132,11 @@ export function registerCreateMetric(server: McpServer): void {
             format: 'json',
           })) as unknown as ESQLResponse;
           trendRowCount = columnarToRows(trendResponse).length;
-        } catch {
-          // Trend query failed — metric still works without it
+        } catch (err) {
+          const trendErr = err instanceof Error ? err.message : String(err);
+          // Trend is optional — report the error but don't fail the metric
+          trendRowCount = 0;
+          statusWarnings.push(`Trend query failed: ${trendErr}`);
         }
       }
 
@@ -152,7 +163,8 @@ export function registerCreateMetric(server: McpServer): void {
         `Metric "${title}" added to dashboard: ${formattedValue}` +
         (trendRowCount > 0 ? ` (with ${trendRowCount}-point ${trendShape} sparkline)` : '') +
         `. Dashboard now has ${dashboard.charts.length} panel(s).\n` +
-        `Preview: http://localhost:5173`;
+        (statusWarnings.length > 0 ? `Warnings: ${statusWarnings.join('; ')}\n` : '') +
+        `Preview: ${PREVIEW_URL}`;
 
       const imageBase64 = await renderChartToImage(id);
 
