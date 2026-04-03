@@ -139,7 +139,7 @@ function HeatmapPanel({ config }: { config: HeatmapPanelConfig }) {
             },
           }}
           showLegend
-          legendPosition={Position.Right}
+          legendPosition={Position.Bottom}
         />
         <Heatmap
           id={id}
@@ -197,7 +197,7 @@ function XYChartPanel({ config }: { config: XYChartPanelConfig }) {
         <Settings
           theme={ELASTIC_CHARTS_THEME}
           showLegend={chartType === 'pie' || !!splitField || yFields.length > 1}
-          legendPosition={Position.Right}
+          legendPosition={Position.Bottom}
         />
 
         {chartType === 'pie' ? (
