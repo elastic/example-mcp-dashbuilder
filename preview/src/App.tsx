@@ -156,7 +156,7 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
     (newLayout: GridLayoutData) => {
       mcpApp
         .callServerTool({
-          name: 'save-panel-layout',
+          name: 'save_panel_layout',
           arguments: { layout: newLayout },
         })
         .catch((err: unknown) => console.error('[save-layout]', err));

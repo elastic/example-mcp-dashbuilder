@@ -58,7 +58,7 @@ describe('useEsqlQuery', () => {
     expect(result.current.data).toEqual(rows);
     expect(result.current.error).toBeNull();
     expect(app.callServerTool).toHaveBeenCalledWith({
-      name: 'run-esql-query',
+      name: 'run_esql_query',
       arguments: { query: 'FROM logs | STATS c = COUNT(*) BY host' },
     });
   });
@@ -79,7 +79,7 @@ describe('useEsqlQuery', () => {
     });
 
     expect(app.callServerTool).toHaveBeenCalledWith({
-      name: 'run-esql-query',
+      name: 'run_esql_query',
       arguments: { query: 'FROM logs', start: 'now-15m', end: 'now', timeField: 'order_date' },
     });
   });

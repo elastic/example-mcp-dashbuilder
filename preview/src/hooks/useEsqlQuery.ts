@@ -40,7 +40,7 @@ export function useEsqlQuery(
     }
 
     mcpApp
-      .callServerTool({ name: 'run-esql-query', arguments: args })
+      .callServerTool({ name: 'run_esql_query', arguments: args })
       .then((result) => {
         if (!cancelledRef.current) {
           if (result.isError) {

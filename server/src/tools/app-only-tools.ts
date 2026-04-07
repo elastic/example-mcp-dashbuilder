@@ -19,7 +19,7 @@ export function registerAppOnlyTools(server: McpServer): void {
   // and whenever it needs to refresh (e.g. after the model creates a chart).
   registerAppOnlyTool(
     server,
-    'get-dashboard-config',
+    'get_dashboard_config',
     {
       title: 'Get Dashboard Config',
       description:
@@ -46,7 +46,7 @@ export function registerAppOnlyTools(server: McpServer): void {
   // Replaces the Vite /api/esql proxy endpoint.
   registerAppOnlyTool(
     server,
-    'run-esql-query',
+    'run_esql_query',
     {
       title: 'Run ES|QL Query (App)',
       description:
@@ -113,7 +113,7 @@ export function registerAppOnlyTools(server: McpServer): void {
   // Replaces the Vite /api/save-layout endpoint.
   registerAppOnlyTool(
     server,
-    'save-panel-layout',
+    'save_panel_layout',
     {
       title: 'Save Panel Layout',
       description: 'Persist grid layout changes from drag/resize in the dashboard.',
@@ -143,7 +143,7 @@ export function registerAppOnlyTools(server: McpServer): void {
   // Used by the time picker to know which field to filter on.
   registerAppOnlyTool(
     server,
-    'detect-time-field',
+    'detect_time_field',
     {
       title: 'Detect Time Field',
       description: 'Detect the time field for an index pattern via field_caps API.',
