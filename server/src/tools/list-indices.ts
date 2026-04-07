@@ -1,24 +1,6 @@
 import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
 
-function flattenFields(
-  properties: Record<string, unknown>,
-  prefix = ''
-): Array<{ field: string; type: string }> {
-  const fields: Array<{ field: string; type: string }> = [];
-  for (const [name, value] of Object.entries(properties)) {
-    const fieldPath = prefix ? `${prefix}.${name}` : name;
-    const fieldDef = value as Record<string, unknown>;
-    if (fieldDef.type) {
-      fields.push({ field: fieldPath, type: fieldDef.type as string });
-    }
-    if (fieldDef.properties) {
-      fields.push(...flattenFields(fieldDef.properties as Record<string, unknown>, fieldPath));
-    }
-  }
-  return fields;
-}
-
 export const listIndicesTools = [
   {
     name: 'list_indices' as const,
@@ -77,3 +59,24 @@ export const listIndicesTools = [
     },
   },
 ];
+
+function flattenFields(
+  properties: Record<string, unknown>,
+  prefix = ''
+): Array<{ field: string; type: string }> {
+  const fields: Array<{ field: string; type: string }> = [];
+
+  for (const [name, value] of Object.entries(properties)) {
+    const fieldPath = prefix ? `${prefix}.${name}` : name;
+    const fieldDef = value as Record<string, unknown>;
+
+    if (fieldDef.type) {
+      fields.push({ field: fieldPath, type: fieldDef.type as string });
+    }
+    if (fieldDef.properties) {
+      fields.push(...flattenFields(fieldDef.properties as Record<string, unknown>, fieldPath));
+    }
+  }
+
+  return fields;
+}

@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { createDashboard, addChart, addSection, slugify } from '../utils/dashboard-store.js';
+import {
+  createDashboard,
+  addChart,
+  addSection,
+  saveDashboardLayout,
+  slugify,
+} from '../utils/dashboard-store.js';
 import { translateLensToPanel } from '../utils/lens-reverse-translator.js';
 import {
   KIBANA_URL,
@@ -115,6 +121,10 @@ export const importFromKibanaTool = {
     // Translate each panel
     const imported: string[] = [];
     const skipped: string[] = [];
+    const gridLayout: Record<
+      string,
+      { type: 'panel'; column: number; row: number; width: number; height: number }
+    > = {};
 
     for (const panel of panels) {
       if (panel.type !== 'lens') {
@@ -140,6 +150,15 @@ export const importFromKibanaTool = {
 
       addChart(result.config);
       imported.push(`"${panelTitle}" (${result.config.chartType})`);
+
+      // Preserve grid position
+      gridLayout[panelId] = {
+        type: 'panel',
+        column: panel.gridData.x,
+        row: panel.gridData.y,
+        width: panel.gridData.w,
+        height: panel.gridData.h,
+      };
     }
 
     // Import sections
@@ -161,6 +180,11 @@ export const importFromKibanaTool = {
         panelIds,
       };
       addSection(sectionConfig);
+    }
+
+    // Save preserved grid positions
+    if (Object.keys(gridLayout).length > 0) {
+      saveDashboardLayout(gridLayout);
     }
 
     const statusText =
