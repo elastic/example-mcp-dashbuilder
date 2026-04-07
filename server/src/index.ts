@@ -27,10 +27,12 @@ import { viewDashboardTools, viewDashboardResources } from './tools/view-dashboa
 import { appOnlyTools } from './tools/app-only-tools.js';
 import { DATAVIZ_GUIDELINES } from './resources/dataviz-guidelines.js';
 import { buildEsqlReference } from './resources/esql-reference.js';
+import { SERVER_INSTRUCTIONS } from './resources/instructions.js';
 
 const server = new FastMCP({
   name: 'elastic-dashbuilder',
   version: '0.1.0',
+  instructions: SERVER_INSTRUCTIONS,
 });
 
 // Register dataviz best practices as a resource

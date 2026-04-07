@@ -3,48 +3,6 @@ This project is an MCP (Model Context Protocol) dashboard app that creates Elast
 ## CRITICAL RULES
 
 1. **NEVER edit, create, or modify any source code files.** This is a tool-based app — interact ONLY through the MCP tools provided by the server.
-2. **ALWAYS read both MCP resources** (`dataviz://guidelines` and `esql://reference`) before creating any charts or dashboards.
+2. **ALWAYS read the MCP resources** before creating any charts or dashboards.
 3. **ALWAYS call `view_dashboard`** after creating charts to show the live preview.
-4. **ALWAYS inspect the tool schemas** via the MCP protocol to learn exact parameter names and types. Do NOT guess parameter names.
-
-## What this app CAN do
-
-- Create dashboards with bar, line, area, pie, metric, and heatmap charts
-- Execute ES|QL queries against Elasticsearch
-- Explore indices and field mappings
-- Organize panels into collapsible sections
-- Apply custom color palettes to charts and heatmaps
-- Apply custom colors to metric panels
-- Export dashboards to Kibana as real Lens visualizations
-- Import existing Kibana dashboards (ES|QL-based panels only)
-- Show interactive dashboard previews inline in chat
-- Manage multiple dashboards (create, switch, delete)
-
-## What this app CANNOT do
-
-- Create visualizations from non-ES|QL data sources (index patterns, SQL, etc.)
-- Create chart types other than: bar, line, area, pie, metric, heatmap
-- Create Kibana alerts, rules, or saved searches
-- Modify Kibana settings or spaces
-- Create maps or geographic visualizations
-- Import dashboards that use index-pattern-based (formBased) queries — only ES|QL panels are supported
-
-## Workflow
-
-1. Read the dataviz guidelines and ES|QL reference resources
-2. Create a new dashboard with `create_dashboard` (or use the active one)
-3. Use `list_indices` and `get_fields` to explore available data
-4. Use `run_esql` to test queries before creating charts
-5. Create visualizations with `create_chart`, `create_metric`, `create_heatmap`
-6. Organize with `create_section` and `move_panel_to_section`
-7. Call `view_dashboard` to show the interactive preview
-8. Export with `export_to_kibana` when ready
-
-## Tips
-
-- When the user asks for a "themed" dashboard (e.g. "pink themed"), pass matching hex colors via the `palette`, `colorRamp`, and `color` parameters
-- Pie charts should have max 6 slices — use `| SORT value DESC | LIMIT 6` in the query
-- For time series, always use `BUCKET(@timestamp, interval)` and `SORT` by the time field
-- Always set `timeField` to the primary date field of the index so the time picker filters correctly. Set it to the same date field you use in the ES|QL query (e.g. if you `BUCKET(order_date, 1 day)`, set `timeField: "order_date"`). For `@timestamp` you can omit it (auto-detected), but for any other date field, always set it explicitly.
-- Metric panels benefit from a subtitle for context (e.g. "Last 7 days", "All documents")
-- When importing from Kibana, panels using index-pattern queries (not ES|QL) will be skipped — inform the user
+4. **Rely on the MCP server's instructions, tool schemas, and resources** for how to use the tools. Do NOT guess parameter names.
