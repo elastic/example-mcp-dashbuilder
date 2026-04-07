@@ -30,7 +30,7 @@ export const createMetricTool = {
         'ES|QL query that returns a single row with the metric value. ' +
           'Example: FROM kibana_sample_data_ecommerce | STATS total = SUM(taxful_total_price)'
       ),
-    valueColumn: z
+    valueField: z
       .string()
       .describe('Column name from the query result to display as the metric number, e.g. "total"'),
     valuePrefix: z.string().optional().describe('Text before the value, e.g. "$" or "USD "'),
@@ -72,7 +72,7 @@ export const createMetricTool = {
     subtitle?: string;
     color?: string;
     query: string;
-    valueColumn: string;
+    valueField: string;
     valuePrefix?: string;
     valueSuffix?: string;
     trendQuery?: string;
@@ -86,7 +86,7 @@ export const createMetricTool = {
       subtitle,
       color,
       query,
-      valueColumn,
+      valueField,
       valuePrefix,
       valueSuffix,
       trendQuery,
@@ -116,18 +116,18 @@ export const createMetricTool = {
         };
       }
 
-      const fieldError = validateFields(rows, [valueColumn]);
+      const fieldError = validateFields(rows, [valueField]);
       if (fieldError) {
         return { content: [{ type: 'text' as const, text: fieldError }], isError: true };
       }
 
-      value = Number(rows[0][valueColumn]);
+      value = Number(rows[0][valueField]);
       if (isNaN(value)) {
         return {
           content: [
             {
               type: 'text' as const,
-              text: `Column "${valueColumn}" is not a number. Got: ${rows[0][valueColumn]}`,
+              text: `Column "${valueField}" is not a number. Got: ${rows[0][valueField]}`,
             },
           ],
           isError: true,
@@ -163,7 +163,7 @@ export const createMetricTool = {
       chartType: 'metric',
       subtitle,
       color: color || '#54B399',
-      valueField: valueColumn,
+      valueField: valueField,
       valuePrefix,
       valueSuffix,
       esqlQuery: query,
@@ -184,7 +184,7 @@ export const createMetricTool = {
       (statusWarnings.length > 0 ? ` Warnings: ${statusWarnings.join('; ')}` : '');
 
     // Build metric data row for the preview
-    const metricDataRow: Record<string, unknown> = { [valueColumn]: value };
+    const metricDataRow: Record<string, unknown> = { [valueField]: value };
     setChartPreview({ mode: 'chart-preview', chart: metric, data: [metricDataRow], trendData });
 
     return statusText;

@@ -33,7 +33,7 @@ export const createHeatmapTool = {
     yField: z
       .string()
       .describe('Column name from query result for y-axis (vertical buckets), e.g. "day"'),
-    valueColumn: z
+    valueField: z
       .string()
       .describe(
         'Column name from query result for cell values (color intensity), e.g. "order_count"'
@@ -61,11 +61,11 @@ export const createHeatmapTool = {
     query: string;
     xField: string;
     yField: string;
-    valueColumn: string;
+    valueField: string;
     colorRamp?: string[];
     timeField?: string;
   }) => {
-    const { title, query, xField, yField, valueColumn, colorRamp, timeField } = args;
+    const { title, query, xField, yField, valueField, colorRamp, timeField } = args;
     const id = args.id || `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`;
 
     const client = getESClient();
@@ -92,7 +92,7 @@ export const createHeatmapTool = {
       };
     }
 
-    const fieldError = validateFields(data, [xField, yField, valueColumn]);
+    const fieldError = validateFields(data, [xField, yField, valueField]);
     if (fieldError) {
       return { content: [{ type: 'text' as const, text: fieldError }], isError: true };
     }
@@ -104,19 +104,19 @@ export const createHeatmapTool = {
       esqlQuery: query,
       xField,
       yField,
-      valueField: valueColumn,
+      valueField: valueField,
       colorRamp,
       timeField,
     };
     const dashboard = addChart(heatmap);
 
-    const values = data.map((d) => Number(d[valueColumn])).filter((v) => !isNaN(v));
+    const values = data.map((d) => Number(d[valueField])).filter((v) => !isNaN(v));
     const min = Math.min(...values);
     const max = Math.max(...values);
 
     const statusText =
       `Heatmap "${title}" added to dashboard. ` +
-      `Data: ${data.length} cells, x: ${xField}, y: ${yField}, value: ${valueColumn} (range: ${min}–${max}). ` +
+      `Data: ${data.length} cells, x: ${xField}, y: ${yField}, value: ${valueField} (range: ${min}–${max}). ` +
       `Dashboard now has ${dashboard.charts.length} panel(s).`;
 
     setChartPreview({ mode: 'chart-preview', chart: heatmap, data });
