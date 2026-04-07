@@ -44,7 +44,7 @@ export function registerViewDashboard(server: McpServer): void {
     async () => loadHtml()
   );
 
-  // Chart preview shares the same HTML bundle — the app detects mode from structuredContent
+  // Chart preview shares the same HTML bundle — the app detects mode from tool result text
   registerAppResource(
     server,
     'Chart Preview',
@@ -90,7 +90,6 @@ export function registerViewDashboard(server: McpServer): void {
               (sectionCount > 0 ? `, ${sectionCount} section(s)` : ''),
           },
         ],
-        structuredContent: dashboard as unknown as Record<string, unknown>,
       };
     }
   );

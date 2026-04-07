@@ -6,6 +6,7 @@ import { columnarToRows } from '../utils/esql-transform.js';
 import { parseIndexPattern } from '../utils/esql-parser.js';
 import { detectTimeField } from '../utils/time-field.js';
 import { getDashboard, saveDashboardLayout } from '../utils/dashboard-store.js';
+import { getLastChartPreview } from '../utils/chart-preview-store.js';
 import type { ESQLResponse, DashboardConfig } from '../types.js';
 
 /**
@@ -33,10 +34,9 @@ export function registerAppOnlyTools(server: McpServer): void {
         content: [
           {
             type: 'text' as const,
-            text: `Dashboard "${dashboard.title}" — ${dashboard.charts.length} chart(s)`,
+            text: JSON.stringify(dashboard),
           },
         ],
-        structuredContent: dashboard as unknown as Record<string, unknown>,
       };
     }
   );
@@ -95,8 +95,7 @@ export function registerAppOnlyTools(server: McpServer): void {
         const columns = response.columns.map((col) => ({ name: col.name, type: col.type }));
 
         return {
-          content: [{ type: 'text' as const, text: `${rows.length} row(s)` }],
-          structuredContent: { rows, columns } as unknown as Record<string, unknown>,
+          content: [{ type: 'text' as const, text: JSON.stringify({ rows, columns }) }],
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -159,10 +158,9 @@ export function registerAppOnlyTools(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: timeField ? `Time field: ${timeField}` : 'No time field found',
+              text: JSON.stringify({ timeField: timeField ?? null }),
             },
           ],
-          structuredContent: { timeField: timeField ?? null } as unknown as Record<string, unknown>,
         };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -171,6 +169,38 @@ export function registerAppOnlyTools(server: McpServer): void {
           isError: true,
         };
       }
+    }
+  );
+
+  // ── get_chart_preview ─────────────────────────────────────────────────────
+  // Returns the last chart preview data (chart config + pre-fetched data).
+  // Called by the MCP App after create_chart/metric/heatmap renders the iframe.
+  registerAppOnlyTool(
+    server,
+    'get_chart_preview',
+    {
+      title: 'Get Chart Preview',
+      description:
+        'Returns the last chart preview data including chart config and pre-fetched query results.',
+      inputSchema: {},
+      _meta: { ui: { visibility: ['app'] } },
+    },
+    async () => {
+      const preview = getLastChartPreview();
+      if (!preview) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: JSON.stringify({ error: 'No chart preview available' }),
+            },
+          ],
+          isError: true,
+        };
+      }
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(preview) }],
+      };
     }
   );
 }

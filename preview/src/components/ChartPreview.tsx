@@ -13,7 +13,7 @@ interface ChartPreviewData {
 /**
  * Renders a single chart with pre-loaded data.
  * Used for inline chart previews after create_chart/create_metric/create_heatmap.
- * No ES|QL calls needed — data is already provided in structuredContent.
+ * Renders a single chart with pre-loaded data from the server.
  */
 export function ChartPreview({ preview }: { preview: ChartPreviewData }) {
   const { chart, data, trendData } = preview;

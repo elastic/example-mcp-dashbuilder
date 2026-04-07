@@ -52,33 +52,67 @@ appendIconComponentCache({
   warning,
 });
 
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+/** Parse JSON from the first text content block of a tool result. */
+function parseToolResult(result: { content?: Array<{ type: string; text?: string }> }): unknown {
+  const text = result.content?.find((c: { type: string }) => c.type === 'text') as
+    | { text?: string }
+    | undefined;
+  if (!text?.text) return null;
+  try {
+    return JSON.parse(text.text);
+  } catch {
+    return null;
+  }
+}
+
 // ── MCP App bootstrap ─────────────────────────────────────────────────────
 
 interface ChartPreviewData {
-  mode: 'chart-preview';
   chart: PanelConfig;
   data: Record<string, unknown>[];
   trendData?: Record<string, unknown>[];
 }
 
-type ViewData =
-  | { type: 'dashboard'; dashboard: DashboardConfig }
-  | { type: 'chart-preview'; preview: ChartPreviewData };
+type ViewMode = 'dashboard' | 'chart-preview';
 
 function Root() {
-  const [viewData, setViewData] = useState<ViewData | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
+  const [chartPreview, setChartPreview] = useState<ChartPreviewData | null>(null);
   const [mcpApp] = useState(() => new McpApp({ name: 'elastic-dashbuilder', version: '0.1.0' }));
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    mcpApp.ontoolresult = (result) => {
-      if (!result.structuredContent) return;
-      const content = result.structuredContent as Record<string, unknown>;
-      if (content.mode === 'chart-preview') {
-        setViewData({ type: 'chart-preview', preview: content as unknown as ChartPreviewData });
-      } else {
-        setViewData({ type: 'dashboard', dashboard: content as unknown as DashboardConfig });
-      }
+    // On tool result, try chart preview first; fall back to dashboard view.
+    // The server sets chart preview data when create_chart/metric/heatmap runs,
+    // so its presence tells us which mode to render.
+    mcpApp.ontoolresult = () => {
+      mcpApp
+        .callServerTool({ name: 'get_chart_preview', arguments: {} })
+        .then((r) => {
+          if (r.isError) {
+            // No chart preview — render full dashboard
+            setViewMode('dashboard');
+            return mcpApp.callServerTool({ name: 'get_dashboard_config', arguments: {} });
+          }
+          const data = parseToolResult(r) as ChartPreviewData | null;
+          if (data?.chart) {
+            setChartPreview(data);
+            setViewMode('chart-preview');
+          } else {
+            setViewMode('dashboard');
+            return mcpApp.callServerTool({ name: 'get_dashboard_config', arguments: {} });
+          }
+          return undefined;
+        })
+        .then((r) => {
+          if (r) {
+            const data = parseToolResult(r) as DashboardConfig | null;
+            if (data) setDashboard(data);
+          }
+        });
     };
 
     // Adapt to host theme changes
@@ -102,7 +136,7 @@ function Root() {
     });
   }, [mcpApp]);
 
-  if (!viewData) {
+  if (!viewMode) {
     return (
       <EuiProvider colorMode={colorMode}>
         <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>Waiting for data…</div>
@@ -110,19 +144,27 @@ function Root() {
     );
   }
 
-  if (viewData.type === 'chart-preview') {
+  if (viewMode === 'chart-preview' && chartPreview) {
     return (
       <EuiProvider colorMode={colorMode}>
-        <ChartPreview preview={viewData.preview} />
+        <ChartPreview preview={{ mode: 'chart-preview', ...chartPreview }} />
+      </EuiProvider>
+    );
+  }
+
+  if (viewMode === 'dashboard' && dashboard) {
+    return (
+      <EuiProvider colorMode={colorMode}>
+        <McpAppProvider app={mcpApp}>
+          <App initialDashboard={dashboard} />
+        </McpAppProvider>
       </EuiProvider>
     );
   }
 
   return (
     <EuiProvider colorMode={colorMode}>
-      <McpAppProvider app={mcpApp}>
-        <App initialDashboard={viewData.dashboard} />
-      </McpAppProvider>
+      <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>Loading…</div>
     </EuiProvider>
   );
 }

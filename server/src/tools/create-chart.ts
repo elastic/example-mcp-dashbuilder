@@ -4,6 +4,7 @@ import { getESClient } from '../utils/es-client.js';
 import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart, slugify } from '../utils/dashboard-store.js';
 import { registerAppOnlyTool } from '../utils/register-tool.js';
+import { setChartPreview } from '../utils/chart-preview-store.js';
 import type { ChartConfig, ESQLResponse } from '../types.js';
 import { CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
 
@@ -117,13 +118,10 @@ export function registerCreateChart(server: McpServer): void {
         `Data: ${data.length} rows, fields: [${Object.keys(data[0]).join(', ')}]. ` +
         `Dashboard now has ${dashboard.charts.length} chart(s).`;
 
+      setChartPreview({ mode: 'chart-preview', chart, data });
+
       return {
         content: [{ type: 'text', text: statusText }],
-        structuredContent: {
-          mode: 'chart-preview',
-          chart,
-          data,
-        } as unknown as Record<string, unknown>,
       };
     }
   );

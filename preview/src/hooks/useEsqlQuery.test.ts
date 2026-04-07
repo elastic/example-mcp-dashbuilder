@@ -4,14 +4,13 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useEsqlQuery } from './useEsqlQuery';
 import { McpAppProvider } from '../context/McpAppContext';
 
-// Create a mock MCP App
+ 
 function createMockApp(callServerToolImpl?: (...args: unknown[]) => Promise<unknown>) {
   return {
     callServerTool:
       callServerToolImpl ??
       vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: '0 rows' }],
-        structuredContent: { rows: [], columns: [] },
+        content: [{ type: 'text', text: JSON.stringify({ rows: [], columns: [] }) }],
       }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
@@ -35,12 +34,16 @@ describe('useEsqlQuery', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('calls run-esql-query tool and returns rows', async () => {
+  it('calls run_esql_query tool and returns rows', async () => {
     const rows = [{ host: 'a', count: 10 }];
     const app = createMockApp(
       vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: '1 row(s)' }],
-        structuredContent: { rows, columns: [{ name: 'host', type: 'keyword' }] },
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ rows, columns: [{ name: 'host', type: 'keyword' }] }),
+          },
+        ],
       })
     );
 
@@ -66,7 +69,7 @@ describe('useEsqlQuery', () => {
   it('sends time range and timeField in arguments', async () => {
     const app = createMockApp(
       vi.fn().mockResolvedValue({
-        structuredContent: { rows: [] },
+        content: [{ type: 'text', text: JSON.stringify({ rows: [] }) }],
       })
     );
 

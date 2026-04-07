@@ -4,6 +4,7 @@ import { getESClient } from '../utils/es-client.js';
 import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart, slugify } from '../utils/dashboard-store.js';
 import { registerAppOnlyTool } from '../utils/register-tool.js';
+import { setChartPreview } from '../utils/chart-preview-store.js';
 import type { MetricConfig, ESQLResponse } from '../types.js';
 import { CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
 
@@ -184,14 +185,10 @@ export function registerCreateMetric(server: McpServer): void {
       // Build metric data row for the preview
       const metricDataRow: Record<string, unknown> = { [valueColumn]: value };
 
+      setChartPreview({ mode: 'chart-preview', chart: metric, data: [metricDataRow], trendData });
+
       return {
         content: [{ type: 'text', text: statusText }],
-        structuredContent: {
-          mode: 'chart-preview',
-          chart: metric,
-          data: [metricDataRow],
-          trendData,
-        } as unknown as Record<string, unknown>,
       };
     }
   );

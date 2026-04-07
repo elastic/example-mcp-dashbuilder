@@ -50,10 +50,19 @@ export function useEsqlQuery(
             setError(errText?.text || 'ES|QL query failed');
             setIsLoading(false);
           } else {
-            const structured = result.structuredContent as
-              | { rows: Record<string, unknown>[] }
-              | undefined;
-            setData(structured?.rows || []);
+            try {
+              const text = (
+                result.content?.find((c: { type: string }) => c.type === 'text') as {
+                  text?: string;
+                }
+              )?.text;
+              const parsed = text
+                ? (JSON.parse(text) as { rows: Record<string, unknown>[] })
+                : null;
+              setData(parsed?.rows || []);
+            } catch {
+              setData([]);
+            }
             setIsLoading(false);
           }
         }
