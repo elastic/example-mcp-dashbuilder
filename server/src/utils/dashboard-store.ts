@@ -214,6 +214,13 @@ export function removeSection(sectionId: string): DashboardConfig {
   return dashboard;
 }
 
+export function saveDashboardLayout(gridLayout: DashboardConfig['gridLayout']): DashboardConfig {
+  const dashboard = readDashboard();
+  dashboard.gridLayout = gridLayout;
+  writeDashboard(dashboard);
+  return dashboard;
+}
+
 export function movePanelToSection(panelId: string, sectionId: string): DashboardConfig {
   const dashboard = readDashboard();
   for (const section of dashboard.sections) {

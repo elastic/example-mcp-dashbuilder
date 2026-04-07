@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { TimeRange } from '../context/TimeRangeContext';
-import { BASE_URL } from '../utils/base-url';
+import { useMcpApp } from '../context/McpAppContext';
 
 interface UseEsqlQueryResult {
   data: Record<string, unknown>[];
@@ -16,7 +16,8 @@ export function useEsqlQuery(
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
+  const mcpApp = useMcpApp();
 
   useEffect(() => {
     if (!query) {
@@ -25,47 +26,49 @@ export function useEsqlQuery(
       return;
     }
 
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
+    cancelledRef.current = false;
     setIsLoading(true);
     setError(null);
 
-    const body: Record<string, string> = { query };
+    const args: Record<string, string> = { query };
     if (timeRange) {
-      body.start = timeRange.start;
-      body.end = timeRange.end;
+      args.start = timeRange.start;
+      args.end = timeRange.end;
     }
     if (timeField) {
-      body.timeField = timeField;
+      args.timeField = timeField;
     }
 
-    fetch(`${BASE_URL}/api/esql`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`ES|QL query failed (${res.status})`);
-        return res.json();
-      })
+    mcpApp
+      .callServerTool({ name: 'run-esql-query', arguments: args })
       .then((result) => {
-        if (!controller.signal.aborted) {
-          setData(result.rows || []);
-          setIsLoading(false);
+        if (!cancelledRef.current) {
+          if (result.isError) {
+            const errText = result.content?.find((c: { type: string }) => c.type === 'text') as
+              | { text: string }
+              | undefined;
+            setError(errText?.text || 'ES|QL query failed');
+            setIsLoading(false);
+          } else {
+            const structured = result.structuredContent as
+              | { rows: Record<string, unknown>[] }
+              | undefined;
+            setData(structured?.rows || []);
+            setIsLoading(false);
+          }
         }
       })
-      .catch((err) => {
-        if (!controller.signal.aborted) {
-          setError(err.message);
+      .catch((err: unknown) => {
+        if (!cancelledRef.current) {
+          setError(err instanceof Error ? err.message : String(err));
           setIsLoading(false);
         }
       });
 
-    return () => controller.abort();
-  }, [query, timeRange, timeField]);
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, [query, timeRange, timeField, mcpApp]);
 
   return { data, isLoading, error };
 }

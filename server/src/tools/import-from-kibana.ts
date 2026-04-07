@@ -11,7 +11,6 @@ import {
   kibanaFetch,
 } from '../utils/kibana-client.js';
 import type { SectionConfig } from '../types.js';
-import { PREVIEW_URL } from '../utils/config.js';
 
 interface KibanaPanel {
   panelIndex: string;
@@ -191,7 +190,7 @@ export function registerImportFromKibana(server: McpServer): void {
         (skipped.length > 0
           ? `\n\nSkipped: ${skipped.length}\n` + skipped.map((p) => `  - ${p}`).join('\n')
           : '') +
-        `\n\nPreview: ${PREVIEW_URL}`;
+        `\n`;
 
       return { content: [{ type: 'text', text: statusText }] };
     }

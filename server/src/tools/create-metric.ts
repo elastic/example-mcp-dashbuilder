@@ -3,10 +3,8 @@ import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
 import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart } from '../utils/dashboard-store.js';
-import { renderChartToImage } from '../utils/chart-renderer.js';
 import { registerTool } from '../utils/register-tool.js';
 import type { MetricConfig, ESQLResponse } from '../types.js';
-import { PREVIEW_URL } from '../utils/config.js';
 
 export function registerCreateMetric(server: McpServer): void {
   registerTool(
@@ -20,7 +18,7 @@ export function registerCreateMetric(server: McpServer): void {
         'Always add a subtitle for context (time range, scope). Use $ prefix for revenue, % suffix for rates. ' +
         'Add a trend sparkline when showing a value that changes over time. ' +
         'Read the dataviz-guidelines resource for best practices. ' +
-        'Returns a preview image and updates the live preview app.',
+        'Use view_dashboard to see the interactive preview after creating metrics.',
       inputSchema: {
         id: z.string().describe('Unique metric identifier, e.g. "total-revenue"'),
         title: z.string().describe('Metric title, e.g. "Total Revenue"'),
@@ -173,20 +171,13 @@ export function registerCreateMetric(server: McpServer): void {
       const statusText =
         `Metric "${title}" added to dashboard: ${formattedValue}` +
         (trendRowCount > 0 ? ` (with ${trendRowCount}-point ${trendShape} sparkline)` : '') +
-        `. Dashboard now has ${dashboard.charts.length} panel(s).\n` +
-        (statusWarnings.length > 0 ? `Warnings: ${statusWarnings.join('; ')}\n` : '') +
-        `Preview: ${PREVIEW_URL}`;
+        `. Dashboard now has ${dashboard.charts.length} panel(s). ` +
+        `Use view_dashboard to see the interactive preview.` +
+        (statusWarnings.length > 0 ? ` Warnings: ${statusWarnings.join('; ')}` : '');
 
-      const imageBase64 = await renderChartToImage(id);
-
-      const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-        { type: 'text', text: statusText },
-      ];
-      if (imageBase64) {
-        content.push({ type: 'image', data: imageBase64, mimeType: 'image/png' });
-      }
-
-      return { content };
+      return {
+        content: [{ type: 'text', text: statusText }],
+      };
     }
   );
 }

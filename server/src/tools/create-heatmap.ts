@@ -3,10 +3,8 @@ import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
 import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart } from '../utils/dashboard-store.js';
-import { renderChartToImage } from '../utils/chart-renderer.js';
 import { registerTool } from '../utils/register-tool.js';
 import type { HeatmapConfig, ESQLResponse } from '../types.js';
-import { PREVIEW_URL } from '../utils/config.js';
 
 export function registerCreateHeatmap(server: McpServer): void {
   registerTool(
@@ -20,7 +18,7 @@ export function registerCreateHeatmap(server: McpServer): void {
         'Best for: day × hour patterns, category × region comparisons. ' +
         'Keep both dimensions under 15 values. Use meaningful sort orders (days in order, hours 00-23). ' +
         'Read the dataviz-guidelines resource for best practices. ' +
-        'Returns a preview image and updates the live preview app.',
+        'Use view_dashboard to see the interactive preview after creating heatmaps.',
       inputSchema: {
         id: z.string().describe('Unique heatmap identifier, e.g. "orders-by-day-hour"'),
         title: z.string().describe('Heatmap title displayed above the visualization'),
@@ -103,19 +101,12 @@ export function registerCreateHeatmap(server: McpServer): void {
       const statusText =
         `Heatmap "${title}" added to dashboard. ` +
         `Data: ${data.length} cells, x: ${xField}, y: ${yField}, value: ${valueField} (range: ${min}–${max}). ` +
-        `Dashboard now has ${dashboard.charts.length} panel(s).\n` +
-        `Preview: ${PREVIEW_URL}`;
+        `Dashboard now has ${dashboard.charts.length} panel(s). ` +
+        `Use view_dashboard to see the interactive preview.`;
 
-      const imageBase64 = await renderChartToImage(id);
-
-      const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-        { type: 'text', text: statusText },
-      ];
-      if (imageBase64) {
-        content.push({ type: 'image', data: imageBase64, mimeType: 'image/png' });
-      }
-
-      return { content };
+      return {
+        content: [{ type: 'text', text: statusText }],
+      };
     }
   );
 }

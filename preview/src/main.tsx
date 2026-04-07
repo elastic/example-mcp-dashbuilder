@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { EuiProvider } from '@elastic/eui';
+import { App as McpApp } from '@modelcontextprotocol/ext-apps';
+import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import { App } from './App';
+import { McpAppProvider } from './context/McpAppContext';
+import type { DashboardConfig } from './types';
 
 import '@elastic/charts/dist/theme_light.css';
 
@@ -47,8 +51,59 @@ appendIconComponentCache({
   warning,
 });
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <EuiProvider colorMode="light">
-    <App />
-  </EuiProvider>
-);
+// ── MCP App bootstrap ─────────────────────────────────────────────────────
+
+function Root() {
+  const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
+  const [mcpApp] = useState(() => new McpApp({ name: 'elastic-dashbuilder', version: '0.1.0' }));
+  const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    // Receive initial dashboard config from view_dashboard tool result
+    mcpApp.ontoolresult = (result) => {
+      if (result.structuredContent) {
+        setDashboard(result.structuredContent as unknown as DashboardConfig);
+      }
+    };
+
+    // Adapt to host theme changes
+    mcpApp.onhostcontextchanged = (ctx: McpUiHostContext) => {
+      if (ctx.theme) {
+        setColorMode(ctx.theme === 'dark' ? 'dark' : 'light');
+      }
+    };
+
+    // Clean up on teardown
+    mcpApp.onteardown = async () => {
+      return {};
+    };
+
+    // Connect to host
+    mcpApp.connect().then(() => {
+      const ctx = mcpApp.getHostContext();
+      if (ctx?.theme) {
+        setColorMode(ctx.theme === 'dark' ? 'dark' : 'light');
+      }
+    });
+  }, [mcpApp]);
+
+  if (!dashboard) {
+    return (
+      <EuiProvider colorMode={colorMode}>
+        <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
+          Waiting for dashboard data…
+        </div>
+      </EuiProvider>
+    );
+  }
+
+  return (
+    <EuiProvider colorMode={colorMode}>
+      <McpAppProvider app={mcpApp}>
+        <App initialDashboard={dashboard} />
+      </McpAppProvider>
+    </EuiProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(<Root />);

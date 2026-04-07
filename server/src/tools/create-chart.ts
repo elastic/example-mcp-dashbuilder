@@ -3,10 +3,8 @@ import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
 import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart } from '../utils/dashboard-store.js';
-import { renderChartToImage } from '../utils/chart-renderer.js';
 import { registerTool } from '../utils/register-tool.js';
 import type { ChartConfig, ESQLResponse } from '../types.js';
-import { PREVIEW_URL } from '../utils/config.js';
 
 export function registerCreateChart(server: McpServer): void {
   registerTool(
@@ -19,7 +17,7 @@ export function registerCreateChart(server: McpServer): void {
         'Executes the provided ES|QL query and maps the results to an Elastic Charts configuration. ' +
         'Supported chart types: bar (comparisons), line (time trends), area (volume over time), pie (part-of-whole, max 6 slices). ' +
         'Read the dataviz-guidelines resource for best practices on chart selection, ES|QL patterns, and anti-patterns. ' +
-        'Returns a preview image and also updates the live preview app.',
+        'Use view_dashboard to see the interactive preview after creating charts.',
       inputSchema: {
         id: z.string().describe('Unique chart identifier, e.g. "sales-by-category"'),
         title: z.string().describe('Chart title displayed above the visualization'),
@@ -116,25 +114,12 @@ export function registerCreateChart(server: McpServer): void {
       const statusText =
         `Chart "${title}" (${chartType}) added to dashboard. ` +
         `Data: ${data.length} rows, fields: [${Object.keys(data[0]).join(', ')}]. ` +
-        `Dashboard now has ${dashboard.charts.length} chart(s).\n` +
-        `Preview: ${PREVIEW_URL}`;
+        `Dashboard now has ${dashboard.charts.length} chart(s). ` +
+        `Use view_dashboard to see the interactive preview.`;
 
-      const imageBase64 = await renderChartToImage(id);
-
-      const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-        { type: 'text', text: statusText },
-      ];
-
-      if (imageBase64) {
-        content.push({ type: 'image', data: imageBase64, mimeType: 'image/png' });
-      } else {
-        content.push({
-          type: 'text',
-          text: `(Image preview unavailable — make sure the preview app is running on ${PREVIEW_URL})`,
-        });
-      }
-
-      return { content };
+      return {
+        content: [{ type: 'text', text: statusText }],
+      };
     }
   );
 }

@@ -6,7 +6,7 @@ import {
   RESOURCE_MIME_TYPE,
 } from '@modelcontextprotocol/ext-apps/server';
 import { getDashboard } from '../utils/dashboard-store.js';
-import { PREVIEW_URL, MCP_APP_HTML_PATH } from '../utils/config.js';
+import { MCP_APP_HTML_PATH } from '../utils/config.js';
 
 const RESOURCE_URI = 'ui://elastic-dashbuilder/dashboard.html';
 
@@ -29,14 +29,6 @@ export function registerViewDashboard(server: McpServer): void {
     {
       description:
         'Interactive dashboard preview rendered with Elastic Charts and Kibana grid layout.',
-      _meta: {
-        ui: {
-          csp: {
-            connectDomains: [PREVIEW_URL],
-            resourceDomains: [PREVIEW_URL],
-          },
-        },
-      },
     },
     async () => ({
       contents: [
@@ -44,14 +36,6 @@ export function registerViewDashboard(server: McpServer): void {
           uri: RESOURCE_URI,
           mimeType: RESOURCE_MIME_TYPE,
           text: loadMcpAppHtml(),
-          _meta: {
-            ui: {
-              csp: {
-                connectDomains: [PREVIEW_URL],
-                resourceDomains: [PREVIEW_URL],
-              },
-            },
-          },
         },
       ],
     })
@@ -81,10 +65,10 @@ export function registerViewDashboard(server: McpServer): void {
             type: 'text' as const,
             text:
               `Dashboard "${dashboard.title}" — ${chartCount} chart(s)` +
-              (sectionCount > 0 ? `, ${sectionCount} section(s)` : '') +
-              `\nPreview: ${PREVIEW_URL}`,
+              (sectionCount > 0 ? `, ${sectionCount} section(s)` : ''),
           },
         ],
+        structuredContent: dashboard as unknown as Record<string, unknown>,
       };
     }
   );
