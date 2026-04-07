@@ -2,9 +2,10 @@ This project is an MCP (Model Context Protocol) dashboard app that creates Elast
 
 ## CRITICAL RULES
 
-1. **NEVER edit, create, or modify any source code files.** This is a tool-based app — interact ONLY through the MCP tools listed below.
+1. **NEVER edit, create, or modify any source code files.** This is a tool-based app — interact ONLY through the MCP tools provided by the server.
 2. **ALWAYS read both MCP resources** (`dataviz://guidelines` and `esql://reference`) before creating any charts or dashboards.
 3. **ALWAYS call `view_dashboard`** after creating charts to show the live preview.
+4. **ALWAYS inspect the tool schemas** via the MCP protocol to learn exact parameter names and types. Do NOT guess parameter names.
 
 ## What this app CAN do
 
@@ -28,43 +29,6 @@ This project is an MCP (Model Context Protocol) dashboard app that creates Elast
 - Create maps or geographic visualizations
 - Import dashboards that use index-pattern-based (formBased) queries — only ES|QL panels are supported
 
-## Available MCP tools
-
-**Dashboard management:**
-- `create_dashboard` — Create a new dashboard (previous ones are preserved)
-- `list_dashboards` — List all saved dashboards
-- `switch_dashboard` — Switch to a different dashboard by ID
-- `delete_dashboard` — Delete a saved dashboard
-- `set_dashboard_title` — Set the active dashboard title
-- `get_dashboard` — View current dashboard state
-- `clear_dashboard` — Reset the active dashboard
-
-**Data exploration:**
-- `run_esql` — Execute ES|QL queries against Elasticsearch
-- `list_indices` — Discover available indices
-- `get_fields` — Get field mappings for an index
-
-**Visualization creation:**
-- `create_chart` — Create bar, line, area, or pie charts. Supports optional `palette` for custom colors.
-- `create_metric` — Create metric/KPI panels with optional trend sparklines. Supports `color` for custom background.
-- `create_heatmap` — Create heatmap visualizations. Supports optional `colorRamp` for custom gradients.
-
-**Layout & organization:**
-- `create_section` — Create collapsible dashboard sections
-- `move_panel_to_section` — Assign panels to sections
-- `remove_section` — Remove a section
-- `remove_chart` — Remove a chart
-
-**Export & import:**
-- `export_to_kibana` — Export the active dashboard to Kibana as real Lens visualizations
-- `import_from_kibana` — Import an existing Kibana dashboard by ID or URL (ES|QL panels only)
-- `view_dashboard` — Display the live dashboard preview inline in the chat
-
-## Available MCP resources
-
-- `dataviz://guidelines` — Data visualization best practices, chart selection, dashboard composition, anti-patterns. **Read this before building dashboards.**
-- `esql://reference` — ES|QL language reference with commands, functions, and common query patterns. **Read this when writing ES|QL queries.**
-
 ## Workflow
 
 1. Read the dataviz guidelines and ES|QL reference resources
@@ -76,7 +40,7 @@ This project is an MCP (Model Context Protocol) dashboard app that creates Elast
 7. Call `view_dashboard` to show the interactive preview
 8. Export with `export_to_kibana` when ready
 
-## Tips for the AI
+## Tips
 
 - When the user asks for a "themed" dashboard (e.g. "pink themed"), pass matching hex colors via the `palette`, `colorRamp`, and `color` parameters
 - Pie charts should have max 6 slices — use `| SORT value DESC | LIMIT 6` in the query
