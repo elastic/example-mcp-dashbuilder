@@ -4,8 +4,9 @@ import { EuiProvider } from '@elastic/eui';
 import { App as McpApp } from '@modelcontextprotocol/ext-apps';
 import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import { App } from './App';
+import { ChartPreview } from './components/ChartPreview';
 import { McpAppProvider } from './context/McpAppContext';
-import type { DashboardConfig } from './types';
+import type { DashboardConfig, PanelConfig } from './types';
 
 import '@elastic/charts/dist/theme_light.css';
 
@@ -53,16 +54,30 @@ appendIconComponentCache({
 
 // ── MCP App bootstrap ─────────────────────────────────────────────────────
 
+interface ChartPreviewData {
+  mode: 'chart-preview';
+  chart: PanelConfig;
+  data: Record<string, unknown>[];
+  trendData?: Record<string, unknown>[];
+}
+
+type ViewData =
+  | { type: 'dashboard'; dashboard: DashboardConfig }
+  | { type: 'chart-preview'; preview: ChartPreviewData };
+
 function Root() {
-  const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
+  const [viewData, setViewData] = useState<ViewData | null>(null);
   const [mcpApp] = useState(() => new McpApp({ name: 'elastic-dashbuilder', version: '0.1.0' }));
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    // Receive initial dashboard config from view_dashboard tool result
     mcpApp.ontoolresult = (result) => {
-      if (result.structuredContent) {
-        setDashboard(result.structuredContent as unknown as DashboardConfig);
+      if (!result.structuredContent) return;
+      const content = result.structuredContent as Record<string, unknown>;
+      if (content.mode === 'chart-preview') {
+        setViewData({ type: 'chart-preview', preview: content as unknown as ChartPreviewData });
+      } else {
+        setViewData({ type: 'dashboard', dashboard: content as unknown as DashboardConfig });
       }
     };
 
@@ -87,12 +102,18 @@ function Root() {
     });
   }, [mcpApp]);
 
-  if (!dashboard) {
+  if (!viewData) {
     return (
       <EuiProvider colorMode={colorMode}>
-        <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
-          Waiting for dashboard data…
-        </div>
+        <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>Waiting for data…</div>
+      </EuiProvider>
+    );
+  }
+
+  if (viewData.type === 'chart-preview') {
+    return (
+      <EuiProvider colorMode={colorMode}>
+        <ChartPreview preview={viewData.preview} />
       </EuiProvider>
     );
   }
@@ -100,7 +121,7 @@ function Root() {
   return (
     <EuiProvider colorMode={colorMode}>
       <McpAppProvider app={mcpApp}>
-        <App initialDashboard={dashboard} />
+        <App initialDashboard={viewData.dashboard} />
       </McpAppProvider>
     </EuiProvider>
   );

@@ -2,12 +2,13 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
 import { columnarToRows, validateFields } from '../utils/esql-transform.js';
-import { addChart } from '../utils/dashboard-store.js';
-import { registerTool } from '../utils/register-tool.js';
+import { addChart, slugify } from '../utils/dashboard-store.js';
+import { registerAppOnlyTool } from '../utils/register-tool.js';
 import type { HeatmapConfig, ESQLResponse } from '../types.js';
+import { CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
 
 export function registerCreateHeatmap(server: McpServer): void {
-  registerTool(
+  registerAppOnlyTool(
     server,
     'create_heatmap',
     {
@@ -18,11 +19,11 @@ export function registerCreateHeatmap(server: McpServer): void {
         'Best for: day × hour patterns, category × region comparisons. ' +
         'Keep both dimensions under 15 values. Use meaningful sort orders (days in order, hours 00-23). ' +
         'Read the dataviz-guidelines resource for best practices. ' +
-        'Use view_dashboard to see the interactive preview after creating heatmaps.',
+        'Shows an inline chart preview after creation.',
       inputSchema: {
-        id: z.string().describe('Unique heatmap identifier, e.g. "orders-by-day-hour"'),
+        id: z.string().optional().describe('Unique heatmap identifier, e.g. "orders-by-day-hour"'),
         title: z.string().describe('Heatmap title displayed above the visualization'),
-        esqlQuery: z
+        query: z
           .string()
           .describe(
             'ES|QL query that returns rows with x, y, and value columns. ' +
@@ -31,11 +32,17 @@ export function registerCreateHeatmap(server: McpServer): void {
               '| STATS order_count = COUNT(*) BY day, hour ' +
               '| SORT day, hour'
           ),
-        xField: z.string().describe('Column name for the x-axis (horizontal buckets), e.g. "hour"'),
-        yField: z.string().describe('Column name for the y-axis (vertical buckets), e.g. "day"'),
-        valueField: z
+        xField: z
           .string()
-          .describe('Column name for the cell values (color intensity), e.g. "order_count"'),
+          .describe('Column name from query result for x-axis (horizontal buckets), e.g. "hour"'),
+        yField: z
+          .string()
+          .describe('Column name from query result for y-axis (vertical buckets), e.g. "day"'),
+        valueColumn: z
+          .string()
+          .describe(
+            'Column name from query result for cell values (color intensity), e.g. "order_count"'
+          ),
         colorRamp: z
           .array(z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a hex color like #E91E63'))
           .optional()
@@ -50,16 +57,20 @@ export function registerCreateHeatmap(server: McpServer): void {
               'Set this when the index has multiple date fields.'
           ),
       },
+      _meta: {
+        ui: { resourceUri: CHART_PREVIEW_RESOURCE_URI },
+      },
     },
     async (args) => {
-      const { id, title, esqlQuery, xField, yField, valueField, colorRamp, timeField } = args;
+      const { title, query, xField, yField, valueColumn, colorRamp, timeField } = args;
+      const id = args.id || `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`;
 
       const client = getESClient();
 
       let data: Record<string, unknown>[];
       try {
         const response = (await client.esql.query({
-          query: esqlQuery,
+          query,
           format: 'json',
         })) as unknown as ESQLResponse;
         data = columnarToRows(response);
@@ -75,7 +86,7 @@ export function registerCreateHeatmap(server: McpServer): void {
         return { content: [{ type: 'text', text: 'Query returned no results.' }], isError: true };
       }
 
-      const fieldError = validateFields(data, [xField, yField, valueField]);
+      const fieldError = validateFields(data, [xField, yField, valueColumn]);
       if (fieldError) {
         return { content: [{ type: 'text', text: fieldError }], isError: true };
       }
@@ -84,28 +95,32 @@ export function registerCreateHeatmap(server: McpServer): void {
         id,
         title,
         chartType: 'heatmap',
-        esqlQuery,
+        esqlQuery: query,
         xField,
         yField,
-        valueField,
+        valueField: valueColumn,
         colorRamp,
         timeField,
       };
 
       const dashboard = addChart(heatmap);
 
-      const values = data.map((d) => Number(d[valueField])).filter((v) => !isNaN(v));
+      const values = data.map((d) => Number(d[valueColumn])).filter((v) => !isNaN(v));
       const min = Math.min(...values);
       const max = Math.max(...values);
 
       const statusText =
         `Heatmap "${title}" added to dashboard. ` +
-        `Data: ${data.length} cells, x: ${xField}, y: ${yField}, value: ${valueField} (range: ${min}–${max}). ` +
-        `Dashboard now has ${dashboard.charts.length} panel(s). ` +
-        `Use view_dashboard to see the interactive preview.`;
+        `Data: ${data.length} cells, x: ${xField}, y: ${yField}, value: ${valueColumn} (range: ${min}–${max}). ` +
+        `Dashboard now has ${dashboard.charts.length} panel(s).`;
 
       return {
         content: [{ type: 'text', text: statusText }],
+        structuredContent: {
+          mode: 'chart-preview',
+          chart: heatmap,
+          data,
+        } as unknown as Record<string, unknown>,
       };
     }
   );

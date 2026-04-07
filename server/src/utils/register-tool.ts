@@ -38,6 +38,7 @@ export function registerTool<T extends ZodRawShape>(
 /**
  * Wrapper around registerAppTool that avoids the same TS2589 error.
  * Parses args through the Zod schema so handlers receive typed values.
+ * Supports both app-only tools (visibility) and UI tools (resourceUri).
  */
 export function registerAppOnlyTool<T extends ZodRawShape>(
   server: McpServer,
@@ -46,7 +47,7 @@ export function registerAppOnlyTool<T extends ZodRawShape>(
     title?: string;
     description?: string;
     inputSchema: T;
-    _meta?: { ui: { visibility?: string[] } };
+    _meta?: { ui: { visibility?: string[]; resourceUri?: string } };
   },
   handler: (args: z.infer<ZodObject<T>>) => Promise<ToolResult>
 ): void {
