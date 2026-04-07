@@ -8,6 +8,7 @@ import {
   getKibanaAuthHeader,
   getKibanaBasePath,
   parseDashboardId,
+  kibanaFetch,
 } from '../utils/kibana-client.js';
 import type { SectionConfig } from '../types.js';
 import { PREVIEW_URL } from '../utils/config.js';
@@ -70,7 +71,7 @@ export function registerImportFromKibana(server: McpServer): void {
       // Fetch the dashboard from Kibana
       let response: Response;
       try {
-        response = await fetch(`${KIBANA_URL}${basePath}/api/saved_objects/dashboard/${id}`, {
+        response = await kibanaFetch(`${KIBANA_URL}${basePath}/api/saved_objects/dashboard/${id}`, {
           headers: {
             Authorization: authHeader,
             'kbn-xsrf': 'true',

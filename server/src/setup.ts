@@ -15,6 +15,7 @@ interface ConnectionConfig {
   apiKey?: string;
   username?: string;
   password?: string;
+  unsafeSsl?: boolean;
 }
 
 function ask(question: string, defaultValue?: string): Promise<string> {
@@ -33,9 +34,11 @@ async function testConnection(config: ConnectionConfig): Promise<string> {
       ? { username: config.username, password: config.password || '' }
       : undefined;
 
+  const tls = config.unsafeSsl ? { rejectUnauthorized: false } : undefined;
+
   const client = config.cloudId
-    ? new Client({ cloud: { id: config.cloudId }, auth })
-    : new Client({ node: config.node || DEFAULT_ES_NODE, auth });
+    ? new Client({ cloud: { id: config.cloudId }, auth, tls })
+    : new Client({ node: config.node || DEFAULT_ES_NODE, auth, tls });
 
   const info = await client.info();
   return info.cluster_name;
@@ -91,6 +94,19 @@ async function main() {
     existing.KIBANA_URL || (isCloud ? '' : DEFAULT_KIBANA_URL)
   );
 
+  // Ask about self-signed certificates when using HTTPS with localhost
+  let unsafeSsl = false;
+  const isLocalHttps =
+    /^https:\/\/(localhost|127\.0\.0\.1)/i.test(esNode) ||
+    /^https:\/\/(localhost|127\.0\.0\.1)/i.test(kibanaUrl);
+  if (isLocalHttps) {
+    const sslAnswer = await ask(
+      'Accept self-signed certificates? (y/n)',
+      existing.UNSAFE_SSL === 'true' ? 'y' : 'n'
+    );
+    unsafeSsl = sslAnswer.toLowerCase() === 'y';
+  }
+
   // Test the connection
   process.stdout.write('\n  Testing connection... ');
   try {
@@ -100,6 +116,7 @@ async function main() {
       apiKey: apiKey || undefined,
       username: esUsername || undefined,
       password: esPassword || undefined,
+      unsafeSsl,
     });
     console.log(`Connected! (cluster: ${clusterName})\n`);
   } catch (err) {
@@ -121,6 +138,7 @@ async function main() {
   if (esUsername) envLines.push(`ES_USERNAME=${esUsername}`);
   if (esPassword) envLines.push(`ES_PASSWORD=${esPassword}`);
   if (kibanaUrl) envLines.push(`KIBANA_URL=${kibanaUrl}`);
+  if (unsafeSsl) envLines.push('UNSAFE_SSL=true');
   envLines.push('');
 
   writeFileSync(ENV_PATH, envLines.join('\n'));

@@ -1,6 +1,18 @@
+import { Agent } from 'undici';
+
 import { DEFAULT_KIBANA_URL } from './config.js';
 
 export const KIBANA_URL = process.env.KIBANA_URL || DEFAULT_KIBANA_URL;
+
+const unsafeSslAgent = new Agent({ connect: { rejectUnauthorized: false } });
+
+/** fetch() wrapper that honours the UNSAFE_SSL env var for self-signed certs. */
+export function kibanaFetch(url: string, init?: RequestInit): Promise<Response> {
+  if (process.env.UNSAFE_SSL === 'true') {
+    return fetch(url, { ...init, dispatcher: unsafeSslAgent } as RequestInit);
+  }
+  return fetch(url, init);
+}
 
 export function getKibanaAuthHeader(): string {
   const username = process.env.ES_USERNAME;
@@ -12,7 +24,7 @@ export function getKibanaAuthHeader(): string {
 /** Discover Kibana's base path by following the redirect from /api/status. */
 export async function getKibanaBasePath(): Promise<string> {
   try {
-    const res = await fetch(`${KIBANA_URL}/api/status`, {
+    const res = await kibanaFetch(`${KIBANA_URL}/api/status`, {
       redirect: 'manual',
       headers: { Authorization: getKibanaAuthHeader() },
     });
