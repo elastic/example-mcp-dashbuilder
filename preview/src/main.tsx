@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { EuiProvider } from '@elastic/eui';
 import { App as McpApp } from '@modelcontextprotocol/ext-apps';
-import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import { App } from './App';
 import { ChartPreview } from './components/ChartPreview';
 import { McpAppProvider } from './context/McpAppContext';
@@ -82,8 +81,6 @@ function Root() {
   const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
   const [chartPreview, setChartPreview] = useState<ChartPreviewData | null>(null);
   const [mcpApp] = useState(() => new McpApp({ name: 'elastic-dashbuilder', version: '0.1.0' }));
-  const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
-
   useEffect(() => {
     // On tool result, try chart preview first; fall back to dashboard view.
     // The server sets chart preview data when create_chart/metric/heatmap runs,
@@ -115,29 +112,19 @@ function Root() {
         });
     };
 
-    // Adapt to host theme changes
-    mcpApp.onhostcontextchanged = (ctx: McpUiHostContext) => {
-      if (ctx.theme) {
-        setColorMode(ctx.theme === 'dark' ? 'dark' : 'light');
-      }
-    };
-
     // Clean up on teardown
     mcpApp.onteardown = async () => {
       return {};
     };
 
     // Connect to host
-    mcpApp.connect().then(() => {
-      const ctx = mcpApp.getHostContext();
-      if (ctx?.theme) {
-        setColorMode(ctx.theme === 'dark' ? 'dark' : 'light');
-      }
-    });
+    mcpApp.connect();
   }, [mcpApp]);
 
+  // Enforce light theme for now
+  // TODO set up proper dark/light theme support for charts and EUI components
   return (
-    <EuiProvider colorMode={colorMode}>
+    <EuiProvider colorMode="light">
       <RootContent
         viewMode={viewMode}
         chartPreview={chartPreview}
