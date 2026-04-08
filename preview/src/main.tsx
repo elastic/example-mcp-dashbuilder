@@ -136,36 +136,45 @@ function Root() {
     });
   }, [mcpApp]);
 
-  if (!viewMode) {
-    return (
-      <EuiProvider colorMode={colorMode}>
-        <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>Waiting for data…</div>
-      </EuiProvider>
-    );
-  }
+  return (
+    <EuiProvider colorMode={colorMode}>
+      <RootContent
+        viewMode={viewMode}
+        chartPreview={chartPreview}
+        dashboard={dashboard}
+        mcpApp={mcpApp}
+      />
+    </EuiProvider>
+  );
+}
 
+function RootContent({
+  viewMode,
+  chartPreview,
+  dashboard,
+  mcpApp,
+}: {
+  viewMode: ViewMode | null;
+  chartPreview: ChartPreviewData | null;
+  dashboard: DashboardConfig | null;
+  mcpApp: McpApp;
+}) {
   if (viewMode === 'chart-preview' && chartPreview) {
-    return (
-      <EuiProvider colorMode={colorMode}>
-        <ChartPreview preview={{ mode: 'chart-preview', ...chartPreview }} />
-      </EuiProvider>
-    );
+    return <ChartPreview preview={{ mode: 'chart-preview', ...chartPreview }} />;
   }
 
   if (viewMode === 'dashboard' && dashboard) {
     return (
-      <EuiProvider colorMode={colorMode}>
-        <McpAppProvider app={mcpApp}>
-          <App initialDashboard={dashboard} />
-        </McpAppProvider>
-      </EuiProvider>
+      <McpAppProvider app={mcpApp}>
+        <App initialDashboard={dashboard} />
+      </McpAppProvider>
     );
   }
 
   return (
-    <EuiProvider colorMode={colorMode}>
-      <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>Loading…</div>
-    </EuiProvider>
+    <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
+      {viewMode ? 'Loading…' : 'Waiting for data…'}
+    </div>
   );
 }
 
