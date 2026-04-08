@@ -1,6 +1,13 @@
 import { readFileSync } from 'fs';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {
+  registerAppTool,
+  registerAppResource,
+  RESOURCE_MIME_TYPE,
+} from '@modelcontextprotocol/ext-apps/server';
 import { getDashboard } from '../utils/dashboard-store.js';
 import { MCP_APP_HTML_PATH } from '../utils/config.js';
+
 import { DASHBOARD_RESOURCE_URI, CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
 
 function loadMcpAppHtml(): string {
@@ -14,45 +21,76 @@ function loadMcpAppHtml(): string {
   }
 }
 
-// Shared HTML bundle used by both dashboard and chart preview
-export const viewDashboardResources = [
-  {
-    name: 'Dashboard Preview',
-    uri: DASHBOARD_RESOURCE_URI,
-    description:
-      'Interactive dashboard preview rendered with Elastic Charts and Kibana grid layout.',
-    mimeType: 'text/html;profile=mcp-app',
-    load: async () => ({ text: loadMcpAppHtml() }),
-  },
-  // Chart preview shares the same HTML bundle — the app detects mode from tool result text
-  {
-    name: 'Chart Preview',
-    uri: CHART_PREVIEW_RESOURCE_URI,
-    description: 'Single chart preview rendered with Elastic Charts.',
-    mimeType: 'text/html;profile=mcp-app',
-    load: async () => ({ text: loadMcpAppHtml() }),
-  },
-];
+export function registerViewDashboard(server: McpServer): void {
+  // Shared HTML bundle used by both dashboard and chart preview
+  const loadHtml = () => ({
+    contents: [
+      {
+        uri: DASHBOARD_RESOURCE_URI,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: loadMcpAppHtml(),
+      },
+    ],
+  });
 
-export const viewDashboardTools = [
-  {
-    name: 'view_dashboard' as const,
-    description:
-      'Display the live dashboard preview inline in the chat. ' +
-      'Shows all charts rendered with Elastic Charts in the Kibana grid layout. ' +
-      'The preview is interactive — you can see tooltips and hover states.',
-    _meta: {
-      ui: { resourceUri: DASHBOARD_RESOURCE_URI },
+  registerAppResource(
+    server,
+    'Dashboard Preview',
+    DASHBOARD_RESOURCE_URI,
+    {
+      description:
+        'Interactive dashboard preview rendered with Elastic Charts and Kibana grid layout.',
     },
-    execute: async () => {
+    async () => loadHtml()
+  );
+
+  // Chart preview shares the same HTML bundle — the app detects mode from tool result text
+  registerAppResource(
+    server,
+    'Chart Preview',
+    CHART_PREVIEW_RESOURCE_URI,
+    {
+      description: 'Single chart preview rendered with Elastic Charts.',
+    },
+    async () => ({
+      contents: [
+        {
+          uri: CHART_PREVIEW_RESOURCE_URI,
+          mimeType: RESOURCE_MIME_TYPE,
+          text: loadMcpAppHtml(),
+        },
+      ],
+    })
+  );
+
+  registerAppTool(
+    server,
+    'view_dashboard',
+    {
+      title: 'View Dashboard',
+      description:
+        'Display the live dashboard preview inline in the chat. ' +
+        'Shows all charts rendered with Elastic Charts in the Kibana grid layout. ' +
+        'The preview is interactive — you can see tooltips and hover states.',
+      _meta: {
+        ui: { resourceUri: DASHBOARD_RESOURCE_URI },
+      },
+    },
+    async () => {
       const dashboard = getDashboard();
       const chartCount = dashboard.charts.length;
       const sectionCount = (dashboard.sections || []).length;
 
-      return (
-        `Dashboard "${dashboard.title}" — ${chartCount} chart(s)` +
-        (sectionCount > 0 ? `, ${sectionCount} section(s)` : '')
-      );
-    },
-  },
-];
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text:
+              `Dashboard "${dashboard.title}" — ${chartCount} chart(s)` +
+              (sectionCount > 0 ? `, ${sectionCount} section(s)` : ''),
+          },
+        ],
+      };
+    }
+  );
+}

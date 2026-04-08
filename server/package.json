@@ -12,7 +12,8 @@
   "dependencies": {
     "@elastic/elasticsearch": "^9.0.0",
     "@elastic/esql": "^1.7.0",
-    "fastmcp": "^3.35.0",
+    "@modelcontextprotocol/ext-apps": "^1.5.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
