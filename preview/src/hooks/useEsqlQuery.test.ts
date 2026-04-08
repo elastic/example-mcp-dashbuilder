@@ -4,7 +4,6 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { useEsqlQuery } from './useEsqlQuery';
 import { McpAppProvider } from '../context/McpAppContext';
 
- 
 function createMockApp(callServerToolImpl?: (...args: unknown[]) => Promise<unknown>) {
   return {
     callServerTool:
