@@ -32,7 +32,7 @@ export function registerCreateMetric(server: McpServer): void {
           .describe(
             'Hex color for the metric background, e.g. "#54B399". Defaults to Kibana green.'
           ),
-        query: z
+        esqlQuery: z
           .string()
           .describe(
             'ES|QL query that returns a single row with the metric value. ' +
@@ -45,23 +45,23 @@ export function registerCreateMetric(server: McpServer): void {
           ),
         valuePrefix: z.string().optional().describe('Text before the value, e.g. "$" or "USD "'),
         valueSuffix: z.string().optional().describe('Text after the value, e.g. "%" or " orders"'),
-        trendQuery: z
+        trendEsqlQuery: z
           .string()
           .optional()
           .describe(
             'Optional ES|QL query for the sparkline trend. Should return time-bucketed rows. ' +
               'Example: FROM kibana_sample_data_ecommerce | STATS revenue = SUM(taxful_total_price) BY BUCKET(order_date, 1 day)'
           ),
-        trendXColumn: z
+        trendXField: z
           .string()
           .optional()
           .describe(
-            'Column name for the trend x-axis (time column), e.g. "BUCKET(order_date, 1 day)"'
+            'Column name for the trend x-axis (time field), e.g. "BUCKET(order_date, 1 day)"'
           ),
-        trendYColumn: z
+        trendYField: z
           .string()
           .optional()
-          .describe('Column name for the trend y-axis (value column), e.g. "revenue"'),
+          .describe('Column name for the trend y-axis (value field), e.g. "revenue"'),
         trendShape: z
           .enum(['area', 'bars'])
           .optional()
@@ -84,13 +84,13 @@ export function registerCreateMetric(server: McpServer): void {
         title,
         subtitle,
         color,
-        query,
+        esqlQuery,
         valueField,
         valuePrefix,
         valueSuffix,
-        trendQuery,
-        trendXColumn,
-        trendYColumn,
+        trendEsqlQuery,
+        trendXField,
+        trendYField,
         timeField,
       } = args;
       const id = args.id || `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`;
@@ -103,7 +103,7 @@ export function registerCreateMetric(server: McpServer): void {
       let value: number;
       try {
         const response = (await client.esql.query({
-          query,
+          query: esqlQuery,
           format: 'json',
         })) as unknown as ESQLResponse;
         const rows = columnarToRows(response);
@@ -142,10 +142,10 @@ export function registerCreateMetric(server: McpServer): void {
 
       // Validate the optional trend query
       let trendData: Record<string, unknown>[] = [];
-      if (trendQuery && trendXColumn && trendYColumn) {
+      if (trendEsqlQuery && trendXField && trendYField) {
         try {
           const trendResponse = (await client.esql.query({
-            query: trendQuery,
+            query: trendEsqlQuery,
             format: 'json',
           })) as unknown as ESQLResponse;
           trendData = columnarToRows(trendResponse);
@@ -165,10 +165,10 @@ export function registerCreateMetric(server: McpServer): void {
         valueField,
         valuePrefix,
         valueSuffix,
-        esqlQuery: query,
-        trendEsqlQuery: trendQuery,
-        trendXField: trendXColumn,
-        trendYField: trendYColumn,
+        esqlQuery,
+        trendEsqlQuery,
+        trendXField,
+        trendYField,
         trendShape,
         timeField,
       };

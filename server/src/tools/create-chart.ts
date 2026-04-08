@@ -24,7 +24,7 @@ export function registerCreateChart(server: McpServer): void {
         id: z.string().optional().describe('Unique chart identifier, e.g. "sales-by-category"'),
         title: z.string().describe('Chart title displayed above the visualization'),
         chartType: z.enum(['bar', 'line', 'area', 'pie']).describe('Type of chart to render'),
-        query: z
+        esqlQuery: z
           .string()
           .describe(
             'ES|QL query to execute. Must return columns matching xField and yFields. ' +
@@ -61,7 +61,7 @@ export function registerCreateChart(server: McpServer): void {
       },
     },
     async (args) => {
-      const { title, chartType, query, xField, yFields, splitField, palette, timeField } = args;
+      const { title, chartType, esqlQuery, xField, yFields, splitField, palette, timeField } = args;
       const id = args.id || `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`;
 
       const client = getESClient();
@@ -69,7 +69,7 @@ export function registerCreateChart(server: McpServer): void {
       let data: Record<string, unknown>[];
       try {
         const response = (await client.esql.query({
-          query,
+          query: esqlQuery,
           format: 'json',
         })) as unknown as ESQLResponse;
         data = columnarToRows(response);
@@ -103,7 +103,7 @@ export function registerCreateChart(server: McpServer): void {
         id,
         title,
         chartType,
-        esqlQuery: query,
+        esqlQuery,
         xField,
         yFields,
         splitField,

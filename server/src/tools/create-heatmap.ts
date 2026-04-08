@@ -24,7 +24,7 @@ export function registerCreateHeatmap(server: McpServer): void {
       inputSchema: {
         id: z.string().optional().describe('Unique heatmap identifier, e.g. "orders-by-day-hour"'),
         title: z.string().describe('Heatmap title displayed above the visualization'),
-        query: z
+        esqlQuery: z
           .string()
           .describe(
             'ES|QL query that returns rows with x, y, and value columns. ' +
@@ -63,7 +63,7 @@ export function registerCreateHeatmap(server: McpServer): void {
       },
     },
     async (args) => {
-      const { title, query, xField, yField, valueField, colorRamp, timeField } = args;
+      const { title, esqlQuery, xField, yField, valueField, colorRamp, timeField } = args;
       const id = args.id || `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`;
 
       const client = getESClient();
@@ -71,7 +71,7 @@ export function registerCreateHeatmap(server: McpServer): void {
       let data: Record<string, unknown>[];
       try {
         const response = (await client.esql.query({
-          query,
+          query: esqlQuery,
           format: 'json',
         })) as unknown as ESQLResponse;
         data = columnarToRows(response);
@@ -99,7 +99,7 @@ export function registerCreateHeatmap(server: McpServer): void {
         id,
         title,
         chartType: 'heatmap',
-        esqlQuery: query,
+        esqlQuery,
         xField,
         yField,
         valueField,
