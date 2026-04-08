@@ -13,9 +13,7 @@ export function setChartPreview(preview: ChartPreviewData): void {
   lastPreview = preview;
 }
 
-/** Get and consume the last chart preview (returns null on subsequent calls). */
+/** Get the last chart preview. Kept until replaced by a new one so retries and reconnects still receive the data. */
 export function getLastChartPreview(): ChartPreviewData | null {
-  const preview = lastPreview;
-  lastPreview = null;
-  return preview;
+  return lastPreview;
 }
