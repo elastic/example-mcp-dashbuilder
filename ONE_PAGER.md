@@ -2,7 +2,7 @@
 
 ## What It Does
 
-elastic-dashbuilder is an MCP application that lets AI assistants build Kibana dashboards through natural language conversation. Users describe what they want in Cursor, and the AI explores their Elasticsearch data, creates visualizations, previews them interactively, and exports directly to Kibana.
+elastic-dashbuilder is an MCP application that lets AI assistants build Kibana dashboards through natural language conversation. Users describe what they want, and the AI explores their Elasticsearch data, creates visualizations, previews them interactively, and exports directly to Kibana.
 
 ```
 "Build me an ecommerce analytics dashboard with revenue metrics,
@@ -13,7 +13,7 @@ The AI then:
 
 1. Explores indices and field mappings via ES|QL
 2. Creates charts (bar, line, area, pie, metric, heatmap) with appropriate queries
-3. Renders a live, interactive dashboard preview inline in Cursor's chat
+3. Renders a live, interactive dashboard preview inline in the chat
 4. Exports to Kibana as real Lens visualizations with one command
 
 ## Capabilities
@@ -26,7 +26,7 @@ The AI then:
 
 **Kibana integration:** Export to Kibana as Lens visualizations | Import existing Kibana dashboards for AI-assisted editing | Preserves grid positions, custom colors, and time field mapping | Round-trip: import → modify → re-export
 
-**AI integration:** 13 MCP tools for the full workflow | Built-in dataviz best practices resource | Built-in ES|QL reference resource | Inline chart screenshots via Puppeteer | Interactive MCP App preview in Cursor's chat
+**AI integration:** MCP tools for the full workflow | Server-level instructions (workflow, tips, capabilities) sent to every MCP client | Built-in dataviz best practices resource | Built-in ES|QL reference resource | Interactive MCP App preview via ext-apps protocol
 
 ## Example Workflow
 
@@ -37,19 +37,19 @@ AI:  list_indices("kibana_sample_data_*")        -- discover data
      get_fields("kibana_sample_data_logs")        -- understand schema
      create_metric(                                -- KPI panel
        title: "Total Log Entries",
-       esqlQuery: "FROM kibana_sample_data_logs | STATS total = COUNT(*)",
+       query: "FROM kibana_sample_data_logs | STATS total = COUNT(*)",
        valueField: "total"
      )
      create_chart(                                 -- time series
        title: "Bytes Over Time", chartType: "line",
-       esqlQuery: "FROM kibana_sample_data_logs
+       query: "FROM kibana_sample_data_logs
          | STATS bytes = SUM(bytes) BY BUCKET(@timestamp, 1 hour)
          | SORT `BUCKET(@timestamp, 1 hour)`",
        xField: "BUCKET(@timestamp, 1 hour)", yFields: ["bytes"]
      )
      create_chart(                                 -- category comparison
        title: "Response Codes", chartType: "bar",
-       esqlQuery: "FROM kibana_sample_data_logs
+       query: "FROM kibana_sample_data_logs
          | STATS count = COUNT(*) BY response | SORT count DESC",
        xField: "response", yFields: ["count"]
      )
@@ -59,48 +59,50 @@ AI:  list_indices("kibana_sample_data_*")        -- discover data
 
 ## Technology Stack
 
-| Component           | Technology                               | Notes                                                        |
-| ------------------- | ---------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------- |
-| **Chart rendering** | `@elastic/charts` v67                    | Bar, line, area, pie, metric, heatmap with Borealis theme    |
-| **Grid layout**     | `kbn-grid-layout` (vendored from Kibana) | 48-column drag-and-drop system with collapsible sections     |
-| \*\*ES              | QL parsing\*\*                           | `@elastic/esql` v1.6                                         | AST-based index pattern extraction (replaces fragile regex) |
-| **UI components**   | `@elastic/eui` v114                      | Time picker, buttons, progress bars, icons                   |
-| **MCP protocol**    | `@modelcontextprotocol/sdk`              | 13 tools + 2 resources + MCP Apps inline preview             |
-| **MCP Apps**        | `@modelcontextprotocol/ext-apps`         | Single-file HTML bundle rendered in Cursor's chat            |
-| **ES client**       | `@elastic/elasticsearch` v9              | ES                                                           | QL queries, field_caps, index management                    |
-| **Screenshots**     | Puppeteer                                | Headless Chrome renders each chart to PNG for inline display |
-| **Build**           | Vite 6 + `vite-plugin-singlefile`        | Dev server with API proxy + single-file MCP App build        |
-| **Framework**       | React 18 + TypeScript strict             | RxJS for grid state, Emotion for styling                     |
+| Component              | Technology                               | Notes                                                               |
+| ---------------------- | ---------------------------------------- | ------------------------------------------------------------------- |
+| **MCP server**         | FastMCP                                  | Tools, resources, server instructions, ext-apps `_meta` passthrough |
+| **Chart rendering**    | `@elastic/charts` v67                    | Bar, line, area, pie, metric, heatmap with Borealis theme           |
+| **Grid layout**        | `kbn-grid-layout` (vendored from Kibana) | 48-column drag-and-drop system with collapsible sections            |
+| **ES&#124;QL parsing** | `@elastic/esql` v1.6                     | AST-based index pattern extraction                                  |
+| **UI components**      | `@elastic/eui` v114                      | Time picker, buttons, progress bars, icons                          |
+| **MCP Apps client**    | `@modelcontextprotocol/ext-apps`         | Preview app communicates with server via postMessage                |
+| **ES client**          | `@elastic/elasticsearch` v9              | ES&#124;QL queries, field_caps, index management                    |
+| **Build**              | Vite 6 + `vite-plugin-singlefile`        | Single-file MCP App build                                           |
+| **Framework**          | React 18 + TypeScript strict             | RxJS for grid state, Emotion for styling                            |
 
 ## Architecture
 
 ```
-Cursor (AI Assistant)
+MCP Host (Cursor, Claude Desktop, etc.)
   |  MCP Protocol (stdio)
   v
-MCP Server (Node.js)
-  |-- 13 Tools (query, chart, metric, heatmap, section, export, view...)
-  |-- 2 Resources (dataviz guidelines, ES|QL reference)
-  |-- Puppeteer (chart screenshots)
+MCP Server (FastMCP, Node.js)
+  |-- Tools (query, chart, metric, heatmap, section, export, view...)
+  |-- Resources (dataviz guidelines, ES|QL reference)
+  |-- App-only tools (dashboard config, ES|QL proxy, layout save, time field detection)
+  |-- Server instructions (workflow, tips, capabilities)
   |-- Dashboard store (multi-dashboard JSON persistence)
-  |-- Auto-starts Vite dev server as child process
   v
-Preview App (Vite + React)
+MCP App (single-file HTML, rendered in host iframe)
+  |-- ext-apps client SDK (postMessage ↔ host ↔ server)
   |-- Elastic Charts (6 chart types, Borealis theme)
   |-- kbn-grid-layout (drag, resize, sections)
-  |-- Dynamic queries via /api/esql proxy
+  |-- Dynamic queries via callServerTool("run_esql_query")
   |-- Time picker with field_caps detection + DSL filters
-  |-- Single-file build for MCP App embedding
   v
 Elasticsearch <--> Kibana
 ```
 
 **Key design decisions:**
 
-- Queries run dynamically
-- Time filtering uses DSL `filter` parameter on the `_query` API (not injected into ES|QL) -- clean export to Kibana
-- Time field detection via field_caps API with caching -- works with any index without configuration
-- MCP App is a single self-contained HTML file (~2.5MB, ~577KB gzipped) -- sandbox limitation prevents external script loading
+- Queries run dynamically — no static data stored
+- Time filtering uses DSL `filter` parameter on the `_query` API (not injected into ES|QL) — clean export to Kibana
+- Time field detection via field_caps API with caching — works with any index without configuration
+- Preview app communicates via MCP Apps protocol (postMessage) — no localhost server dependency
+- App-only tools (`visibility: ["app"]`) handle all UI↔server interaction (data fetching, layout persistence)
+- MCP App is a single self-contained HTML file (~2.5MB, ~577KB gzipped) — sandbox limitation prevents external script loading
+- Server instructions exposed via MCP `initialize` response — works with any MCP client, not just Cursor
 
 ## What's Needed for Marketplace
 
@@ -138,8 +140,11 @@ When an ES|QL query fails, panels show a basic error message. The preview should
 
 ### Nice to Have
 
-**9. Collaborative editing**
+**9. Session isolation**
+The MCP server stores dashboard state in memory per process. All chat sessions within one host window share the same state. Introducing session scoping or per-chat namespacing would allow parallel dashboard work.
+
+**10. Collaborative editing**
 Multiple users working on the same dashboard via shared MCP server state.
 
-**10. Template library**
+**11. Template library**
 Pre-built dashboard templates for common Elastic data sources (logs, APM, security, ecommerce).
