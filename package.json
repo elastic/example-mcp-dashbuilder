@@ -16,7 +16,7 @@
     "format:check": "prettier --check .",
     "test": "npm run test --workspace=server && npm run test --workspace=preview",
     "check": "npm run format:check && npm run lint && npm run typecheck",
-    "postinstall": "npm run build:mcp-app --workspace=preview",
+    "postinstall": "npm run build --workspace=preview",
     "prepare": "husky"
   },
   "devDependencies": {
