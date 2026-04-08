@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useEsqlQuery } from './useEsqlQuery';
@@ -23,6 +23,16 @@ function createWrapper(app: any) {
 }
 
 describe('useEsqlQuery', () => {
+  beforeEach(() => {
+    // advanceTimers: true auto-advances fake timers when promises are pending,
+    // allowing waitFor's internal polling to work alongside fake timers.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('returns empty data when query is undefined', () => {
     const app = createMockApp();
     const { result } = renderHook(() => useEsqlQuery(undefined, null), {
@@ -104,5 +114,34 @@ describe('useEsqlQuery', () => {
 
     expect(result.current.error).toContain('parse error');
     expect(result.current.data).toEqual([]);
+  });
+
+  it('discards stale results when query changes rapidly', async () => {
+    const app = createMockApp(
+      vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: JSON.stringify({ rows: [{ x: 2 }] }) }],
+      })
+    );
+
+    const { result, rerender } = renderHook(
+      ({ query }: { query: string }) => useEsqlQuery(query, null),
+      { wrapper: createWrapper(app), initialProps: { query: 'FROM logs-1' } }
+    );
+
+    // Change query before debounce fires — first query should be cancelled
+    await vi.advanceTimersByTimeAsync(50);
+    rerender({ query: 'FROM logs-2' });
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Only the second query should have been sent (first was debounced away)
+    expect(app.callServerTool).toHaveBeenCalledTimes(1);
+    expect(app.callServerTool).toHaveBeenCalledWith({
+      name: 'app_only_esql_query',
+      arguments: { query: 'FROM logs-2' },
+    });
+    expect(result.current.data).toEqual([{ x: 2 }]);
   });
 });

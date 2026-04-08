@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import type { TimeRange } from '../context/TimeRangeContext';
 import { useMcpApp } from '../context/McpAppContext';
 
+/** Debounce delay to avoid flooding ES during rapid time-range scrubbing. */
+const DEBOUNCE_MS = 150;
+
 interface UseEsqlQueryResult {
   data: Record<string, unknown>[];
   isLoading: boolean;
@@ -16,17 +19,23 @@ export function useEsqlQuery(
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const cancelledRef = useRef(false);
+
+  // Monotonic counter — only the latest request's results are applied.
+  // MCP callServerTool doesn't support AbortSignal, so the server-side
+  // query still runs to completion, but stale results are discarded.
+  const requestIdRef = useRef(0);
   const mcpApp = useMcpApp();
 
   useEffect(() => {
     if (!query) {
       setData([]);
       setIsLoading(false);
+      setError(null);
       return;
     }
 
-    cancelledRef.current = false;
+    // Bump counter immediately so any in-flight request becomes stale
+    const currentId = ++requestIdRef.current;
     setIsLoading(true);
     setError(null);
 
@@ -39,10 +48,13 @@ export function useEsqlQuery(
       args.timeField = timeField;
     }
 
-    mcpApp
-      .callServerTool({ name: 'app_only_esql_query', arguments: args })
-      .then((result) => {
-        if (!cancelledRef.current) {
+    // Debounce to coalesce rapid parameter changes (e.g. time range scrubbing)
+    const timer = setTimeout(() => {
+      mcpApp
+        .callServerTool({ name: 'app_only_esql_query', arguments: args })
+        .then((result) => {
+          if (requestIdRef.current !== currentId) return; // stale
+
           if (result.isError) {
             const errText = result.content?.find((c: { type: string }) => c.type === 'text') as
               | { text: string }
@@ -65,17 +77,16 @@ export function useEsqlQuery(
             }
             setIsLoading(false);
           }
-        }
-      })
-      .catch((err: unknown) => {
-        if (!cancelledRef.current) {
+        })
+        .catch((err: unknown) => {
+          if (requestIdRef.current !== currentId) return; // stale
           setError(err instanceof Error ? err.message : String(err));
           setIsLoading(false);
-        }
-      });
+        });
+    }, DEBOUNCE_MS);
 
     return () => {
-      cancelledRef.current = true;
+      clearTimeout(timer);
     };
   }, [query, timeRange, timeField, mcpApp]);
 
