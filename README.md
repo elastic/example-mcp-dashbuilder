@@ -1,19 +1,17 @@
 # elastic-dashbuilder
 
-An MCP (Model Context Protocol) app that lets AI assistants build Kibana dashboards using ES|QL and Elastic Charts. Create visualizations through natural language in Cursor, preview them live with Kibana's grid layout, and export directly to Kibana as real Lens dashboards.
+An MCP (Model Context Protocol) app that lets AI assistants build Kibana dashboards using ES|QL and Elastic Charts. Create visualizations through natural language, preview them live with Kibana's grid layout, and export directly to Kibana as real Lens dashboards.
 
 ## What it does
 
 ```
-You (in Cursor) → "Build me an ecommerce analytics dashboard"
+You (in an MCP client) → "Build me an ecommerce analytics dashboard"
     ↓
 AI explores your Elasticsearch data via ES|QL
     ↓
 Creates charts (bar, line, pie, metric, heatmap) with Elastic Charts
     ↓
-Live preview with Kibana's drag-and-drop grid layout
-    ↓
-Interactive dashboard rendered inline in Cursor's chat (MCP Apps)
+Interactive dashboard rendered inline in the chat (MCP Apps)
     ↓
 One-click export to Kibana as Lens visualizations
 ```
@@ -22,11 +20,9 @@ One-click export to Kibana as Lens visualizations
 
 - **Natural language dashboard creation** — describe what you want, the AI builds it
 - **ES|QL powered** — all queries use ES|QL for data retrieval
-- **Inline dashboard preview** — full interactive dashboard rendered directly in Cursor's chat via MCP Apps
-- **Browser preview** — live preview at `localhost:5173` with drag-and-drop
+- **Inline dashboard preview** — full interactive dashboard rendered directly in the chat via MCP Apps
 - **Kibana grid layout** — same 48-column drag-and-drop grid as Kibana dashboards
 - **Borealis theme** — matches Kibana's latest visual design
-- **Inline chart screenshots** — see rendered chart images directly in Cursor via Puppeteer
 - **Collapsible sections** — organize panels into groups
 - **Export to Kibana** — creates real Kibana dashboards with Lens visualizations
 - **Import from Kibana** — import existing ES|QL-based Kibana dashboards for AI-assisted editing
@@ -34,6 +30,7 @@ One-click export to Kibana as Lens visualizations
 - **Time picker** — filter data by time range with automatic time field detection
 - **Multiple dashboards** — create, switch between, and manage multiple dashboards
 - **Elastic Cloud support** — works with local Elasticsearch and Elastic Cloud (Cloud ID + API key)
+- **Server instructions** — workflow, tips, and capabilities exposed to every MCP client via the `initialize` response
 - **Dataviz best practices** — built-in guidelines for chart selection and dashboard composition
 - **ES|QL reference** — built-in language reference for correct query syntax
 
@@ -41,25 +38,28 @@ One-click export to Kibana as Lens visualizations
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Cursor (AI Assistant)                          │
+│  MCP Host (Cursor, Claude Desktop, etc.)        │
 │  ↕ MCP Protocol (stdio)                        │
 ├─────────────────────────────────────────────────┤
 │  MCP Server (TypeScript)                        │
 │  ├── Tools: query, chart, metric, heatmap, ...  │
-│  ├── MCP App: inline dashboard view             │
+│  ├── App-only tools: data fetch, layout, etc.   │
 │  ├── Resources: dataviz guidelines, ES|QL ref   │
-│  ├── Puppeteer: inline chart screenshots        │
+│  ├── Instructions: workflow, tips, capabilities  │
 │  └── Export: Kibana saved objects API           │
 ├─────────────────────────────────────────────────┤
-│  Preview App (Vite + React)                     │
+│  MCP App (single-file HTML, in host iframe)     │
+│  ├── ext-apps client SDK (postMessage ↔ server) │
 │  ├── Elastic Charts (bar, line, pie, etc.)      │
 │  ├── kbn-grid-layout (drag, resize, sections)   │
 │  ├── Borealis theme                             │
-│  └── Single-file build for MCP App embedding    │
+│  └── Data via callServerTool("run_esql_query")  │
 ├─────────────────────────────────────────────────┤
 │  Elasticsearch  ←→  Kibana                      │
 └─────────────────────────────────────────────────┘
 ```
+
+The MCP App communicates with the server entirely via the MCP Apps protocol (postMessage) — no localhost server dependency. App-only tools (`visibility: ["app"]`) handle all UI↔server interaction including data fetching, layout persistence, and time field detection.
 
 ## Prerequisites
 
@@ -76,7 +76,7 @@ One-click export to Kibana as Lens visualizations
 npm install
 ```
 
-This also auto-builds the MCP App (the inline dashboard preview for Cursor's chat).
+This also auto-builds the MCP App (the inline dashboard preview).
 
 ### 2. Configure Elasticsearch connection
 
@@ -140,11 +140,9 @@ No environment variables are needed if you ran `npm run setup` — credentials a
 
 Note: Claude Desktop requires an absolute path to the server entry point.
 
-### 4. Open the project in Cursor
+### 4. Open the project in your MCP client
 
-Open the `elastic-dashbuilder` folder in Cursor. The MCP server will auto-connect and start the preview server automatically. You should see it listed in Cursor Settings > MCP.
-
-The live preview is available at [http://localhost:5173](http://localhost:5173) for browser-based development.
+Open the `elastic-dashbuilder` folder in your MCP client. The MCP server will auto-connect. In Cursor, you should see it listed in Settings > MCP.
 
 ## Usage
 
@@ -188,9 +186,14 @@ The live preview is available at [http://localhost:5173](http://localhost:5173) 
 | `create_heatmap`        | Create heatmap visualizations                       |
 | `create_section`        | Create collapsible dashboard sections               |
 | `move_panel_to_section` | Assign panels to sections                           |
+| `remove_section`        | Remove a section                                    |
+| `remove_chart`          | Remove a chart                                      |
+| `set_dashboard_title`   | Set the dashboard title                             |
+| `get_dashboard`         | Get the active dashboard configuration              |
+| `clear_dashboard`       | Reset the active dashboard                          |
 | `export_to_kibana`      | Export to Kibana as Lens visualizations             |
 | `import_from_kibana`    | Import an existing Kibana dashboard (ES\|QL panels) |
-| `view_dashboard`        | Display the full dashboard inline in Cursor's chat  |
+| `view_dashboard`        | Display the full dashboard inline in the chat       |
 
 ### Available MCP resources
 
@@ -208,24 +211,23 @@ The live preview is available at [http://localhost:5173](http://localhost:5173) 
 | Area    | Volume over time               | Traffic over time                  |
 | Pie     | Part-of-whole (max 6 slices)   | Orders by status                   |
 | Metric  | Single KPI with optional trend | Total revenue with daily sparkline |
-| Heatmap | Patterns across 2 dimensions   | Orders by day of week x hour       |
+| Heatmap | Patterns across 2 dimensions   | Orders by day of week × hour       |
 
 ## Inline dashboard preview (MCP Apps)
 
-The `view_dashboard` tool renders the full interactive dashboard directly inside Cursor's chat using [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview). The entire preview app (React + Elastic Charts + grid layout) is bundled into a single HTML file and served as the MCP App resource — no iframe needed.
+The `view_dashboard` tool renders the full interactive dashboard directly inside the chat using [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview). The preview app is bundled into a single HTML file and served as an MCP App resource.
 
 **How it works:**
 
-1. `npm run build:mcp-app` builds the preview app into a single self-contained HTML file (~2.5MB, ~577KB gzipped) using `vite-plugin-singlefile`
+1. `npm run build --workspace=preview` builds the preview app into a single self-contained HTML file (~2.5MB, ~577KB gzipped) using `vite-plugin-singlefile`
 2. The MCP server reads this file and serves it as an MCP App resource with `mimeType: 'text/html;profile=mcp-app'`
-3. Cursor renders the HTML directly in a sandboxed environment inside the chat
-4. The app fetches `dashboard.json` from the Vite dev server via `fetch()` (enabled by `connectDomains` CSP)
-5. Charts render with the same Elastic Charts + Borealis theme as the browser preview
+3. The host renders the HTML in a sandboxed iframe
+4. The app communicates with the MCP server via the ext-apps client SDK (`callServerTool()` over postMessage)
+5. Charts render with Elastic Charts + Borealis theme
 
 **Requirements:**
 
 - Cursor v2.6+ (MCP Apps support) — also supported by Claude Desktop, Claude.ai, VS Code Copilot
-- The preview server starts automatically when the MCP server launches
 
 ## Export to Kibana
 
@@ -250,20 +252,20 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 │       ├── index.ts           # Server entry point
 │       ├── types.ts           # Shared types
 │       ├── tools/             # MCP tool implementations
-│       │   └── view-dashboard.ts  # MCP Apps inline preview
+│       │   ├── view-dashboard.ts  # MCP Apps inline preview + resources
+│       │   └── app-only-tools.ts  # App-only tools (visibility: ["app"])
 │       ├── utils/             # ES client, dashboard store, translators
-│       └── resources/         # Dataviz guidelines, ES|QL reference
-├── preview/                   # Preview App (Vite + React)
-│   ├── vite.config.ts         # Dev server config
-│   ├── vite.mcp-app.config.ts # Single-file build config for MCP Apps
+│       └── resources/         # Instructions, dataviz guidelines, ES|QL ref
+├── preview/                   # MCP App (React, built to single HTML file)
+│   ├── vite.mcp-app.config.ts # Single-file build config
 │   └── src/
 │       ├── App.tsx            # Main app with grid layout
 │       ├── components/        # ChartPanel, PanelChrome
 │       ├── grid-layout/       # kbn-grid-layout (from Kibana)
-│       ├── hooks/             # Dashboard config polling
+│       ├── hooks/             # ES|QL query hook
 │       └── theme.ts           # Borealis palette
 ├── .cursor/mcp.json           # Cursor MCP configuration
-├── .cursorrules               # AI assistant instructions
+├── .cursorrules               # Cursor-specific AI instructions
 ├── .github/workflows/ci.yml   # CI pipeline
 └── eslint.config.js           # Linting (no-explicit-any enforced)
 ```
@@ -272,27 +274,23 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 
 The MCP App sandbox does not allow loading external scripts, so the MCP App always uses the pre-built bundle.
 
-| What changed                                                                                  | What to do                                                        |
-| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Frontend code (`App.tsx`, `ChartPanel.tsx`, `PanelChrome.tsx`, `main.tsx`, grid-layout, etc.) | Rebuild: `cd preview && npm run build:mcp-app`                    |
-| Server/API code (`vite.config.ts` — ESQL proxy, field_caps, etc.)                             | Restart the MCP server in Cursor (auto-restarts Vite)             |
-| `dashboard.json` (new charts, layout changes)                                                 | Nothing — the MCP App polls this from the preview server every 2s |
-
-For frontend development, use the browser preview at `http://localhost:5173` which has HMR.
+| What changed                   | What to do                                   |
+| ------------------------------ | -------------------------------------------- |
+| Frontend code (`preview/src/`) | Rebuild: `npm run build --workspace=preview` |
+| Server code (`server/src/`)    | Restart the MCP server in your client        |
 
 ### Scripts
 
 ```bash
-npm run setup                  # Interactive setup wizard (ES credentials)
-npm run dev:preview            # Start preview app (Vite dev server)
-npm run build                  # Build both server and preview
-npm run test                   # Run all tests (server + preview)
-npm run lint                   # ESLint check
-npm run typecheck              # TypeScript check (both projects)
-npm run format                 # Format all files with Prettier
-npm run format:check           # Check formatting without writing
-npm run check                  # Run all checks (format + lint + typecheck)
-cd preview && npm run build:mcp-app  # Build single-file MCP App
+npm run setup                         # Interactive setup wizard (ES credentials)
+npm run build                         # Build both server and preview
+npm run test                          # Run all tests (server + preview)
+npm run lint                          # ESLint check
+npm run typecheck                     # TypeScript check (both projects)
+npm run format                        # Format all files with Prettier
+npm run format:check                  # Check formatting without writing
+npm run check                         # Run all checks (format + lint + typecheck)
+npm run build --workspace=preview     # Build single-file MCP App
 ```
 
 ### Testing
@@ -300,9 +298,9 @@ cd preview && npm run build:mcp-app  # Build single-file MCP App
 Tests use [Vitest](https://vitest.dev/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/).
 
 ```bash
-npm test                       # Run all tests
-npm run test --workspace=server   # Server tests only
-npm run test --workspace=preview  # Preview tests only
+npm test                              # Run all tests
+npm run test --workspace=server       # Server tests only
+npm run test --workspace=preview      # Preview tests only
 ```
 
 **Server tests** cover pure utility functions (ES|QL transforms, index pattern parsing, time field detection, slugify), the Lens forward/reverse translators, round-trip export-then-import fidelity, and dashboard translation.

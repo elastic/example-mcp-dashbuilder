@@ -59,17 +59,17 @@ AI:  list_indices("kibana_sample_data_*")        -- discover data
 
 ## Technology Stack
 
-| Component              | Technology                               | Notes                                                               |
-| ---------------------- | ---------------------------------------- | ------------------------------------------------------------------- |
-| **MCP server**         | FastMCP                                  | Tools, resources, server instructions, ext-apps `_meta` passthrough |
-| **Chart rendering**    | `@elastic/charts` v67                    | Bar, line, area, pie, metric, heatmap with Borealis theme           |
-| **Grid layout**        | `kbn-grid-layout` (vendored from Kibana) | 48-column drag-and-drop system with collapsible sections            |
-| **ES&#124;QL parsing** | `@elastic/esql` v1.6                     | AST-based index pattern extraction                                  |
-| **UI components**      | `@elastic/eui` v114                      | Time picker, buttons, progress bars, icons                          |
-| **MCP Apps client**    | `@modelcontextprotocol/ext-apps`         | Preview app communicates with server via postMessage                |
-| **ES client**          | `@elastic/elasticsearch` v9              | ES&#124;QL queries, field_caps, index management                    |
-| **Build**              | Vite 6 + `vite-plugin-singlefile`        | Single-file MCP App build                                           |
-| **Framework**          | React 18 + TypeScript strict             | RxJS for grid state, Emotion for styling                            |
+| Component              | Technology                               | Notes                                                     |
+| ---------------------- | ---------------------------------------- | --------------------------------------------------------- |
+| **MCP server**         | `@modelcontextprotocol/sdk`              | Tools, resources, server instructions via MCP protocol    |
+| **Chart rendering**    | `@elastic/charts` v67                    | Bar, line, area, pie, metric, heatmap with Borealis theme |
+| **Grid layout**        | `kbn-grid-layout` (vendored from Kibana) | 48-column drag-and-drop system with collapsible sections  |
+| **ES&#124;QL parsing** | `@elastic/esql` v1.6                     | AST-based index pattern extraction                        |
+| **UI components**      | `@elastic/eui` v114                      | Time picker, buttons, progress bars, icons                |
+| **MCP Apps client**    | `@modelcontextprotocol/ext-apps`         | Preview app communicates with server via postMessage      |
+| **ES client**          | `@elastic/elasticsearch` v9              | ES&#124;QL queries, field_caps, index management          |
+| **Build**              | Vite 6 + `vite-plugin-singlefile`        | Single-file MCP App build                                 |
+| **Framework**          | React 18 + TypeScript strict             | RxJS for grid state, Emotion for styling                  |
 
 ## Architecture
 
@@ -77,7 +77,7 @@ AI:  list_indices("kibana_sample_data_*")        -- discover data
 MCP Host (Cursor, Claude Desktop, etc.)
   |  MCP Protocol (stdio)
   v
-MCP Server (FastMCP, Node.js)
+MCP Server (Node.js, @modelcontextprotocol/sdk)
   |-- Tools (query, chart, metric, heatmap, section, export, view...)
   |-- Resources (dataviz guidelines, ES|QL reference)
   |-- App-only tools (dashboard config, ES|QL proxy, layout save, time field detection)
