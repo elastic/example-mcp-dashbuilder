@@ -100,6 +100,5 @@ registerAppOnlyTools(server);
 process.on('SIGINT', () => process.exit(0));
 process.on('SIGTERM', () => process.exit(0));
 
-// Connect via stdio (Cursor spawns this process)
 const transport = new StdioServerTransport();
 await server.connect(transport);

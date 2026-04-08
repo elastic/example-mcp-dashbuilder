@@ -3,9 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "build:mcp-app": "vite build --config vite.mcp-app.config.ts",
+    "build": "vite build --config vite.mcp-app.config.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
