@@ -108,8 +108,7 @@ export function registerImportFromKibana(server: McpServer): void {
         };
       };
 
-      const dashboardTitle =
-        String(args.title) || savedObject.attributes.title || 'Imported Dashboard';
+      const dashboardTitle = args.title || savedObject.attributes.title || 'Imported Dashboard';
 
       // Parse panels
       let panels: KibanaPanel[];

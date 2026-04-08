@@ -90,12 +90,12 @@ function Root() {
     // so its presence tells us which mode to render.
     mcpApp.ontoolresult = () => {
       mcpApp
-        .callServerTool({ name: 'get_chart_preview', arguments: {} })
+        .callServerTool({ name: 'app_only_get_chart_preview', arguments: {} })
         .then((r) => {
           if (r.isError) {
             // No chart preview — render full dashboard
             setViewMode('dashboard');
-            return mcpApp.callServerTool({ name: 'get_dashboard_config', arguments: {} });
+            return mcpApp.callServerTool({ name: 'app_only_get_dashboard_config', arguments: {} });
           }
           const data = parseToolResult(r) as ChartPreviewData | null;
           if (data?.chart) {
@@ -103,7 +103,7 @@ function Root() {
             setViewMode('chart-preview');
           } else {
             setViewMode('dashboard');
-            return mcpApp.callServerTool({ name: 'get_dashboard_config', arguments: {} });
+            return mcpApp.callServerTool({ name: 'app_only_get_dashboard_config', arguments: {} });
           }
           return undefined;
         })

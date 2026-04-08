@@ -20,7 +20,7 @@ export function registerAppOnlyTools(server: McpServer): void {
   // and whenever it needs to refresh (e.g. after the model creates a chart).
   registerAppOnlyTool(
     server,
-    'get_dashboard_config',
+    'app_only_get_dashboard_config',
     {
       title: 'Get Dashboard Config',
       description:
@@ -46,7 +46,7 @@ export function registerAppOnlyTools(server: McpServer): void {
   // Replaces the Vite /api/esql proxy endpoint.
   registerAppOnlyTool(
     server,
-    'run_esql_query',
+    'app_only_esql_query',
     {
       title: 'Run ES|QL Query (App)',
       description:
@@ -112,7 +112,7 @@ export function registerAppOnlyTools(server: McpServer): void {
   // Replaces the Vite /api/save-layout endpoint.
   registerAppOnlyTool(
     server,
-    'save_panel_layout',
+    'app_only_save_panel_layout',
     {
       title: 'Save Panel Layout',
       description: 'Persist grid layout changes from drag/resize in the dashboard.',
@@ -142,7 +142,7 @@ export function registerAppOnlyTools(server: McpServer): void {
   // Used by the time picker to know which field to filter on.
   registerAppOnlyTool(
     server,
-    'detect_time_field',
+    'app_only_detect_time_field',
     {
       title: 'Detect Time Field',
       description: 'Detect the time field for an index pattern via field_caps API.',
@@ -172,12 +172,12 @@ export function registerAppOnlyTools(server: McpServer): void {
     }
   );
 
-  // ── get_chart_preview ─────────────────────────────────────────────────
+  // ── app_only_get_chart_preview ─────────────────────────────────────────────────
   // Returns the last chart preview data (chart config + pre-fetched data).
   // Called by the MCP App after create_chart/metric/heatmap renders the iframe.
   registerAppOnlyTool(
     server,
-    'get_chart_preview',
+    'app_only_get_chart_preview',
     {
       title: 'Get Chart Preview',
       description:

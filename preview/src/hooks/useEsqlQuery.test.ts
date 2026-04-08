@@ -33,7 +33,7 @@ describe('useEsqlQuery', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('calls run_esql_query tool and returns rows', async () => {
+  it('calls app_only_esql_query tool and returns rows', async () => {
     const rows = [{ host: 'a', count: 10 }];
     const app = createMockApp(
       vi.fn().mockResolvedValue({
@@ -60,7 +60,7 @@ describe('useEsqlQuery', () => {
     expect(result.current.data).toEqual(rows);
     expect(result.current.error).toBeNull();
     expect(app.callServerTool).toHaveBeenCalledWith({
-      name: 'run_esql_query',
+      name: 'app_only_esql_query',
       arguments: { query: 'FROM logs | STATS c = COUNT(*) BY host' },
     });
   });
@@ -81,7 +81,7 @@ describe('useEsqlQuery', () => {
     });
 
     expect(app.callServerTool).toHaveBeenCalledWith({
-      name: 'run_esql_query',
+      name: 'app_only_esql_query',
       arguments: { query: 'FROM logs', start: 'now-15m', end: 'now', timeField: 'order_date' },
     });
   });
