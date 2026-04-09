@@ -13,94 +13,15 @@ import { DashboardPanel } from './components/DashboardPanel';
 import { ChartPanel } from './components/ChartPanel';
 import type { PanelConfig, SectionConfig, DashboardConfig } from './types';
 import type { DurationRange } from './constants';
-import { ALL_DATA_SENTINEL, COMMONLY_USED_RANGES, GRID_SETTINGS, DEFAULT_SIZES } from './constants';
+import { ALL_DATA_SENTINEL, COMMONLY_USED_RANGES, GRID_SETTINGS } from './constants';
 import { TimeRangeProvider, useTimeRange } from './context/TimeRangeContext';
 import { useMcpApp } from './context/McpAppContext';
 import { useEsqlQuery } from './hooks/useEsqlQuery';
+import { buildAutoGridLayout } from './utils/auto_layout';
 
 interface OnTimeChangeProps extends DurationRange {
   isInvalid: boolean;
   isQuickSelection: boolean;
-}
-
-function autoPlacePanels(
-  charts: PanelConfig[],
-  startRow: number = 0,
-  columnCount: number = GRID_SETTINGS.columnCount
-): { panels: Record<string, GridPanelData>; nextRow: number } {
-  const panels: Record<string, GridPanelData> = {};
-  let nextRow = startRow;
-  let colOffset = 0;
-  let maxHeightInRow = 0;
-
-  for (const chart of charts) {
-    const size = DEFAULT_SIZES[chart.chartType] || DEFAULT_SIZES.bar;
-    if (colOffset + size.w > columnCount) {
-      nextRow += maxHeightInRow;
-      colOffset = 0;
-      maxHeightInRow = 0;
-    }
-    panels[chart.id] = {
-      id: chart.id,
-      column: colOffset,
-      row: nextRow - startRow,
-      width: size.w,
-      height: size.h,
-    };
-    colOffset += size.w;
-    maxHeightInRow = Math.max(maxHeightInRow, size.h);
-    if (colOffset >= columnCount) {
-      nextRow += maxHeightInRow;
-      colOffset = 0;
-      maxHeightInRow = 0;
-    }
-  }
-  if (colOffset > 0) {
-    nextRow += maxHeightInRow;
-  }
-
-  return { panels, nextRow };
-}
-
-function buildAutoGridLayout(charts: PanelConfig[], sections: SectionConfig[]): GridLayoutData {
-  const layout: GridLayoutData = {};
-  const chartMap = new Map(charts.map((c) => [c.id, c]));
-
-  const assignedPanelIds = new Set<string>();
-  for (const section of sections) {
-    for (const panelId of section.panelIds) {
-      assignedPanelIds.add(panelId);
-    }
-  }
-
-  const unassignedCharts = charts.filter((c) => !assignedPanelIds.has(c.id));
-  const { panels: topLevelPanels, nextRow: afterTopLevel } = autoPlacePanels(unassignedCharts, 0);
-
-  for (const [id, panel] of Object.entries(topLevelPanels)) {
-    layout[id] = { ...panel, type: 'panel' as const };
-  }
-
-  let sectionRow = afterTopLevel;
-  for (const section of sections) {
-    const sectionCharts = section.panelIds
-      .map((id) => chartMap.get(id))
-      .filter((c): c is PanelConfig => c !== undefined);
-
-    const { panels: sectionPanels } = autoPlacePanels(sectionCharts, 0);
-
-    layout[section.id] = {
-      type: 'section' as const,
-      id: section.id,
-      row: sectionRow,
-      title: section.title,
-      isCollapsed: section.collapsed,
-      panels: sectionPanels,
-    };
-
-    sectionRow++;
-  }
-
-  return layout;
 }
 
 function buildGridLayout(

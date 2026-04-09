@@ -9,6 +9,7 @@ const THREE_QUARTER_WIDTH = 36;
 const QUARTER_WIDTH = 12;
 const DEFAULT_HEIGHT = 15;
 const METRIC_HEIGHT = 10;
+const GRID_COLUMN_COUNT = 48;
 
 const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
   bar: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
@@ -24,6 +25,11 @@ interface SavedDashboardPanel {
   type: string;
   gridData: { x: number; y: number; w: number; h: number; i: string; sectionId?: string };
   embeddableConfig: Record<string, unknown>;
+}
+
+interface RowPanel {
+  chart: PanelConfig;
+  height: number;
 }
 
 function buildSavedPanel(
@@ -47,6 +53,44 @@ function buildSavedPanel(
   };
 }
 
+function buildBalancedRowWidths(panelCount: number, columnCount: number): number[] {
+  const baseWidth = Math.floor(columnCount / panelCount);
+  const remainder = columnCount % panelCount;
+
+  return Array.from({ length: panelCount }, (_, index) => baseWidth + (index < remainder ? 1 : 0));
+}
+
+function flushRow(
+  rowPanels: RowPanel[],
+  nextRow: number,
+  panels: SavedDashboardPanel[],
+  sectionId: string | undefined,
+  ctxFn?: (chart: PanelConfig) => TimeFieldContext | undefined
+): number {
+  if (rowPanels.length === 0) {
+    return 0;
+  }
+
+  const widths = buildBalancedRowWidths(rowPanels.length, GRID_COLUMN_COUNT);
+  let column = 0;
+  let maxHeightInRow = 0;
+
+  for (const [index, rowPanel] of rowPanels.entries()) {
+    panels.push(
+      buildSavedPanel(
+        rowPanel.chart,
+        { x: column, y: nextRow, w: widths[index], h: rowPanel.height },
+        sectionId,
+        ctxFn?.(rowPanel.chart)
+      )
+    );
+    column += widths[index];
+    maxHeightInRow = Math.max(maxHeightInRow, rowPanel.height);
+  }
+
+  return maxHeightInRow;
+}
+
 /**
  * Auto-place panels in a flowing layout (fallback when no grid positions stored).
  */
@@ -58,33 +102,33 @@ function autoPlacePanels(
 ): { panels: SavedDashboardPanel[]; nextRow: number } {
   const panels: SavedDashboardPanel[] = [];
   let nextRow = startRow;
-  let colOffset = 0;
-  let maxHeightInRow = 0;
+  let rowPanels: RowPanel[] = [];
+  let widthInRow = 0;
+
+  const commitRow = () => {
+    const maxHeightInRow = flushRow(rowPanels, nextRow, panels, sectionId, ctxFn);
+    if (maxHeightInRow > 0) {
+      nextRow += maxHeightInRow;
+    }
+    rowPanels = [];
+    widthInRow = 0;
+  };
 
   for (const chart of charts) {
     const size = DEFAULT_SIZES[chart.chartType] || DEFAULT_SIZES.bar;
-    if (colOffset + size.w > 48) {
-      nextRow += maxHeightInRow;
-      colOffset = 0;
-      maxHeightInRow = 0;
+    if (rowPanels.length > 0 && widthInRow + size.w > GRID_COLUMN_COUNT) {
+      commitRow();
     }
-    panels.push(
-      buildSavedPanel(
-        chart,
-        { x: colOffset, y: nextRow, w: size.w, h: size.h },
-        sectionId,
-        ctxFn?.(chart)
-      )
-    );
-    colOffset += size.w;
-    maxHeightInRow = Math.max(maxHeightInRow, size.h);
-    if (colOffset >= 48) {
-      nextRow += maxHeightInRow;
-      colOffset = 0;
-      maxHeightInRow = 0;
+
+    rowPanels.push({ chart, height: size.h });
+    widthInRow += size.w;
+
+    if (widthInRow >= GRID_COLUMN_COUNT) {
+      commitRow();
     }
   }
-  if (colOffset > 0) nextRow += maxHeightInRow;
+
+  commitRow();
   return { panels, nextRow };
 }
 
