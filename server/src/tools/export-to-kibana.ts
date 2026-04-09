@@ -3,7 +3,12 @@ import { z } from 'zod';
 import { getDashboard } from '../utils/dashboard-store.js';
 import { translateDashboardToSavedObject } from '../utils/dashboard-translator.js';
 import { registerTool } from '../utils/register-tool.js';
-import { KIBANA_URL, getKibanaAuthHeader, getKibanaBasePath } from '../utils/kibana-client.js';
+import {
+  KIBANA_URL,
+  getKibanaAuthHeader,
+  getKibanaBasePath,
+  kibanaFetch,
+} from '../utils/kibana-client.js';
 import { parseIndexPattern } from '../utils/esql-parser.js';
 import { detectTimeField } from '../utils/time-field.js';
 
@@ -76,13 +81,13 @@ export function registerExportToKibana(server: McpServer): void {
       // Translate to Kibana saved object format
       const { attributes, references } = translateDashboardToSavedObject(dashboard, timeFieldMap);
 
-      const basePath = await getKibanaBasePath();
-
       // Create dashboard via saved_objects API
       // TODO: Use the new Dashboard API instead
+      const basePath = await getKibanaBasePath();
+
       let response: Response;
       try {
-        response = await fetch(`${KIBANA_URL}${basePath}/api/saved_objects/dashboard`, {
+        response = await kibanaFetch(`${KIBANA_URL}${basePath}/api/saved_objects/dashboard`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -12,7 +12,6 @@ import type { DashboardConfig, PanelConfig, SectionConfig } from '../types.js';
 import { PROJECT_ROOT } from './config.js';
 
 const DASHBOARDS_DIR = resolve(PROJECT_ROOT, 'preview', 'public', 'dashboards');
-const ACTIVE_PATH = resolve(PROJECT_ROOT, 'preview', 'public', 'dashboard.json');
 // Track which dashboard is active
 const ACTIVE_ID_PATH = resolve(DASHBOARDS_DIR, '.active');
 
@@ -83,7 +82,6 @@ function writeDashboard(config: DashboardConfig): void {
   const id = getActiveDashboardId();
   const json = JSON.stringify(config, null, 2);
   atomicWriteSync(getDashboardPath(id), json);
-  atomicWriteSync(ACTIVE_PATH, json);
 }
 
 // ── Multi-dashboard management ──
@@ -133,8 +131,6 @@ export function switchDashboard(id: string): DashboardConfig {
   }
   setActiveDashboardId(id);
   const config = JSON.parse(readFileSync(path, 'utf-8'));
-  // Update the active path for the preview app
-  writeFileSync(ACTIVE_PATH, JSON.stringify(config, null, 2));
   return config;
 }
 
@@ -210,6 +206,13 @@ export function addSection(section: SectionConfig): DashboardConfig {
 export function removeSection(sectionId: string): DashboardConfig {
   const dashboard = readDashboard();
   dashboard.sections = dashboard.sections.filter((s) => s.id !== sectionId);
+  writeDashboard(dashboard);
+  return dashboard;
+}
+
+export function saveDashboardLayout(gridLayout: DashboardConfig['gridLayout']): DashboardConfig {
+  const dashboard = readDashboard();
+  dashboard.gridLayout = gridLayout;
   writeDashboard(dashboard);
   return dashboard;
 }

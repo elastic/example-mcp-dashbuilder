@@ -4,14 +4,11 @@ import { GridLayout } from './grid-layout';
 import type { GridLayoutData } from './grid-layout';
 import type { GridPanelData } from './grid-layout';
 import { DashboardPanel } from './components/DashboardPanel';
-import { ChartPanel } from './components/ChartPanel';
-import { useDashboardConfig } from './hooks/useDashboardConfig';
-import type { PanelConfig, SectionConfig } from './types';
+import type { PanelConfig, SectionConfig, DashboardConfig } from './types';
 import type { DurationRange } from './constants';
 import { ALL_DATA_SENTINEL, COMMONLY_USED_RANGES, GRID_SETTINGS, DEFAULT_SIZES } from './constants';
 import { TimeRangeProvider, useTimeRange } from './context/TimeRangeContext';
-import { useEsqlQuery } from './hooks/useEsqlQuery';
-import { BASE_URL } from './utils/base-url';
+import { useMcpApp } from './context/McpAppContext';
 
 interface OnTimeChangeProps extends DurationRange {
   isInvalid: boolean;
@@ -104,18 +101,19 @@ function getDashboardKey(charts: PanelConfig[], sections: SectionConfig[]): stri
   return `${chartsKey}|${sectionsKey}`;
 }
 
-export function App() {
+export function App({ initialDashboard }: { initialDashboard: DashboardConfig }) {
   return (
     <TimeRangeProvider>
-      <AppInner />
+      <AppInner initialDashboard={initialDashboard} />
     </TimeRangeProvider>
   );
 }
 
-function AppInner() {
-  const dashboard = useDashboardConfig();
+function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
+  const dashboard = initialDashboard;
   const hasCharts = dashboard.charts.length > 0;
   const { setTimeRange } = useTimeRange();
+  const mcpApp = useMcpApp();
 
   const [isAllData, setIsAllData] = useState(true);
   const [start, setStart] = useState('now-15m');
@@ -136,9 +134,6 @@ function AppInner() {
     [setTimeRange]
   );
 
-  const params = new URLSearchParams(window.location.search);
-  const renderChartId = params.get('render');
-
   const chartMap = useMemo(() => {
     const map: Record<string, PanelConfig> = {};
     for (const chart of dashboard.charts) {
@@ -157,13 +152,17 @@ function AppInner() {
     layoutRef.current = buildGridLayout(dashboard.charts, sections);
   }
 
-  const handleLayoutChange = useCallback((newLayout: GridLayoutData) => {
-    fetch(`${BASE_URL}/api/save-layout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newLayout),
-    }).catch((err) => console.error('[save-layout]', err));
-  }, []);
+  const handleLayoutChange = useCallback(
+    (newLayout: GridLayoutData) => {
+      mcpApp
+        .callServerTool({
+          name: 'app_only_save_panel_layout',
+          arguments: { layout: newLayout },
+        })
+        .catch((err: unknown) => console.error('[save-layout]', err));
+    },
+    [mcpApp]
+  );
 
   const renderPanelContents = useCallback(
     (panelId: string) => {
@@ -173,18 +172,6 @@ function AppInner() {
     },
     [chartMap]
   );
-
-  if (renderChartId) {
-    const chart = dashboard.charts.find((c) => c.id === renderChartId);
-    if (!chart) {
-      return (
-        <div id="render-ready" data-status="not-found">
-          Chart not found
-        </div>
-      );
-    }
-    return <RenderSingleChart config={chart} />;
-  }
 
   return (
     <div
@@ -249,53 +236,6 @@ function AppInner() {
           </p>
         </div>
       )}
-    </div>
-  );
-}
-
-function RenderSingleChart({ config }: { config: PanelConfig }) {
-  const { timeRange } = useTimeRange();
-  const { data, isLoading } = useEsqlQuery(config.esqlQuery, timeRange, config.timeField);
-
-  // Fetch trend data for metrics (same logic as DashboardPanel)
-  const trendQuery = config.chartType === 'metric' ? config.trendEsqlQuery : undefined;
-  const { data: trendData, isLoading: trendLoading } = useEsqlQuery(
-    trendQuery,
-    timeRange,
-    config.timeField
-  );
-
-  const liveConfig = useMemo(() => {
-    const base = { ...config, data };
-    if (config.chartType === 'metric' && trendData.length > 0) {
-      return {
-        ...base,
-        trend: {
-          data: trendData.map((row) => ({
-            x: new Date(row[config.trendXField!] as string).getTime(),
-            y: Number(row[config.trendYField!]) || 0,
-          })),
-          shape: config.trendShape || 'area',
-        },
-      };
-    }
-    return base;
-  }, [config, data, trendData]);
-
-  const ready = !isLoading && !trendLoading;
-
-  return (
-    <div
-      id="render-ready"
-      data-status={ready ? 'ok' : 'loading'}
-      style={{
-        width: 600,
-        height: config.chartType === 'metric' ? 200 : 350,
-        padding: 16,
-        background: '#fff',
-      }}
-    >
-      <ChartPanel config={liveConfig} />
     </div>
   );
 }

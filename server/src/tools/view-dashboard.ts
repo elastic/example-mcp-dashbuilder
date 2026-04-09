@@ -6,9 +6,9 @@ import {
   RESOURCE_MIME_TYPE,
 } from '@modelcontextprotocol/ext-apps/server';
 import { getDashboard } from '../utils/dashboard-store.js';
-import { PREVIEW_URL, MCP_APP_HTML_PATH } from '../utils/config.js';
+import { MCP_APP_HTML_PATH } from '../utils/config.js';
 
-const RESOURCE_URI = 'ui://elastic-dashbuilder/dashboard.html';
+import { DASHBOARD_RESOURCE_URI, CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
 
 function loadMcpAppHtml(): string {
   try {
@@ -22,36 +22,42 @@ function loadMcpAppHtml(): string {
 }
 
 export function registerViewDashboard(server: McpServer): void {
+  // Shared HTML bundle used by both dashboard and chart preview
+  const loadHtml = () => ({
+    contents: [
+      {
+        uri: DASHBOARD_RESOURCE_URI,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: loadMcpAppHtml(),
+      },
+    ],
+  });
+
   registerAppResource(
     server,
     'Dashboard Preview',
-    RESOURCE_URI,
+    DASHBOARD_RESOURCE_URI,
     {
       description:
         'Interactive dashboard preview rendered with Elastic Charts and Kibana grid layout.',
-      _meta: {
-        ui: {
-          csp: {
-            connectDomains: [PREVIEW_URL],
-            resourceDomains: [PREVIEW_URL],
-          },
-        },
-      },
+    },
+    async () => loadHtml()
+  );
+
+  // Chart preview shares the same HTML bundle — the app detects mode from tool result text
+  registerAppResource(
+    server,
+    'Chart Preview',
+    CHART_PREVIEW_RESOURCE_URI,
+    {
+      description: 'Single chart preview rendered with Elastic Charts.',
     },
     async () => ({
       contents: [
         {
-          uri: RESOURCE_URI,
+          uri: CHART_PREVIEW_RESOURCE_URI,
           mimeType: RESOURCE_MIME_TYPE,
           text: loadMcpAppHtml(),
-          _meta: {
-            ui: {
-              csp: {
-                connectDomains: [PREVIEW_URL],
-                resourceDomains: [PREVIEW_URL],
-              },
-            },
-          },
         },
       ],
     })
@@ -67,7 +73,7 @@ export function registerViewDashboard(server: McpServer): void {
         'Shows all charts rendered with Elastic Charts in the Kibana grid layout. ' +
         'The preview is interactive — you can see tooltips and hover states.',
       _meta: {
-        ui: { resourceUri: RESOURCE_URI },
+        ui: { resourceUri: DASHBOARD_RESOURCE_URI },
       },
     },
     async () => {
@@ -81,8 +87,7 @@ export function registerViewDashboard(server: McpServer): void {
             type: 'text' as const,
             text:
               `Dashboard "${dashboard.title}" — ${chartCount} chart(s)` +
-              (sectionCount > 0 ? `, ${sectionCount} section(s)` : '') +
-              `\nPreview: ${PREVIEW_URL}`,
+              (sectionCount > 0 ? `, ${sectionCount} section(s)` : ''),
           },
         ],
       };

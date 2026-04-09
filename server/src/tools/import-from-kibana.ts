@@ -1,6 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { createDashboard, addChart, addSection, slugify } from '../utils/dashboard-store.js';
+import {
+  createDashboard,
+  addChart,
+  addSection,
+  saveDashboardLayout,
+  slugify,
+} from '../utils/dashboard-store.js';
 import { translateLensToPanel } from '../utils/lens-reverse-translator.js';
 import { registerTool } from '../utils/register-tool.js';
 import {
@@ -8,9 +14,9 @@ import {
   getKibanaAuthHeader,
   getKibanaBasePath,
   parseDashboardId,
+  kibanaFetch,
 } from '../utils/kibana-client.js';
 import type { SectionConfig } from '../types.js';
-import { PREVIEW_URL } from '../utils/config.js';
 
 interface KibanaPanel {
   panelIndex: string;
@@ -70,7 +76,7 @@ export function registerImportFromKibana(server: McpServer): void {
       // Fetch the dashboard from Kibana
       let response: Response;
       try {
-        response = await fetch(`${KIBANA_URL}${basePath}/api/saved_objects/dashboard/${id}`, {
+        response = await kibanaFetch(`${KIBANA_URL}${basePath}/api/saved_objects/dashboard/${id}`, {
           headers: {
             Authorization: authHeader,
             'kbn-xsrf': 'true',
@@ -102,8 +108,7 @@ export function registerImportFromKibana(server: McpServer): void {
         };
       };
 
-      const dashboardTitle =
-        String(args.title) || savedObject.attributes.title || 'Imported Dashboard';
+      const dashboardTitle = args.title || savedObject.attributes.title || 'Imported Dashboard';
 
       // Parse panels
       let panels: KibanaPanel[];
@@ -162,6 +167,11 @@ export function registerImportFromKibana(server: McpServer): void {
         };
       }
 
+      // Save preserved grid positions
+      if (Object.keys(gridLayout).length > 0) {
+        saveDashboardLayout(gridLayout);
+      }
+
       // Import sections
       const kibanaSections = savedObject.attributes.sections || [];
       for (const section of kibanaSections) {
@@ -190,7 +200,7 @@ export function registerImportFromKibana(server: McpServer): void {
         (skipped.length > 0
           ? `\n\nSkipped: ${skipped.length}\n` + skipped.map((p) => `  - ${p}`).join('\n')
           : '') +
-        `\n\nPreview: ${PREVIEW_URL}`;
+        `\n`;
 
       return { content: [{ type: 'text', text: statusText }] };
     }

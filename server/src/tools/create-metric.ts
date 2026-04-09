@@ -2,14 +2,14 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
 import { columnarToRows, validateFields } from '../utils/esql-transform.js';
-import { addChart } from '../utils/dashboard-store.js';
-import { renderChartToImage } from '../utils/chart-renderer.js';
-import { registerTool } from '../utils/register-tool.js';
+import { addChart, slugify } from '../utils/dashboard-store.js';
+import { registerAppOnlyTool } from '../utils/register-tool.js';
+import { setChartPreview } from '../utils/chart-preview-store.js';
 import type { MetricConfig, ESQLResponse } from '../types.js';
-import { PREVIEW_URL } from '../utils/config.js';
+import { CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
 
 export function registerCreateMetric(server: McpServer): void {
-  registerTool(
+  registerAppOnlyTool(
     server,
     'create_metric',
     {
@@ -20,9 +20,9 @@ export function registerCreateMetric(server: McpServer): void {
         'Always add a subtitle for context (time range, scope). Use $ prefix for revenue, % suffix for rates. ' +
         'Add a trend sparkline when showing a value that changes over time. ' +
         'Read the dataviz-guidelines resource for best practices. ' +
-        'Returns a preview image and updates the live preview app.',
+        'Shows an inline chart preview after creation.',
       inputSchema: {
-        id: z.string().describe('Unique metric identifier, e.g. "total-revenue"'),
+        id: z.string().optional().describe('Unique metric identifier, e.g. "total-revenue"'),
         title: z.string().describe('Metric title, e.g. "Total Revenue"'),
         subtitle: z.string().optional().describe('Optional subtitle, e.g. "Last 7 days"'),
         color: z
@@ -40,7 +40,9 @@ export function registerCreateMetric(server: McpServer): void {
           ),
         valueField: z
           .string()
-          .describe('Column name from the query result to use as the metric value, e.g. "total"'),
+          .describe(
+            'Column name from the query result to display as the metric number, e.g. "total"'
+          ),
         valuePrefix: z.string().optional().describe('Text before the value, e.g. "$" or "USD "'),
         valueSuffix: z.string().optional().describe('Text after the value, e.g. "%" or " orders"'),
         trendEsqlQuery: z
@@ -53,7 +55,9 @@ export function registerCreateMetric(server: McpServer): void {
         trendXField: z
           .string()
           .optional()
-          .describe('Column name for the trend x-axis (time field), e.g. "order_date"'),
+          .describe(
+            'Column name for the trend x-axis (time field), e.g. "BUCKET(order_date, 1 day)"'
+          ),
         trendYField: z
           .string()
           .optional()
@@ -71,10 +75,12 @@ export function registerCreateMetric(server: McpServer): void {
               'Set this when the index has multiple date fields.'
           ),
       },
+      _meta: {
+        ui: { resourceUri: CHART_PREVIEW_RESOURCE_URI },
+      },
     },
     async (args) => {
       const {
-        id,
         title,
         subtitle,
         color,
@@ -87,6 +93,7 @@ export function registerCreateMetric(server: McpServer): void {
         trendYField,
         timeField,
       } = args;
+      const id = args.id || `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`;
       const trendShape = args.trendShape || 'area';
 
       const client = getESClient();
@@ -119,7 +126,7 @@ export function registerCreateMetric(server: McpServer): void {
             content: [
               {
                 type: 'text',
-                text: `Field "${valueField}" is not a number. Got: ${rows[0][valueField]}`,
+                text: `Column "${valueField}" is not a number. Got: ${rows[0][valueField]}`,
               },
             ],
             isError: true,
@@ -134,18 +141,17 @@ export function registerCreateMetric(server: McpServer): void {
       }
 
       // Validate the optional trend query
-      let trendRowCount = 0;
+      let trendData: Record<string, unknown>[] = [];
       if (trendEsqlQuery && trendXField && trendYField) {
         try {
           const trendResponse = (await client.esql.query({
             query: trendEsqlQuery,
             format: 'json',
           })) as unknown as ESQLResponse;
-          trendRowCount = columnarToRows(trendResponse).length;
+          trendData = columnarToRows(trendResponse);
         } catch (err) {
           const trendErr = err instanceof Error ? err.message : String(err);
           // Trend is optional — report the error but don't fail the metric
-          trendRowCount = 0;
           statusWarnings.push(`Trend query failed: ${trendErr}`);
         }
       }
@@ -172,21 +178,18 @@ export function registerCreateMetric(server: McpServer): void {
       const formattedValue = `${valuePrefix || ''}${value.toLocaleString()}${valueSuffix || ''}`;
       const statusText =
         `Metric "${title}" added to dashboard: ${formattedValue}` +
-        (trendRowCount > 0 ? ` (with ${trendRowCount}-point ${trendShape} sparkline)` : '') +
-        `. Dashboard now has ${dashboard.charts.length} panel(s).\n` +
-        (statusWarnings.length > 0 ? `Warnings: ${statusWarnings.join('; ')}\n` : '') +
-        `Preview: ${PREVIEW_URL}`;
+        (trendData.length > 0 ? ` (with ${trendData.length}-point ${trendShape} sparkline)` : '') +
+        `. Dashboard now has ${dashboard.charts.length} panel(s).` +
+        (statusWarnings.length > 0 ? ` Warnings: ${statusWarnings.join('; ')}` : '');
 
-      const imageBase64 = await renderChartToImage(id);
+      // Build metric data row for the preview
+      const metricDataRow: Record<string, unknown> = { [valueField]: value };
 
-      const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-        { type: 'text', text: statusText },
-      ];
-      if (imageBase64) {
-        content.push({ type: 'image', data: imageBase64, mimeType: 'image/png' });
-      }
+      setChartPreview({ mode: 'chart-preview', chart: metric, data: [metricDataRow], trendData });
 
-      return { content };
+      return {
+        content: [{ type: 'text', text: statusText }],
+      };
     }
   );
 }

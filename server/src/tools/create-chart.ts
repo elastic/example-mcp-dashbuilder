@@ -2,14 +2,14 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getESClient } from '../utils/es-client.js';
 import { columnarToRows, validateFields } from '../utils/esql-transform.js';
-import { addChart } from '../utils/dashboard-store.js';
-import { renderChartToImage } from '../utils/chart-renderer.js';
-import { registerTool } from '../utils/register-tool.js';
+import { addChart, slugify } from '../utils/dashboard-store.js';
+import { registerAppOnlyTool } from '../utils/register-tool.js';
+import { setChartPreview } from '../utils/chart-preview-store.js';
 import type { ChartConfig, ESQLResponse } from '../types.js';
-import { PREVIEW_URL } from '../utils/config.js';
+import { CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
 
 export function registerCreateChart(server: McpServer): void {
-  registerTool(
+  registerAppOnlyTool(
     server,
     'create_chart',
     {
@@ -19,26 +19,23 @@ export function registerCreateChart(server: McpServer): void {
         'Executes the provided ES|QL query and maps the results to an Elastic Charts configuration. ' +
         'Supported chart types: bar (comparisons), line (time trends), area (volume over time), pie (part-of-whole, max 6 slices). ' +
         'Read the dataviz-guidelines resource for best practices on chart selection, ES|QL patterns, and anti-patterns. ' +
-        'Returns a preview image and also updates the live preview app.',
+        'Shows an inline chart preview after creation.',
       inputSchema: {
-        id: z.string().describe('Unique chart identifier, e.g. "sales-by-category"'),
+        id: z.string().optional().describe('Unique chart identifier, e.g. "sales-by-category"'),
         title: z.string().describe('Chart title displayed above the visualization'),
         chartType: z.enum(['bar', 'line', 'area', 'pie']).describe('Type of chart to render'),
         esqlQuery: z
           .string()
           .describe(
-            'ES|QL query that produces the data for this chart. ' +
-              'Should return columns matching xField and yFields. ' +
+            'ES|QL query to execute. Must return columns matching xField and yFields. ' +
               'Example: FROM kibana_sample_data_ecommerce | STATS revenue = SUM(taxful_total_price) BY category'
           ),
         xField: z
           .string()
-          .describe('Column name from the query result to use as the x-axis (or pie slice labels)'),
+          .describe('Column name from the query result for the x-axis (or pie slice labels)'),
         yFields: z
           .array(z.string())
-          .describe(
-            'Column name(s) from the query result to use as y-axis values (or pie slice sizes)'
-          ),
+          .describe('Column name(s) from the query result for y-axis values (or pie slice sizes)'),
         splitField: z
           .string()
           .optional()
@@ -59,10 +56,13 @@ export function registerCreateChart(server: McpServer): void {
               'Set this when the index has multiple date fields to ensure the time picker filters correctly.'
           ),
       },
+      _meta: {
+        ui: { resourceUri: CHART_PREVIEW_RESOURCE_URI },
+      },
     },
     async (args) => {
-      const { id, title, chartType, esqlQuery, xField, yFields, splitField, palette, timeField } =
-        args;
+      const { title, chartType, esqlQuery, xField, yFields, splitField, palette, timeField } = args;
+      const id = args.id || `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`;
 
       const client = getESClient();
 
@@ -116,25 +116,13 @@ export function registerCreateChart(server: McpServer): void {
       const statusText =
         `Chart "${title}" (${chartType}) added to dashboard. ` +
         `Data: ${data.length} rows, fields: [${Object.keys(data[0]).join(', ')}]. ` +
-        `Dashboard now has ${dashboard.charts.length} chart(s).\n` +
-        `Preview: ${PREVIEW_URL}`;
+        `Dashboard now has ${dashboard.charts.length} chart(s).`;
 
-      const imageBase64 = await renderChartToImage(id);
+      setChartPreview({ mode: 'chart-preview', chart, data });
 
-      const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-        { type: 'text', text: statusText },
-      ];
-
-      if (imageBase64) {
-        content.push({ type: 'image', data: imageBase64, mimeType: 'image/png' });
-      } else {
-        content.push({
-          type: 'text',
-          text: `(Image preview unavailable — make sure the preview app is running on ${PREVIEW_URL})`,
-        });
-      }
-
-      return { content };
+      return {
+        content: [{ type: 'text', text: statusText }],
+      };
     }
   );
 }

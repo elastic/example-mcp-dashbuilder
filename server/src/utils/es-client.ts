@@ -12,8 +12,11 @@ export function getESClient(): Client {
       : process.env.ES_USERNAME
         ? { username: process.env.ES_USERNAME, password: process.env.ES_PASSWORD || '' }
         : undefined;
+    const tls = process.env.UNSAFE_SSL === 'true' ? { rejectUnauthorized: false } : undefined;
 
-    client = cloudId ? new Client({ cloud: { id: cloudId }, auth }) : new Client({ node, auth });
+    client = cloudId
+      ? new Client({ cloud: { id: cloudId }, auth, tls })
+      : new Client({ node, auth, tls });
   }
   return client;
 }
