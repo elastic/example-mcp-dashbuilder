@@ -6,7 +6,7 @@ import { columnarToRows } from '../utils/esql-transform.js';
 import { parseIndexPattern } from '../utils/esql-parser.js';
 import { detectTimeField } from '../utils/time-field.js';
 import { getDashboard, saveDashboardLayout } from '../utils/dashboard-store.js';
-import { getLastChartPreview } from '../utils/chart-preview-store.js';
+import { getChartPreview } from '../utils/chart-preview-store.js';
 import type { ESQLResponse, DashboardConfig } from '../types.js';
 
 /**
@@ -43,7 +43,6 @@ export function registerAppOnlyTools(server: McpServer): void {
 
   // ── run-esql-query ────────────────────────────────────────────────────
   // Runs an ES|QL query with optional time range filtering via DSL filter.
-  // Replaces the Vite /api/esql proxy endpoint.
   registerAppOnlyTool(
     server,
     'app_only_esql_query',
@@ -109,7 +108,6 @@ export function registerAppOnlyTools(server: McpServer): void {
 
   // ── save-panel-layout ─────────────────────────────────────────────────
   // Persists grid layout changes when the user drags/resizes panels.
-  // Replaces the Vite /api/save-layout endpoint.
   registerAppOnlyTool(
     server,
     'app_only_save_panel_layout',
@@ -173,7 +171,7 @@ export function registerAppOnlyTools(server: McpServer): void {
   );
 
   // ── app_only_get_chart_preview ─────────────────────────────────────────────────
-  // Returns the last chart preview data (chart config + pre-fetched data).
+  // Returns chart preview data by ID (or most recent if no ID given).
   // Called by the MCP App after create_chart/metric/heatmap renders the iframe.
   registerAppOnlyTool(
     server,
@@ -181,12 +179,17 @@ export function registerAppOnlyTools(server: McpServer): void {
     {
       title: 'Get Chart Preview',
       description:
-        'Returns the last chart preview data including chart config and pre-fetched query results.',
-      inputSchema: {},
+        'Returns chart preview data including chart config and pre-fetched query results.',
+      inputSchema: {
+        chartId: z
+          .string()
+          .optional()
+          .describe('Chart ID to retrieve. If omitted, returns the most recent preview.'),
+      },
       _meta: { ui: { visibility: ['app'] } },
     },
-    async () => {
-      const preview = getLastChartPreview();
+    async ({ chartId }) => {
+      const preview = getChartPreview(chartId);
       if (!preview) {
         return {
           content: [
