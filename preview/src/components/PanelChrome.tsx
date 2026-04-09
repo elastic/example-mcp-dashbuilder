@@ -1,5 +1,5 @@
-import React from 'react';
-import { EuiProgress } from '@elastic/eui';
+import React, { useMemo } from 'react';
+import { EuiPanel, EuiProgress, EuiTitle, useEuiTheme } from '@elastic/eui';
 
 interface PanelChromeProps {
   title: string;
@@ -8,47 +8,54 @@ interface PanelChromeProps {
 }
 
 export function PanelChrome({ title, isLoading, children }: PanelChromeProps) {
+  const { euiTheme } = useEuiTheme();
+  const containerStyle = useMemo<React.CSSProperties>(
+    () => ({
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      overflow: 'hidden',
+    }),
+    []
+  );
+  const headerStyle = useMemo<React.CSSProperties>(
+    () => ({
+      padding: `${euiTheme.size.xs} ${euiTheme.size.m}`,
+      borderBottom: `1px solid ${euiTheme.border.color}`,
+      minHeight: 32,
+      display: 'flex',
+      alignItems: 'center',
+    }),
+    [euiTheme.border.color, euiTheme.size.m, euiTheme.size.xs]
+  );
+  const titleStyle = useMemo<React.CSSProperties>(
+    () => ({
+      margin: 0,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+    }),
+    []
+  );
+  const contentStyle = useMemo<React.CSSProperties>(
+    () => ({
+      flex: 1,
+      padding: Number.parseInt(euiTheme.size.s, 10) || 8,
+      minHeight: 0,
+    }),
+    [euiTheme.size.s]
+  );
+
   return (
-    <div style={containerStyle}>
+    <EuiPanel hasBorder hasShadow={false} paddingSize="none" style={containerStyle}>
       {isLoading && <EuiProgress size="xs" color="accent" position="absolute" />}
       <div style={headerStyle}>
-        <span style={titleStyle}>{title}</span>
+        <EuiTitle size="xxxs">
+          <h3 style={titleStyle}>{title}</h3>
+        </EuiTitle>
       </div>
       <div style={contentStyle}>{children}</div>
-    </div>
+    </EuiPanel>
   );
 }
-
-const containerStyle: React.CSSProperties = {
-  position: 'relative',
-  display: 'flex',
-  flexDirection: 'column',
-  height: '100%',
-  border: '1px solid #D3DAE6',
-  borderRadius: 6,
-  background: '#fff',
-  overflow: 'hidden',
-};
-
-const headerStyle: React.CSSProperties = {
-  padding: '6px 12px',
-  borderBottom: '1px solid #EEF0F4',
-  minHeight: 32,
-  display: 'flex',
-  alignItems: 'center',
-};
-
-const titleStyle: React.CSSProperties = {
-  fontSize: 14,
-  fontWeight: 600,
-  color: '#343741',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-};
-
-const contentStyle: React.CSSProperties = {
-  flex: 1,
-  padding: 8,
-  minHeight: 0,
-};

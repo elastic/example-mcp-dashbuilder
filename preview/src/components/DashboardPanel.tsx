@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { EuiCallOut } from '@elastic/eui';
 import { PanelChrome } from './PanelChrome';
 import { ChartPanel } from './ChartPanel';
 import { useEsqlQuery } from '../hooks/useEsqlQuery';
@@ -33,9 +34,9 @@ export function DashboardPanel({ config }: { config: PanelConfig }) {
   return (
     <PanelChrome title={config.title} isLoading={isLoading}>
       {error ? (
-        <div style={{ padding: 12, color: '#BD271E', fontSize: 13 }}>
-          <strong>Query error:</strong> {error}
-        </div>
+        <EuiCallOut color="danger" iconType="warning" size="s" title="Query error">
+          <p>{error}</p>
+        </EuiCallOut>
       ) : (
         <ChartPanel config={liveConfig} />
       )}

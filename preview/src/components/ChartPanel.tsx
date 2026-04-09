@@ -14,9 +14,9 @@ import {
   Position,
   ScaleType,
 } from '@elastic/charts';
-import type { MetricDatum, HeatmapBandsColorScale } from '@elastic/charts';
-import { euiPaletteForTemperature } from '@elastic/eui';
-import { ELASTIC_CHARTS_THEME, KIBANA_PALETTE } from '../theme';
+import type { MetricDatum, HeatmapBandsColorScale, PartialTheme } from '@elastic/charts';
+import { euiPaletteForTemperature, useEuiTheme } from '@elastic/eui';
+import { getElasticChartsTheme, KIBANA_PALETTE } from '../theme';
 import type {
   RenderablePanelConfig,
   XYChartPanelConfig,
@@ -42,18 +42,30 @@ function formatDateTime(d: Date): string {
 // ── Router ──
 
 export function ChartPanel({ config }: { config: RenderablePanelConfig }) {
+  const { euiTheme } = useEuiTheme();
+  const chartTheme = useMemo(
+    () => getElasticChartsTheme(euiTheme.border.color),
+    [euiTheme.border.color]
+  );
+
   if (config.chartType === 'metric') {
-    return <MetricPanel config={config as MetricPanelConfig} />;
+    return <MetricPanel config={config as MetricPanelConfig} chartTheme={chartTheme} />;
   }
   if (config.chartType === 'heatmap') {
-    return <HeatmapPanel config={config as HeatmapPanelConfig} />;
+    return <HeatmapPanel config={config as HeatmapPanelConfig} chartTheme={chartTheme} />;
   }
-  return <XYChartPanel config={config as XYChartPanelConfig} />;
+  return <XYChartPanel config={config as XYChartPanelConfig} chartTheme={chartTheme} />;
 }
 
 // ── Metric ──
 
-function MetricPanel({ config }: { config: MetricPanelConfig }) {
+function MetricPanel({
+  config,
+  chartTheme,
+}: {
+  config: MetricPanelConfig;
+  chartTheme: PartialTheme;
+}) {
   const { id, title, subtitle, color, valueField, valuePrefix, valueSuffix, data, trend } = config;
 
   // Derive value from query data using valueField
@@ -79,7 +91,7 @@ function MetricPanel({ config }: { config: MetricPanelConfig }) {
   return (
     <div style={{ height: '100%' }}>
       <Chart>
-        <Settings theme={ELASTIC_CHARTS_THEME} />
+        <Settings theme={chartTheme} />
         <Metric id={id} data={[[metricDatum]]} />
       </Chart>
     </div>
@@ -113,7 +125,13 @@ function buildColorScale(
   return { type: 'bands', bands };
 }
 
-function HeatmapPanel({ config }: { config: HeatmapPanelConfig }) {
+function HeatmapPanel({
+  config,
+  chartTheme,
+}: {
+  config: HeatmapPanelConfig;
+  chartTheme: PartialTheme;
+}) {
   const { id, data = [], xField, yField, valueField, colorRamp } = config;
 
   const colorScale = useMemo(() => {
@@ -121,26 +139,12 @@ function HeatmapPanel({ config }: { config: HeatmapPanelConfig }) {
     return buildColorScale(values, 8, colorRamp);
   }, [data, valueField, colorRamp]);
 
-  if (data.length === 0) return <p>No data</p>;
+  if (data.length === 0) return <p style={{ color: 'inherit' }}>No data</p>;
 
   return (
     <div style={{ height: '100%' }}>
       <Chart>
-        <Settings
-          theme={{
-            ...ELASTIC_CHARTS_THEME,
-            heatmap: {
-              grid: {
-                stroke: { width: 1, color: '#EDF0F5' },
-              },
-              cell: {
-                border: { stroke: '#EDF0F5', strokeWidth: 1 },
-              },
-            },
-          }}
-          showLegend
-          legendPosition={Position.Bottom}
-        />
+        <Settings theme={chartTheme} showLegend legendPosition={Position.Bottom} />
         <Heatmap
           id={id}
           data={data}
@@ -177,11 +181,17 @@ function isLikelyTimeValue(value: unknown): boolean {
   return !Number.isNaN(t);
 }
 
-function XYChartPanel({ config }: { config: XYChartPanelConfig }) {
+function XYChartPanel({
+  config,
+  chartTheme,
+}: {
+  config: XYChartPanelConfig;
+  chartTheme: PartialTheme;
+}) {
   const { id, chartType, data = [], xField, yFields, splitField, palette } = config;
   const colors = palette || KIBANA_PALETTE;
 
-  if (data.length === 0) return <p>No data</p>;
+  if (data.length === 0) return <p style={{ color: 'inherit' }}>No data</p>;
 
   const firstXValue = data[0]?.[xField];
   const isTimeBased = isLikelyTimeValue(firstXValue);
@@ -195,7 +205,7 @@ function XYChartPanel({ config }: { config: XYChartPanelConfig }) {
     <div style={{ height: '100%' }}>
       <Chart>
         <Settings
-          theme={ELASTIC_CHARTS_THEME}
+          theme={chartTheme}
           showLegend={chartType === 'pie' || !!splitField || yFields.length > 1}
           legendPosition={Position.Bottom}
         />
