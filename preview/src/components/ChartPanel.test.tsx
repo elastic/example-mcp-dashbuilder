@@ -37,6 +37,13 @@ vi.mock('@elastic/eui', () => ({
     '#FDA49C',
     '#F6726A',
   ],
+  useEuiTheme: () => ({
+    euiTheme: {
+      border: {
+        color: '#2F3D4C',
+      },
+    },
+  }),
 }));
 
 import { ChartPanel } from './ChartPanel';

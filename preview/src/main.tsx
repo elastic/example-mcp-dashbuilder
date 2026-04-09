@@ -13,7 +13,7 @@ import { ChartPreview } from './components/ChartPreview';
 import { McpAppProvider } from './context/McpAppContext';
 import type { DashboardConfig, PanelConfig } from './types';
 
-import '@elastic/charts/dist/theme_light.css';
+import '@elastic/charts/dist/theme_dark.css';
 
 // Pre-cache icons used by kbn-grid-layout and EuiSuperDatePicker
 import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon';
@@ -147,10 +147,8 @@ function Root() {
     mcpApp.connect();
   }, [mcpApp]);
 
-  // Enforce light theme for now
-  // TODO set up proper dark/light theme support for charts and EUI components
   return (
-    <EuiProvider colorMode="light">
+    <EuiProvider colorMode="dark">
       <RootContent
         viewMode={viewMode}
         chartPreview={chartPreview}
@@ -185,7 +183,7 @@ function RootContent({
   }
 
   return (
-    <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
+    <div style={{ padding: 40, textAlign: 'center', color: 'inherit' }}>
       {viewMode ? 'Loading…' : 'Waiting for data…'}
     </div>
   );
