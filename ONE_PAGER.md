@@ -88,7 +88,7 @@ MCP App (single-file HTML, rendered in host iframe)
   |-- ext-apps client SDK (postMessage ↔ host ↔ server)
   |-- Elastic Charts (6 chart types, Borealis theme)
   |-- kbn-grid-layout (drag, resize, sections)
-  |-- Dynamic queries via callServerTool("run_esql_query")
+  |-- Dynamic queries via callServerTool("app_only_esql_query")
   |-- Time picker with field_caps detection + DSL filters
   v
 Elasticsearch <--> Kibana
