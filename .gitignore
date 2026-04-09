@@ -6,3 +6,4 @@ preview/public/dashboards/
 preview/public/dashboard.json
 .claude/
 .env
+.DS_Store

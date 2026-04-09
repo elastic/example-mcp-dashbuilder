@@ -83,7 +83,9 @@ function Root() {
   const [viewMode, setViewMode] = useState<ViewMode | null>(null);
   const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
   const [chartPreview, setChartPreview] = useState<ChartPreviewData | null>(null);
-  const [mcpApp] = useState(() => new McpApp({ name: 'elastic-dashbuilder', version: '0.1.0' }));
+  const [mcpApp] = useState(
+    () => new McpApp({ name: 'example-mcp-dashbuilder', version: '0.1.0' })
+  );
 
   // Store the tool input so we can extract the chart ID for preview lookup.
   // ontoolinput fires before ontoolresult with the tool call arguments.

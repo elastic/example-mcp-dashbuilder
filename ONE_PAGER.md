@@ -1,8 +1,8 @@
-# elastic-dashbuilder: AI-Powered Dashboard Creation via MCP
+# example-mcp-dashbuilder: AI-Powered Dashboard Creation via MCP
 
 ## What It Does
 
-elastic-dashbuilder is an MCP application that lets AI assistants build Kibana dashboards through natural language conversation. Users describe what they want, and the AI explores their Elasticsearch data, creates visualizations, previews them interactively, and exports directly to Kibana.
+example-mcp-dashbuilder is an MCP application that lets AI assistants build Kibana dashboards through natural language conversation. Users describe what they want, and the AI explores their Elasticsearch data, creates visualizations, previews them interactively, and exports directly to Kibana.
 
 ```
 "Build me an ecommerce analytics dashboard with revenue metrics,

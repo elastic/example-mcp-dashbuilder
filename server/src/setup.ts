@@ -45,7 +45,7 @@ async function testConnection(config: ConnectionConfig): Promise<string> {
 }
 
 async function main() {
-  console.log('\n  elastic-dashbuilder setup\n');
+  console.log('\n  example-mcp-dashbuilder setup\n');
 
   // Load existing .env values as defaults
   const existing: Record<string, string> = {};
