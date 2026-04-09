@@ -1,19 +1,28 @@
 import type { PanelConfig } from '../types.js';
 
-interface ChartPreviewData {
+export interface ChartPreviewData {
   mode: 'chart-preview';
   chart: PanelConfig;
   data: Record<string, unknown>[];
   trendData?: Record<string, unknown>[];
 }
 
-let lastPreview: ChartPreviewData | null = null;
+/** Previews keyed by chart ID so each iframe can retrieve its own chart. */
+const previews = new Map<string, ChartPreviewData>();
 
 export function setChartPreview(preview: ChartPreviewData): void {
-  lastPreview = preview;
+  previews.set(preview.chart.id, preview);
 }
 
-/** Get the last chart preview. Kept until replaced by a new one so retries and reconnects still receive the data. */
-export function getLastChartPreview(): ChartPreviewData | null {
-  return lastPreview;
+/** Get chart preview by ID, or the most recent one if no ID given. */
+export function getChartPreview(chartId?: string): ChartPreviewData | null {
+  if (chartId) {
+    return previews.get(chartId) ?? null;
+  }
+  // Fall back to most recent entry
+  let last: ChartPreviewData | null = null;
+  for (const v of previews.values()) {
+    last = v;
+  }
+  return last;
 }

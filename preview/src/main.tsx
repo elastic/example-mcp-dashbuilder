@@ -68,6 +68,9 @@ function parseToolResult(result: { content?: Array<{ type: string; text?: string
 
 // ── MCP App bootstrap ─────────────────────────────────────────────────────
 
+/** Tools that show a single chart preview instead of the full dashboard. */
+const CHART_PREVIEW_TOOLS = new Set(['create_chart', 'create_metric', 'create_heatmap']);
+
 interface ChartPreviewData {
   chart: PanelConfig;
   data: Record<string, unknown>[];
@@ -81,35 +84,50 @@ function Root() {
   const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
   const [chartPreview, setChartPreview] = useState<ChartPreviewData | null>(null);
   const [mcpApp] = useState(() => new McpApp({ name: 'elastic-dashbuilder', version: '0.1.0' }));
+
+  // Store the tool input so we can extract the chart ID for preview lookup.
+  // ontoolinput fires before ontoolresult with the tool call arguments.
+  const toolInputRef = React.useRef<Record<string, unknown> | undefined>();
+
   useEffect(() => {
-    // On tool result, try chart preview first; fall back to dashboard view.
-    // The server sets chart preview data when create_chart/metric/heatmap runs,
-    // so its presence tells us which mode to render.
+    mcpApp.ontoolinput = (params: { arguments?: Record<string, unknown> }) => {
+      toolInputRef.current = params.arguments;
+    };
+
     mcpApp.ontoolresult = () => {
-      mcpApp
-        .callServerTool({ name: 'app_only_get_chart_preview', arguments: {} })
-        .then((r) => {
-          if (r.isError) {
-            // No chart preview — render full dashboard
-            setViewMode('dashboard');
-            return mcpApp.callServerTool({ name: 'app_only_get_dashboard_config', arguments: {} });
-          }
-          const data = parseToolResult(r) as ChartPreviewData | null;
-          if (data?.chart) {
-            setChartPreview(data);
-            setViewMode('chart-preview');
-          } else {
-            setViewMode('dashboard');
-            return mcpApp.callServerTool({ name: 'app_only_get_dashboard_config', arguments: {} });
-          }
-          return undefined;
-        })
-        .then((r) => {
-          if (r) {
+      // Use toolInfo from the host context to determine which tool spawned
+      // this iframe, so each inline preview keeps the correct mode even
+      // when the user scrolls back to it later.
+      const toolName = mcpApp.getHostContext()?.toolInfo?.tool?.name;
+      const isChartPreview = toolName != null && CHART_PREVIEW_TOOLS.has(toolName);
+
+      if (isChartPreview) {
+        // Pass the chart ID from the tool arguments so the server returns
+        // this specific chart's preview, not just the most recent one.
+        const chartId = toolInputRef.current?.id as string | undefined;
+        mcpApp
+          .callServerTool({
+            name: 'app_only_get_chart_preview',
+            arguments: chartId ? { chartId } : {},
+          })
+          .then((r) => {
+            const data = parseToolResult(r) as ChartPreviewData | null;
+            if (data?.chart) {
+              setChartPreview(data);
+              setViewMode('chart-preview');
+            }
+          });
+      } else {
+        mcpApp
+          .callServerTool({ name: 'app_only_get_dashboard_config', arguments: {} })
+          .then((r) => {
             const data = parseToolResult(r) as DashboardConfig | null;
-            if (data) setDashboard(data);
-          }
-        });
+            if (data) {
+              setDashboard(data);
+              setViewMode('dashboard');
+            }
+          });
+      }
     };
 
     // Clean up on teardown

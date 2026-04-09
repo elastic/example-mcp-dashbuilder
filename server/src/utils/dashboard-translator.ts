@@ -90,7 +90,7 @@ function autoPlacePanels(
 
 /**
  * Translate the MCP dashboard config into the saved_objects API format.
- * Uses grid positions from dashboard.json if the user has dragged/resized panels.
+ * Uses grid positions from gridLayout if the user has dragged/resized panels.
  */
 export function translateDashboardToSavedObject(
   config: DashboardConfig,
