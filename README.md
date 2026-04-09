@@ -1,4 +1,4 @@
-# elastic-dashbuilder
+# example-mcp-dashbuilder
 
 An MCP (Model Context Protocol) app that lets AI assistants build Kibana dashboards using ES|QL and Elastic Charts. Create visualizations through natural language, preview them live with Kibana's grid layout, and export directly to Kibana as real Lens dashboards.
 
@@ -102,7 +102,7 @@ No environment variables are needed if you ran `npm run setup` — credentials a
 ```json
 {
   "mcpServers": {
-    "elastic-dashbuilder": {
+    "example-mcp-dashbuilder": {
       "type": "stdio",
       "command": "npx",
       "args": ["tsx", "server/src/index.ts"]
@@ -116,7 +116,7 @@ No environment variables are needed if you ran `npm run setup` — credentials a
 ```json
 {
   "mcpServers": {
-    "elastic-dashbuilder": {
+    "example-mcp-dashbuilder": {
       "type": "stdio",
       "command": "npx",
       "args": ["tsx", "server/src/index.ts"]
@@ -130,9 +130,9 @@ No environment variables are needed if you ran `npm run setup` — credentials a
 ```json
 {
   "mcpServers": {
-    "elastic-dashbuilder": {
+    "example-mcp-dashbuilder": {
       "command": "npx",
-      "args": ["tsx", "/absolute/path/to/elastic-dashbuilder/server/src/index.ts"]
+      "args": ["tsx", "/absolute/path/to/example-mcp-dashbuilder/server/src/index.ts"]
     }
   }
 }
@@ -142,7 +142,7 @@ Note: Claude Desktop requires an absolute path to the server entry point.
 
 ### 4. Open the project in your MCP client
 
-Open the `elastic-dashbuilder` folder in your MCP client. The MCP server will auto-connect. In Cursor, you should see it listed in Settings > MCP.
+Open the `example-mcp-dashbuilder` folder in your MCP client. The MCP server will auto-connect. In Cursor, you should see it listed in Settings > MCP.
 
 ## Usage
 

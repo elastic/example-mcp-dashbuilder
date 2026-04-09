@@ -32,7 +32,7 @@ import { SERVER_INSTRUCTIONS } from './resources/instructions.js';
 
 const server = new McpServer(
   {
-    name: 'elastic-dashbuilder',
+    name: 'example-mcp-dashbuilder',
     version: '0.1.0',
   },
   {
