@@ -1,3 +1,9 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License 2.0;
+ * you may not use this file except in compliance with the Elastic License 2.0.
+ */
+
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerAppTool as sdkRegisterAppTool } from '@modelcontextprotocol/ext-apps/server';
 import { z, type ZodRawShape, type ZodObject } from 'zod';
