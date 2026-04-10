@@ -35,9 +35,9 @@ export const requireLicenseHeader = {
         // Find a block comment that matches our license header
         const licenseComment = comments.find(
           (node) =>
-            node.type === 'Block' && normalizeWhitespace(node.value) === normalizeWhitespace(
-              licenseHeader.replace(/^\/\*/, '').replace(/\*\/$/, '')
-            )
+            node.type === 'Block' &&
+            normalizeWhitespace(node.value) ===
+              normalizeWhitespace(licenseHeader.replace(/^\/\*/, '').replace(/\*\/$/, ''))
         );
 
         if (!licenseComment) {
