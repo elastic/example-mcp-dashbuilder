@@ -1,0 +1,9 @@
+example-mcp-dashbuilder (AI-powered Kibana dashboard creation via MCP)
+Copyright 2025-2026 Elasticsearch B.V.
+
+The grid layout code in preview/src/grid-layout/ is adapted from kbn-grid-layout
+in the Kibana repository: https://github.com/elastic/kibana
+
+The ES|QL reference documentation in server/src/resources/esql_docs/ is adapted
+from Kibana's NL-to-ES|QL feature in the Kibana repository:
+https://github.com/elastic/kibana
