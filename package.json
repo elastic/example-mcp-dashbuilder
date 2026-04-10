@@ -1,6 +1,7 @@
 {
   "name": "mcp-app-dashboards",
   "private": true,
+  "license": "Elastic-2.0",
   "workspaces": [
     "server",
     "preview"
