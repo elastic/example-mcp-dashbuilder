@@ -33,7 +33,7 @@ export function registerListIndices(server: McpServer): void {
         const indices = await client.cat.indices({
           index: pattern,
           format: 'json',
-          h: 'index,docs.count,store.size',
+          h: 'index,docs.count,store.size,health,status',
           s: 'index',
         });
 
