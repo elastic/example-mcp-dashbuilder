@@ -98,7 +98,16 @@ describe('stripCliInstructions', () => {
 describe('buildEsqlReference', () => {
   const reference = buildEsqlReference();
 
-  // --- Sections extracted from SKILL.md ---
+  // --- Expected ## headings from SKILL.md ---
+
+  it('includes the expected top-level headings from SKILL.md', () => {
+    const skillPortion = reference.slice(0, reference.indexOf('# ES|QL Complete Reference'));
+    expect(skillPortion).toContain('## About ES|QL');
+    expect(skillPortion).toContain('## Query Generation Guidelines');
+    expect(skillPortion).toContain('## Error Handling');
+  });
+
+  // --- Content extracted from SKILL.md ---
 
   it('includes the _source prerequisite warning', () => {
     expect(reference).toContain('ES|QL requires `_source` to be enabled');
