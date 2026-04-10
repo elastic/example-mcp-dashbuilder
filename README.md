@@ -324,3 +324,7 @@ npm run test --workspace=preview      # Preview tests only
 - [Model Context Protocol](https://modelcontextprotocol.io) for AI tool integration
 - [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) for inline UI rendering
 - ES|QL reference docs adapted from Kibana's NL-to-ES|QL feature
+
+## Licence
+
+Licensed under [Elastic License 2.0](./LICENSE.txt).
