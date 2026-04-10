@@ -9,10 +9,119 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const SKILL_DIR = resolve(__dirname, '../../vendor/agent-skills/elasticsearch-esql/references');
+const SKILL_DIR = resolve(__dirname, '../../vendor/agent-skills/elasticsearch-esql');
 
 function readSkillFile(name: string): string {
   return readFileSync(resolve(SKILL_DIR, name), 'utf-8').trim();
+}
+
+/**
+ * Parse SKILL.md into sections keyed by ## heading name.
+ */
+export function parseSkillSections(content: string): Map<string, string> {
+  const sections = new Map<string, string>();
+  const lines = content.split('\n');
+  let currentHeading = '';
+  let currentLines: string[] = [];
+
+  for (const line of lines) {
+    const match = line.match(/^## (.+)/);
+    if (match) {
+      if (currentHeading) {
+        sections.set(currentHeading, currentLines.join('\n').trim());
+      }
+      currentHeading = match[1];
+      currentLines = [];
+    } else if (currentHeading) {
+      currentLines.push(line);
+    }
+  }
+  if (currentHeading) {
+    sections.set(currentHeading, currentLines.join('\n').trim());
+  }
+
+  return sections;
+}
+
+/**
+ * Extract specific numbered guidelines from the Guidelines section.
+ * Parses markdown numbered list items (1. **Title**: ...) and returns
+ * only the requested ones by number.
+ */
+export function extractGuidelines(guidelinesContent: string, numbers: number[]): string {
+  const items: { num: number; text: string }[] = [];
+  let current: { num: number; lines: string[] } | null = null;
+
+  for (const line of guidelinesContent.split('\n')) {
+    const match = line.match(/^(\d+)\.\s/);
+    if (match) {
+      if (current) {
+        items.push({ num: current.num, text: current.lines.join('\n').trim() });
+      }
+      current = { num: parseInt(match[1], 10), lines: [line] };
+    } else if (current) {
+      current.lines.push(line);
+    }
+  }
+  if (current) {
+    items.push({ num: current.num, text: current.lines.join('\n').trim() });
+  }
+
+  return items
+    .filter((item) => numbers.includes(item.num))
+    .map((item) => item.text)
+    .join('\n\n');
+}
+
+/**
+ * Strip CLI-specific content from extracted skill sections:
+ * - bash code blocks
+ * - lines referencing `node scripts/esql.js` or `curl`
+ * - the ### Environment Configuration subsection
+ * - markdown link references to environment-setup.md
+ */
+export function stripCliInstructions(content: string): string {
+  const lines = content.split('\n');
+  const result: string[] = [];
+  let inBashBlock = false;
+  let inEnvSection = false;
+
+  for (const line of lines) {
+    // Skip bash code blocks
+    if (line.trim().startsWith('```bash')) {
+      inBashBlock = true;
+      continue;
+    }
+    if (inBashBlock) {
+      if (line.trim() === '```') {
+        inBashBlock = false;
+      }
+      continue;
+    }
+
+    // Skip ### Environment Configuration subsection
+    if (line.match(/^### Environment Configuration/)) {
+      inEnvSection = true;
+      continue;
+    }
+    if (inEnvSection) {
+      if (line.match(/^###? /) && !line.match(/^### Environment/)) {
+        inEnvSection = false;
+      } else {
+        continue;
+      }
+    }
+
+    // Skip lines with CLI tool references
+    if (line.match(/node scripts\/esql\.js/) || line.match(/^Run `node scripts/)) {
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  // Clean up multiple consecutive blank lines
+  return result.join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
 /**
@@ -21,16 +130,35 @@ function readSkillFile(name: string): string {
  * then appends MCP-specific visualization patterns.
  */
 export function buildEsqlReference(): string {
+  const skillContent = readSkillFile('SKILL.md');
+  const sections = parseSkillSections(skillContent);
+
+  // Extract relevant sections from SKILL.md
+  const whatIsEsql = sections.get('What is ES|QL?') ?? '';
+  const guidelines = sections.get('Guidelines') ?? '';
+  const errorHandling = sections.get('Error Handling') ?? '';
+
+  // Guidelines 2 (prefer simplicity paragraph), 3 (choose right feature), 5 (query generation principles)
+  const selectedGuidelines = stripCliInstructions(extractGuidelines(guidelines, [2, 3, 5]));
+
   const parts: string[] = [
-    readSkillFile('esql-reference.md'),
+    '# ES|QL Reference for Dashboard Visualizations\n',
+    '## About ES|QL\n',
+    stripCliInstructions(whatIsEsql),
+    '\n## Query Generation Guidelines\n',
+    selectedGuidelines,
+    '\n## Error Handling\n',
+    stripCliInstructions(errorHandling),
     '\n---\n',
-    readSkillFile('generation-tips.md'),
+    readSkillFile('references/esql-reference.md'),
     '\n---\n',
-    readSkillFile('query-patterns.md'),
+    readSkillFile('references/generation-tips.md'),
     '\n---\n',
-    readSkillFile('time-series-queries.md'),
+    readSkillFile('references/query-patterns.md'),
     '\n---\n',
-    readSkillFile('esql-search.md'),
+    readSkillFile('references/time-series-queries.md'),
+    '\n---\n',
+    readSkillFile('references/esql-search.md'),
     `
 ---
 
