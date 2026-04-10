@@ -4,6 +4,7 @@
   "license": "Elastic-2.0",
   "type": "module",
   "scripts": {
+    "postinstall": "bash scripts/sync-agent-skills.sh",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
