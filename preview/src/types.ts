@@ -4,6 +4,8 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
+import type { GridLayoutData } from './grid-layout';
+
 export interface ChartConfig {
   id: string;
   title: string;
@@ -58,6 +60,7 @@ export interface DashboardConfig {
   title: string;
   charts: PanelConfig[];
   sections: SectionConfig[];
+  gridLayout?: GridLayoutData;
   updatedAt: string;
 }
 

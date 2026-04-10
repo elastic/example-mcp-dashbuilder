@@ -35,6 +35,14 @@ const metric: MetricConfig = {
   esqlQuery: 'FROM ecommerce | STATS total = COUNT(*)',
 };
 
+function makeMetric(id: string): MetricConfig {
+  return {
+    ...metric,
+    id,
+    title: `Metric ${id}`,
+  };
+}
+
 describe('translateDashboardToSavedObject', () => {
   it('produces valid attributes with title and panelsJSON', () => {
     const config = makeDashboard({ charts: [barChart] });
@@ -46,19 +54,26 @@ describe('translateDashboardToSavedObject', () => {
     const panels = JSON.parse(attributes.panelsJSON as string);
     expect(panels).toHaveLength(1);
     expect(panels[0].type).toBe('lens');
+    expect(panels[0].gridData).toMatchObject({ x: 0, y: 0, w: 48, h: 15 });
   });
 
-  it('auto-places panels with correct grid positions', () => {
+  it('evenly distributes two charts across the row', () => {
     const config = makeDashboard({ charts: [barChart, metric] });
     const { attributes } = translateDashboardToSavedObject(config);
     const panels = JSON.parse(attributes.panelsJSON as string);
 
-    // First panel at x=0
-    expect(panels[0].gridData.x).toBe(0);
-    expect(panels[0].gridData.y).toBe(0);
+    expect(panels[0].gridData).toMatchObject({ x: 0, y: 0, w: 24, h: 15 });
+    expect(panels[1].gridData).toMatchObject({ x: 24, y: 0, w: 24, h: 10 });
+  });
 
-    // Second panel also at y=0 (fits beside bar chart since metric is narrow)
-    expect(panels[1].gridData.x).toBeGreaterThan(0);
+  it('evenly distributes three charts in the same row while preserving heights', () => {
+    const config = makeDashboard({ charts: [barChart, metric, makeMetric('metric-2')] });
+    const { attributes } = translateDashboardToSavedObject(config);
+    const panels = JSON.parse(attributes.panelsJSON as string);
+
+    expect(panels[0].gridData).toMatchObject({ x: 0, y: 0, w: 16, h: 15 });
+    expect(panels[1].gridData).toMatchObject({ x: 16, y: 0, w: 16, h: 10 });
+    expect(panels[2].gridData).toMatchObject({ x: 32, y: 0, w: 16, h: 10 });
   });
 
   it('uses gridLayout positions when provided', () => {
@@ -77,16 +92,43 @@ describe('translateDashboardToSavedObject', () => {
     expect(panels[0].gridData.h).toBe(20);
   });
 
-  it('includes sections', () => {
+  it('balances section panels using the same row logic', () => {
     const config = makeDashboard({
-      charts: [barChart],
-      sections: [{ id: 'sec-1', title: 'Revenue Section', collapsed: false, panelIds: ['bar-1'] }],
+      charts: [barChart, metric, makeMetric('metric-2')],
+      sections: [
+        {
+          id: 'sec-1',
+          title: 'Revenue Section',
+          collapsed: false,
+          panelIds: ['metric-1', 'metric-2'],
+        },
+      ],
     });
     const { attributes } = translateDashboardToSavedObject(config);
+    const panels = JSON.parse(attributes.panelsJSON as string);
+    const sectionPanels = panels.filter(
+      (panel: { gridData: { sectionId?: string } }) => panel.gridData.sectionId === 'sec-1'
+    );
 
     expect(attributes.sections).toBeDefined();
-    const sections = attributes.sections as Array<{ title: string }>;
+    const sections = attributes.sections as Array<{ title: string; gridData: { y: number } }>;
     expect(sections[0].title).toBe('Revenue Section');
+    expect(sections[0].gridData.y).toBe(15);
+    expect(sectionPanels).toHaveLength(2);
+    expect(sectionPanels[0].gridData).toMatchObject({
+      x: 0,
+      y: 0,
+      w: 24,
+      h: 10,
+      sectionId: 'sec-1',
+    });
+    expect(sectionPanels[1].gridData).toMatchObject({
+      x: 24,
+      y: 0,
+      w: 24,
+      h: 10,
+      sectionId: 'sec-1',
+    });
   });
 
   it('embeds Lens attributes in each panel', () => {
