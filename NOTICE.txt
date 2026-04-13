@@ -7,3 +7,8 @@ in the Kibana repository: https://github.com/elastic/kibana
 The ES|QL reference documentation in server/src/resources/esql_docs/ is adapted
 from Kibana's NL-to-ES|QL feature in the Kibana repository:
 https://github.com/elastic/kibana
+
+The Elastic UI Numeric font in preview/src/fonts/elastic_ui_numeric/ is a modified
+version of Inter, created by Elastic for monospaced numeric rendering in charts.
+Licensed under the SIL Open Font License, Version 1.1.
+See preview/src/fonts/elastic_ui_numeric/LICENSE.txt for the full license text.

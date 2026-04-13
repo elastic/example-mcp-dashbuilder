@@ -49,6 +49,7 @@ export function PanelChrome({ title, isLoading, children }: PanelChromeProps) {
       flex: 1,
       padding: Number.parseInt(euiTheme.size.s, 10) || 8,
       minHeight: 0,
+      fontFamily: "'Elastic UI Numeric', Inter, sans-serif",
     }),
     [euiTheme.size.s]
   );
