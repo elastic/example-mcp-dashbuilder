@@ -20,9 +20,10 @@ import {
   Position,
   ScaleType,
 } from '@elastic/charts';
-import type { MetricDatum, HeatmapBandsColorScale, PartialTheme } from '@elastic/charts';
+import type { MetricDatum, HeatmapBandsColorScale } from '@elastic/charts';
 import { euiPaletteForTemperature, useEuiTheme } from '@elastic/eui';
 import { getElasticChartsTheme, KIBANA_PALETTE } from '../theme';
+import type { ChartsTheme } from '../theme';
 import type {
   RenderablePanelConfig,
   XYChartPanelConfig,
@@ -48,10 +49,10 @@ function formatDateTime(d: Date): string {
 // ── Router ──
 
 export function ChartPanel({ config }: { config: RenderablePanelConfig }) {
-  const { euiTheme } = useEuiTheme();
+  const { euiTheme, colorMode } = useEuiTheme();
   const chartTheme = useMemo(
-    () => getElasticChartsTheme(euiTheme.border.color),
-    [euiTheme.border.color]
+    () => getElasticChartsTheme(euiTheme.border.color, colorMode === 'DARK'),
+    [euiTheme.border.color, colorMode]
   );
 
   if (config.chartType === 'metric') {
@@ -70,7 +71,7 @@ function MetricPanel({
   chartTheme,
 }: {
   config: MetricPanelConfig;
-  chartTheme: PartialTheme;
+  chartTheme: ChartsTheme;
 }) {
   const { id, title, subtitle, color, valueField, valuePrefix, valueSuffix, data, trend } = config;
 
@@ -97,7 +98,7 @@ function MetricPanel({
   return (
     <div style={{ height: '100%' }}>
       <Chart>
-        <Settings theme={chartTheme} />
+        <Settings baseTheme={chartTheme.baseTheme} theme={chartTheme.theme} />
         <Metric id={id} data={[[metricDatum]]} />
       </Chart>
     </div>
@@ -136,7 +137,7 @@ function HeatmapPanel({
   chartTheme,
 }: {
   config: HeatmapPanelConfig;
-  chartTheme: PartialTheme;
+  chartTheme: ChartsTheme;
 }) {
   const { id, data = [], xField, yField, valueField, colorRamp } = config;
 
@@ -150,7 +151,12 @@ function HeatmapPanel({
   return (
     <div style={{ height: '100%' }}>
       <Chart>
-        <Settings theme={chartTheme} showLegend legendPosition={Position.Bottom} />
+        <Settings
+          baseTheme={chartTheme.baseTheme}
+          theme={chartTheme.theme}
+          showLegend
+          legendPosition={Position.Bottom}
+        />
         <Heatmap
           id={id}
           data={data}
@@ -192,7 +198,7 @@ function XYChartPanel({
   chartTheme,
 }: {
   config: XYChartPanelConfig;
-  chartTheme: PartialTheme;
+  chartTheme: ChartsTheme;
 }) {
   const { id, chartType, data = [], xField, yFields, splitField, palette } = config;
   const colors = palette || KIBANA_PALETTE;
@@ -211,7 +217,8 @@ function XYChartPanel({
     <div style={{ height: '100%' }}>
       <Chart>
         <Settings
-          theme={chartTheme}
+          baseTheme={chartTheme.baseTheme}
+          theme={chartTheme.theme}
           showLegend={chartType === 'pie' || !!splitField || yFields.length > 1}
           legendPosition={Position.Bottom}
         />
