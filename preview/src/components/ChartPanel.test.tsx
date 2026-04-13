@@ -23,6 +23,8 @@ vi.mock('@elastic/charts', () => ({
   MetricTrendShape: { Area: 'area', Bars: 'bars' },
   Position: { Bottom: 'bottom', Left: 'left', Right: 'right' },
   ScaleType: { Time: 'time', Ordinal: 'ordinal' },
+  DARK_THEME: { background: { color: '#1D1E24' } },
+  LIGHT_THEME: { background: { color: '#FFFFFF' } },
 }));
 
 vi.mock('@elastic/eui', () => ({
@@ -43,6 +45,7 @@ vi.mock('@elastic/eui', () => ({
         color: '#2F3D4C',
       },
     },
+    colorMode: 'DARK',
   }),
 }));
 
