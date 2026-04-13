@@ -1,6 +1,7 @@
 {
   "name": "mcp-dashboards-server",
   "version": "0.1.0",
+  "license": "Elastic-2.0",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
