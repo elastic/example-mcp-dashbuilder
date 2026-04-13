@@ -5,7 +5,13 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { EuiSuperDatePicker, EuiFlexGroup, EuiFlexItem, EuiButtonEmpty } from '@elastic/eui';
+import {
+  EuiSuperDatePicker,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiButtonEmpty,
+  useEuiTheme,
+} from '@elastic/eui';
 import { GridLayout } from './grid-layout';
 import type { GridLayoutData } from './grid-layout';
 import type { GridPanelData } from './grid-layout';
@@ -91,6 +97,7 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
   const hasCharts = dashboard.charts.length > 0;
   const { setTimeRange } = useTimeRange();
   const mcpApp = useMcpApp();
+  const { euiTheme } = useEuiTheme();
 
   const [isAllData, setIsAllData] = useState(true);
   const [start, setStart] = useState('now-15m');
@@ -150,24 +157,31 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
     [chartMap]
   );
 
+  const appStyle: React.CSSProperties = {
+    padding: `${euiTheme.size.l} ${euiTheme.size.xl}`,
+    fontFamily: 'Inter, system-ui, sans-serif',
+    background: euiTheme.colors.body,
+    color: euiTheme.colors.text,
+    minHeight: '100vh',
+  };
+  const subduedTextStyle: React.CSSProperties = {
+    marginTop: euiTheme.size.xs,
+    fontSize: 14,
+    opacity: 0.72,
+  };
+  const emptyStateStyle: React.CSSProperties = {
+    textAlign: 'center',
+    padding: `${euiTheme.size.xxl} ${euiTheme.size.l}`,
+    opacity: 0.8,
+  };
   return (
-    <div
-      style={{
-        padding: '16px 24px',
-        fontFamily: 'Inter, system-ui, sans-serif',
-        background: '#F5F7FA',
-        color: '#343741',
-        minHeight: '100vh',
-      }}
-    >
+    <div style={appStyle}>
       <header style={{ marginBottom: 16 }}>
         <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false}>
           <EuiFlexItem grow={false}>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: '#1A1C21' }}>
-              {dashboard.title}
-            </h1>
+            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{dashboard.title}</h1>
             {hasCharts && (
-              <p style={{ color: '#666', marginTop: 4, fontSize: 14 }}>
+              <p style={subduedTextStyle}>
                 {dashboard.charts.length} chart(s)
                 {sections.length > 0 && ` · ${sections.length} section(s)`}
               </p>
@@ -201,7 +215,7 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
           accessMode={'EDIT'}
         />
       ) : (
-        <div style={{ textAlign: 'center', padding: '80px 20px', color: '#666' }}>
+        <div style={emptyStateStyle}>
           <h2 style={{ fontSize: 20, marginBottom: 8 }}>No charts yet</h2>
           <p>
             Use the MCP tools in Cursor to create charts. Try asking:

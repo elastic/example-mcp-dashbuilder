@@ -14,6 +14,7 @@ import { McpAppProvider } from './context/McpAppContext';
 import type { DashboardConfig, PanelConfig } from './types';
 
 import '@elastic/charts/dist/theme_light.css';
+import '@elastic/charts/dist/theme_only_dark.css';
 
 // Pre-cache icons used by kbn-grid-layout and EuiSuperDatePicker
 import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon';
@@ -89,6 +90,7 @@ function Root() {
   const [viewMode, setViewMode] = useState<ViewMode | null>(null);
   const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
   const [chartPreview, setChartPreview] = useState<ChartPreviewData | null>(null);
+  const [colorMode, setColorMode] = useState<'light' | 'dark'>('dark');
   const [mcpApp] = useState(
     () => new McpApp({ name: 'example-mcp-dashbuilder', version: '0.1.0' })
   );
@@ -138,19 +140,29 @@ function Root() {
       }
     };
 
+    // Adapt to host theme preference
+    mcpApp.onhostcontextchanged = (ctx) => {
+      if (ctx.theme) {
+        setColorMode(ctx.theme === 'dark' ? 'dark' : 'light');
+      }
+    };
+
     // Clean up on teardown
     mcpApp.onteardown = async () => {
       return {};
     };
 
-    // Connect to host
-    mcpApp.connect();
+    // Connect to host and pick up initial theme
+    mcpApp.connect().then(() => {
+      const ctx = mcpApp.getHostContext();
+      if (ctx?.theme) {
+        setColorMode(ctx.theme === 'dark' ? 'dark' : 'light');
+      }
+    });
   }, [mcpApp]);
 
-  // Enforce light theme for now
-  // TODO set up proper dark/light theme support for charts and EUI components
   return (
-    <EuiProvider colorMode="light">
+    <EuiProvider colorMode={colorMode}>
       <RootContent
         viewMode={viewMode}
         chartPreview={chartPreview}
@@ -185,7 +197,7 @@ function RootContent({
   }
 
   return (
-    <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
+    <div style={{ padding: 40, textAlign: 'center', color: 'inherit' }}>
       {viewMode ? 'Loading…' : 'Waiting for data…'}
     </div>
   );
