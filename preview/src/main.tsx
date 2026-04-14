@@ -16,6 +16,22 @@ import type { DashboardConfig, PanelConfig } from './types';
 import '@elastic/charts/dist/theme_light.css';
 import '@elastic/charts/dist/theme_only_dark.css';
 
+// Import font files as data URIs (Vite inlines them as base64)
+import elasticUiNumericUrl from './fonts/elastic_ui_numeric/ElasticUINumeric-Variable.woff2?url';
+import interRegularUrl from './fonts/inter/Inter-Regular.woff2?url';
+import interBoldUrl from './fonts/inter/Inter-Bold.woff2?url';
+
+/** Convert a base64 data URI to an ArrayBuffer without fetch. */
+function dataUriToBuffer(dataUri: string): ArrayBuffer {
+  const base64 = dataUri.split(',')[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 // Pre-cache icons used by kbn-grid-layout and EuiSuperDatePicker
 import { appendIconComponentCache } from '@elastic/eui/es/components/icon/icon';
 import { icon as arrowDown } from '@elastic/eui/es/components/icon/assets/arrow_down';
@@ -91,9 +107,42 @@ function Root() {
   const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
   const [chartPreview, setChartPreview] = useState<ChartPreviewData | null>(null);
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('dark');
+  const [fontsReady, setFontsReady] = useState(false);
   const [mcpApp] = useState(
     () => new McpApp({ name: 'example-mcp-dashbuilder', version: '0.1.0' })
   );
+
+  // Register fonts via FontFace API with ArrayBuffer source.
+  // CSS @font-face and FontFace url() are both blocked in Cursor's sandbox,
+  // but fetching a data URI to ArrayBuffer and passing raw bytes works.
+  useEffect(() => {
+    async function loadFonts() {
+      try {
+        const faces = [
+          new FontFace('Elastic UI Numeric', dataUriToBuffer(elasticUiNumericUrl), {
+            weight: '100 900',
+            style: 'normal',
+          }),
+          new FontFace('Inter', dataUriToBuffer(interRegularUrl), {
+            weight: '400',
+            style: 'normal',
+          }),
+          new FontFace('Inter', dataUriToBuffer(interBoldUrl), {
+            weight: '700',
+            style: 'normal',
+          }),
+        ];
+        for (const face of faces) {
+          await face.load();
+          document.fonts.add(face);
+        }
+      } catch {
+        // Fonts failed — charts will fall back to system fonts
+      }
+      setFontsReady(true);
+    }
+    loadFonts();
+  }, []);
 
   // Store the tool input so we can extract the chart ID for preview lookup.
   // ontoolinput fires before ontoolresult with the tool call arguments.
@@ -164,7 +213,7 @@ function Root() {
   return (
     <EuiProvider colorMode={colorMode}>
       <RootContent
-        viewMode={viewMode}
+        viewMode={fontsReady ? viewMode : null}
         chartPreview={chartPreview}
         dashboard={dashboard}
         mcpApp={mcpApp}

@@ -23,8 +23,14 @@ vi.mock('@elastic/charts', () => ({
   MetricTrendShape: { Area: 'area', Bars: 'bars' },
   Position: { Bottom: 'bottom', Left: 'left', Right: 'right' },
   ScaleType: { Time: 'time', Ordinal: 'ordinal' },
-  DARK_THEME: { background: { color: '#1D1E24' } },
-  LIGHT_THEME: { background: { color: '#FFFFFF' } },
+  DARK_THEME: {
+    background: { color: '#1D1E24' },
+    axes: { tickLabel: { fontFamily: 'Inter, sans-serif' } },
+  },
+  LIGHT_THEME: {
+    background: { color: '#FFFFFF' },
+    axes: { tickLabel: { fontFamily: 'Inter, sans-serif' } },
+  },
 }));
 
 vi.mock('@elastic/eui', () => ({

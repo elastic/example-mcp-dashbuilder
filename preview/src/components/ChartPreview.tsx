@@ -51,7 +51,7 @@ export function ChartPreview({ preview }: { preview: ChartPreviewData }) {
         maxWidth: 600,
         height,
         padding: 16,
-        fontFamily: 'Inter, system-ui, sans-serif',
+        fontFamily: "'Elastic UI Numeric', Inter, sans-serif",
       }}
     >
       <PanelChrome title={chart.title}>
