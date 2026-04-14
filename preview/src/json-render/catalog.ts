@@ -4,12 +4,10 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    exclude: ['dist/**', 'node_modules/**'],
-  },
-});
+export {
+  jsonUiCatalog,
+  JSON_UI_ACTION_NAME_SCHEMA,
+  type JsonUiActionName,
+  type JsonUiSpec,
+  type JsonUiState,
+} from '@example-mcp-dashbuilder/json-render-contract';

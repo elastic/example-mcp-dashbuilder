@@ -1,0 +1,23 @@
+{
+  "name": "@example-mcp-dashbuilder/json-render-contract",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Elastic-2.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@json-render/core": "^0.17.0",
+    "@json-render/react": "^0.17.0",
+    "zod": "^4.3.6"
+  }
+}

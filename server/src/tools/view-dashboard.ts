@@ -4,7 +4,6 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import { readFileSync } from 'fs';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import {
@@ -13,20 +12,8 @@ import {
   RESOURCE_MIME_TYPE,
 } from '@modelcontextprotocol/ext-apps/server';
 import { getDashboard } from '../utils/dashboard-store.js';
-import { MCP_APP_HTML_PATH } from '../utils/config.js';
-
 import { DASHBOARD_RESOURCE_URI, CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
-
-function loadMcpAppHtml(): string {
-  try {
-    return readFileSync(MCP_APP_HTML_PATH, 'utf-8');
-  } catch {
-    return `<!DOCTYPE html>
-<html><body>
-<p>MCP App not built. Run <code>npm run build:mcp-app</code> in the preview directory first.</p>
-</body></html>`;
-  }
-}
+import { loadMcpAppHtml } from '../utils/mcp-app-html.js';
 
 export function registerViewDashboard(server: McpServer): void {
   // Shared HTML bundle used by both dashboard and chart preview

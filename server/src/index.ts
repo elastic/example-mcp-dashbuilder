@@ -31,9 +31,11 @@ import { registerManageDashboard } from './tools/manage-dashboard.js';
 import { registerExportToKibana } from './tools/export-to-kibana.js';
 import { registerImportFromKibana } from './tools/import-from-kibana.js';
 import { registerViewDashboard } from './tools/view-dashboard.js';
+import { registerRenderJsonUi } from './tools/render-json-ui.js';
 import { registerAppOnlyTools } from './tools/app-only-tools.js';
 import { DATAVIZ_GUIDELINES } from './resources/dataviz-guidelines.js';
 import { buildEsqlReference } from './resources/esql-reference.js';
+import { registerJsonRenderResources } from './resources/json-render-resources.js';
 import { SERVER_INSTRUCTIONS } from './resources/instructions.js';
 
 const server = new McpServer(
@@ -89,6 +91,8 @@ server.resource(
   })
 );
 
+registerJsonRenderResources(server);
+
 // Register all tools
 registerRunEsql(server);
 registerListIndices(server);
@@ -100,6 +104,7 @@ registerManageDashboard(server);
 registerExportToKibana(server);
 registerImportFromKibana(server);
 registerViewDashboard(server);
+registerRenderJsonUi(server);
 registerAppOnlyTools(server);
 
 // Clean up on shutdown

@@ -11,6 +11,7 @@ import { App as McpApp } from '@modelcontextprotocol/ext-apps';
 import { App } from './App';
 import { ChartPreview } from './components/ChartPreview';
 import { McpAppProvider } from './context/McpAppContext';
+import { JsonUiApp } from './json-render/JsonUiApp';
 import type { DashboardConfig, PanelConfig } from './types';
 
 import '@elastic/charts/dist/theme_light.css';
@@ -39,12 +40,17 @@ import { icon as arrowLeft } from '@elastic/eui/es/components/icon/assets/arrow_
 import { icon as arrowRight } from '@elastic/eui/es/components/icon/assets/arrow_right';
 import { icon as arrowUp } from '@elastic/eui/es/components/icon/assets/arrow_up';
 import { icon as calendar } from '@elastic/eui/es/components/icon/assets/calendar';
+import { icon as check } from '@elastic/eui/es/components/icon/assets/check';
 import { icon as chevronSingleDown } from '@elastic/eui/es/components/icon/assets/chevron_single_down';
 import { icon as chevronSingleRight } from '@elastic/eui/es/components/icon/assets/chevron_single_right';
 import { icon as clock } from '@elastic/eui/es/components/icon/assets/clock';
 import { icon as cross } from '@elastic/eui/es/components/icon/assets/cross';
+import { icon as dot } from '@elastic/eui/es/components/icon/assets/dot';
 import { icon as grab } from '@elastic/eui/es/components/icon/assets/grab';
 import { icon as grabOmnidirectional } from '@elastic/eui/es/components/icon/assets/grab_omnidirectional';
+import { icon as help } from '@elastic/eui/es/components/icon/assets/help';
+import { icon as iInCircle } from '@elastic/eui/es/components/icon/assets/info';
+import { icon as minusInCircle } from '@elastic/eui/es/components/icon/assets/minus_circle';
 import { icon as move } from '@elastic/eui/es/components/icon/assets/move';
 import { icon as pencil } from '@elastic/eui/es/components/icon/assets/pencil';
 import { icon as plus } from '@elastic/eui/es/components/icon/assets/plus';
@@ -59,12 +65,17 @@ appendIconComponentCache({
   arrowRight,
   arrowUp,
   calendar,
+  check,
   chevronSingleDown,
   chevronSingleRight,
   clock,
   cross,
+  dot,
   grab,
   grabOmnidirectional,
+  help,
+  iInCircle,
+  minusInCircle,
   move,
   pencil,
   plus,
@@ -93,6 +104,7 @@ function parseToolResult(result: { content?: Array<{ type: string; text?: string
 
 /** Tools that show a single chart preview instead of the full dashboard. */
 const CHART_PREVIEW_TOOLS = new Set(['create_chart', 'create_metric', 'create_heatmap']);
+const JSON_UI_TOOLS = new Set(['render_json_ui']);
 
 interface ChartPreviewData {
   chart: PanelConfig;
@@ -100,12 +112,13 @@ interface ChartPreviewData {
   trendData?: Record<string, unknown>[];
 }
 
-type ViewMode = 'dashboard' | 'chart-preview';
+type ViewMode = 'dashboard' | 'chart-preview' | 'json-ui';
 
 function Root() {
   const [viewMode, setViewMode] = useState<ViewMode | null>(null);
   const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
   const [chartPreview, setChartPreview] = useState<ChartPreviewData | null>(null);
+  const [jsonUiId, setJsonUiId] = useState<string | null>(null);
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('dark');
   const [fontsReady, setFontsReady] = useState(false);
   const [mcpApp] = useState(
@@ -159,6 +172,7 @@ function Root() {
       // when the user scrolls back to it later.
       const toolName = mcpApp.getHostContext()?.toolInfo?.tool?.name;
       const isChartPreview = toolName != null && CHART_PREVIEW_TOOLS.has(toolName);
+      const isJsonUiPreview = toolName != null && JSON_UI_TOOLS.has(toolName);
 
       if (isChartPreview) {
         // Pass the chart ID from the tool arguments so the server returns
@@ -176,6 +190,12 @@ function Root() {
               setViewMode('chart-preview');
             }
           });
+      } else if (isJsonUiPreview) {
+        const uiId = toolInputRef.current?.uiId as string | undefined;
+        if (uiId) {
+          setJsonUiId(uiId);
+          setViewMode('json-ui');
+        }
       } else {
         // Pass dashboardId from the tool arguments so the MCP App shows
         // the correct dashboard for this conversation's session.
@@ -222,6 +242,7 @@ function Root() {
         viewMode={fontsReady ? viewMode : null}
         chartPreview={chartPreview}
         dashboard={dashboard}
+        jsonUiId={jsonUiId}
         mcpApp={mcpApp}
       />
     </EuiProvider>
@@ -232,15 +253,25 @@ function RootContent({
   viewMode,
   chartPreview,
   dashboard,
+  jsonUiId,
   mcpApp,
 }: {
   viewMode: ViewMode | null;
   chartPreview: ChartPreviewData | null;
   dashboard: DashboardConfig | null;
+  jsonUiId: string | null;
   mcpApp: McpApp;
 }) {
   if (viewMode === 'chart-preview' && chartPreview) {
     return <ChartPreview preview={{ mode: 'chart-preview', ...chartPreview }} />;
+  }
+
+  if (viewMode === 'json-ui' && jsonUiId) {
+    return (
+      <McpAppProvider app={mcpApp}>
+        <JsonUiApp uiId={jsonUiId} />
+      </McpAppProvider>
+    );
   }
 
   if (viewMode === 'dashboard' && dashboard) {

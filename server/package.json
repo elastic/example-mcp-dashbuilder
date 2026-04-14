@@ -13,6 +13,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "^9.0.0",
     "@elastic/esql": "^1.7.0",
+    "@example-mcp-dashbuilder/json-render-contract": "^0.1.0",
     "@modelcontextprotocol/ext-apps": "^1.5.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.24.0"

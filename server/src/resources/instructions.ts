@@ -10,7 +10,8 @@
  */
 export const SERVER_INSTRUCTIONS = `\
 Elastic Dashbuilder provides tools and resources for creating \
-Elasticsearch visualizations using ES|QL and Elastic Charts.
+Elasticsearch visualizations using ES|QL and Elastic Charts, plus small \
+schema-driven UIs using json-render and a curated EUI catalog.
 
 ## Workflow
 
@@ -24,6 +25,14 @@ session isolation. This prevents different chat sessions from interfering with e
 7. Organize with \`create_section\` and \`move_panel_to_section\`.
 8. Call \`view_dashboard\` to show the interactive preview.
 9. Export with \`export_to_kibana\` when ready.
+
+## json-render Workflow
+
+1. Read \`json-render://catalog\`, \`json-render://schema\`, and \
+\`json-render://binding-reference\` before generating a schema-driven UI.
+2. Use only the curated components, bindings, and allowlisted actions documented in those resources.
+3. Render small focused UIs with \`render_json_ui\`.
+4. Always provide a new immutable \`uiId\` for each rendered snapshot. Do not reuse existing ids.
 
 ## Tips
 
@@ -43,10 +52,11 @@ but for any other date field, always set it explicitly.
 Supported: bar, line, area, pie, metric, and heatmap charts; \
 ES|QL queries; index and field exploration; collapsible sections; \
 export to Kibana as Lens visualizations; import existing Kibana dashboards (ES|QL panels only); \
-interactive previews inline.
+interactive previews inline; json-render previews backed by a curated EUI catalog.
 
 Not supported: non-ES|QL data sources; \
 chart types other than bar, line, area, pie, metric, heatmap; \
 Kibana alerts, rules, or saved searches; \
-import of dashboards with index-pattern-based (formBased) queries.
+import of dashboards with index-pattern-based (formBased) queries; \
+arbitrary json-render components or free-form server actions outside the documented catalog.
 `;

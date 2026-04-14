@@ -13,6 +13,8 @@ import { parseIndexPattern } from '../utils/esql-parser.js';
 import { detectTimeField } from '../utils/time-field.js';
 import { getDashboard, saveDashboardLayout } from '../utils/dashboard-store.js';
 import { getChartPreview } from '../utils/chart-preview-store.js';
+import { getJsonUiPayload } from '../utils/json-ui-store.js';
+import { dispatchJsonUiAction } from '../utils/json-ui-actions.js';
 import type { ESQLResponse, DashboardConfig } from '../types.js';
 
 /**
@@ -48,6 +50,40 @@ export function registerAppOnlyTools(server: McpServer): void {
             text: JSON.stringify(dashboard),
           },
         ],
+      };
+    }
+  );
+
+  // ── get-json-ui-payload ────────────────────────────────────────────────
+  // Returns the exact immutable JSON UI snapshot for a specific uiId.
+  registerAppOnlyTool(
+    server,
+    'app_only_get_json_ui_payload',
+    {
+      title: 'Get JSON UI Payload',
+      description:
+        'Returns a stored json-render snapshot including the validated spec and current state.',
+      inputSchema: {
+        uiId: z.string().describe('Immutable JSON UI snapshot ID to load'),
+      },
+      _meta: { ui: { visibility: ['app'] } },
+    },
+    async ({ uiId }) => {
+      const payload = getJsonUiPayload(uiId);
+      if (!payload) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `JSON UI snapshot "${uiId}" not found.`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(payload) }],
       };
     }
   );
@@ -179,6 +215,43 @@ export function registerAppOnlyTools(server: McpServer): void {
         const message = err instanceof Error ? err.message : String(err);
         return {
           content: [{ type: 'text' as const, text: `field_caps failed: ${message}` }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // ── dispatch-json-ui-action ────────────────────────────────────────────
+  // Executes a small allowlisted action surface for json-render previews.
+  registerAppOnlyTool(
+    server,
+    'app_only_dispatch_json_ui_action',
+    {
+      title: 'Dispatch JSON UI Action',
+      description:
+        'Dispatch an allowlisted JSON UI action such as sync_state, reset_state, or refresh_ui.',
+      inputSchema: {
+        uiId: z.string().describe('Immutable JSON UI snapshot ID to operate on'),
+        action: z
+          .enum(['sync_state', 'reset_state', 'refresh_ui'])
+          .describe('Allowlisted JSON UI action name'),
+        state: z
+          .record(z.string(), z.unknown())
+          .optional()
+          .describe('Optional current local state, required for sync_state'),
+      },
+      _meta: { ui: { visibility: ['app'] } },
+    },
+    async ({ uiId, action, state }) => {
+      try {
+        const result = dispatchJsonUiAction(uiId, action, state);
+        return {
+          content: [{ type: 'text' as const, text: JSON.stringify(result) }],
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          content: [{ type: 'text' as const, text: `JSON UI action failed: ${message}` }],
           isError: true,
         };
       }
