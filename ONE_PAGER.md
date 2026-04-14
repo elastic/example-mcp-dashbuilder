@@ -126,22 +126,16 @@ The grid layout is currently vendored (copy-pasted) from the Kibana repository. 
 - Versioned and maintained alongside Kibana releases
 - Installed via `npm install` instead of copied into the project
 
-**5. Resolve licensing for vendored code**
-The grid layout code carries Elastic License 2.0 + SSPL headers from Kibana. Publishing as a separate npm package with clear licensing is required.
-
-**6. Align visualization capabilities with Lens**
+**5. Align visualization capabilities with Lens**
 Currently the app can create Elastic Charts configurations that have no equivalent in Lens. The AI should be instructed with Lens-specific constraints so that every chart it creates can be faithfully exported to Kibana. The dataviz guidelines resource should document what Lens supports and what it doesn't.
 
-**7. Support more Lens chart types**
+**6. Support more Lens chart types**
 Only bar, line, area, pie, metric, and heatmap are supported today. Lens also supports gauge, donut, treemap/mosaic, datatable, and tag cloud. Adding these would increase the coverage of dashboards that can be round-tripped between the MCP app and Kibana.
 
-**8. Error UX in the preview**
+**7. Error UX in the preview**
 When an ES|QL query fails, panels show a basic error message. The preview should display more detailed error information to help users debug query issues.
 
 ### Nice to Have
-
-**9. Session isolation**
-The MCP server stores dashboard state in memory per process. All chat sessions within one host window share the same state. Introducing session scoping or per-chat namespacing would allow parallel dashboard work.
 
 **10. Collaborative editing**
 Multiple users working on the same dashboard via shared MCP server state.

@@ -31,17 +31,18 @@ export function registerSectionTools(server: McpServer): void {
           .optional()
           .default([])
           .describe('Optional list of panel IDs to include in this section immediately'),
+        dashboardId: z
+          .string()
+          .optional()
+          .describe(
+            'Target dashboard ID for session isolation. If omitted, uses the active dashboard.'
+          ),
       },
     },
     async (args) => {
       const { id, title, panelIds } = args;
 
-      const dashboard = addSection({
-        id,
-        title,
-        collapsed: false,
-        panelIds,
-      });
+      const dashboard = addSection({ id, title, collapsed: false, panelIds }, args.dashboardId);
 
       return {
         content: [
@@ -64,13 +65,20 @@ export function registerSectionTools(server: McpServer): void {
       inputSchema: {
         panelId: z.string().describe('The ID of the panel to move'),
         sectionId: z.string().describe('The ID of the section to move the panel into'),
+        dashboardId: z
+          .string()
+          .optional()
+          .describe(
+            'Target dashboard ID for session isolation. If omitted, uses the active dashboard.'
+          ),
       },
     },
     async (args) => {
-      const { panelId, sectionId } = args;
-      movePanelToSection(panelId, sectionId);
+      movePanelToSection(args.panelId, args.sectionId, args.dashboardId);
       return {
-        content: [{ type: 'text', text: `Panel "${panelId}" moved to section "${sectionId}".` }],
+        content: [
+          { type: 'text', text: `Panel "${args.panelId}" moved to section "${args.sectionId}".` },
+        ],
       };
     }
   );
@@ -83,13 +91,18 @@ export function registerSectionTools(server: McpServer): void {
       description: 'Remove a section. Panels in the section will become top-level panels again.',
       inputSchema: {
         sectionId: z.string().describe('The ID of the section to remove'),
+        dashboardId: z
+          .string()
+          .optional()
+          .describe(
+            'Target dashboard ID for session isolation. If omitted, uses the active dashboard.'
+          ),
       },
     },
     async (args) => {
-      const { sectionId } = args;
-      removeSection(sectionId);
+      removeSection(args.sectionId, args.dashboardId);
       return {
-        content: [{ type: 'text', text: `Section "${sectionId}" removed.` }],
+        content: [{ type: 'text', text: `Section "${args.sectionId}" removed.` }],
       };
     }
   );

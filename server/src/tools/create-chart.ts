@@ -61,6 +61,12 @@ export function registerCreateChart(server: McpServer): void {
             'Optional date field for time filtering, e.g. "@timestamp" or "order_date". ' +
               'Set this when the index has multiple date fields to ensure the time picker filters correctly.'
           ),
+        dashboardId: z
+          .string()
+          .optional()
+          .describe(
+            'Target dashboard ID for session isolation. If omitted, uses the active dashboard.'
+          ),
       },
       _meta: {
         ui: { resourceUri: CHART_PREVIEW_RESOURCE_URI },
@@ -117,7 +123,7 @@ export function registerCreateChart(server: McpServer): void {
         timeField,
       };
 
-      const dashboard = addChart(chart);
+      const dashboard = addChart(chart, args.dashboardId);
 
       const statusText =
         `Chart "${title}" (${chartType}) added to dashboard. ` +

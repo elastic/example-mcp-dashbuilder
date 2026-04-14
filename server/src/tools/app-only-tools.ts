@@ -30,12 +30,17 @@ export function registerAppOnlyTools(server: McpServer): void {
     {
       title: 'Get Dashboard Config',
       description:
-        'Returns the full active dashboard configuration including all charts, sections, and layout.',
-      inputSchema: {},
+        'Returns the full dashboard configuration including all charts, sections, and layout.',
+      inputSchema: {
+        dashboardId: z
+          .string()
+          .optional()
+          .describe('Dashboard ID to retrieve. If omitted, returns the active dashboard.'),
+      },
       _meta: { ui: { visibility: ['app'] } },
     },
-    async () => {
-      const dashboard = getDashboard();
+    async ({ dashboardId }) => {
+      const dashboard = getDashboard(dashboardId);
       return {
         content: [
           {
@@ -122,12 +127,16 @@ export function registerAppOnlyTools(server: McpServer): void {
       description: 'Persist grid layout changes from drag/resize in the dashboard.',
       inputSchema: {
         layout: z.record(z.string(), z.unknown()).describe('Grid layout data from kbn-grid-layout'),
+        dashboardId: z
+          .string()
+          .optional()
+          .describe('Dashboard ID for session isolation. If omitted, uses the active dashboard.'),
       },
       _meta: { ui: { visibility: ['app'] } },
     },
-    async ({ layout }) => {
+    async ({ layout, dashboardId }) => {
       try {
-        saveDashboardLayout(layout as DashboardConfig['gridLayout']);
+        saveDashboardLayout(layout as DashboardConfig['gridLayout'], dashboardId);
         return {
           content: [{ type: 'text' as const, text: 'Layout saved' }],
         };

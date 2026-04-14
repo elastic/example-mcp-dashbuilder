@@ -36,6 +36,12 @@ export function registerExportToKibana(server: McpServer): void {
           .describe(
             'Optional title override for the Kibana dashboard. Defaults to the current dashboard title.'
           ),
+        dashboardId: z
+          .string()
+          .optional()
+          .describe(
+            'Target dashboard ID for session isolation. If omitted, uses the active dashboard.'
+          ),
       },
     },
     async (args) => {
@@ -54,7 +60,7 @@ export function registerExportToKibana(server: McpServer): void {
         };
       }
 
-      const dashboard = getDashboard();
+      const dashboard = getDashboard(args.dashboardId);
 
       if (dashboard.charts.length === 0) {
         return {
