@@ -6,6 +6,7 @@
 
 import { readFileSync } from 'fs';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
 import {
   registerAppTool,
   registerAppResource,
@@ -78,12 +79,20 @@ export function registerViewDashboard(server: McpServer): void {
         'Display the live dashboard preview inline in the chat. ' +
         'Shows all charts rendered with Elastic Charts in the Kibana grid layout. ' +
         'The preview is interactive — you can see tooltips and hover states.',
+      inputSchema: {
+        dashboardId: z
+          .string()
+          .optional()
+          .describe(
+            'Target dashboard ID for session isolation. If omitted, uses the active dashboard.'
+          ),
+      },
       _meta: {
         ui: { resourceUri: DASHBOARD_RESOURCE_URI },
       },
     },
-    async () => {
-      const dashboard = getDashboard();
+    async (args: { dashboardId?: string }) => {
+      const dashboard = getDashboard(args.dashboardId);
       const chartCount = dashboard.charts.length;
       const sectionCount = (dashboard.sections || []).length;
 

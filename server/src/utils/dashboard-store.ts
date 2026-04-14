@@ -64,8 +64,13 @@ function emptyDashboard(title = 'Untitled Dashboard'): DashboardConfig {
   return { title, charts: [], sections: [], updatedAt: new Date().toISOString() };
 }
 
-function readDashboard(): DashboardConfig {
-  const id = getActiveDashboardId();
+/** Resolve which dashboard ID to use: explicit override or the global active one. */
+function resolveId(dashboardId?: string): string {
+  return dashboardId ? safeDashboardId(dashboardId) : getActiveDashboardId();
+}
+
+function readDashboard(dashboardId?: string): DashboardConfig {
+  const id = resolveId(dashboardId);
   const path = getDashboardPath(id);
   if (existsSync(path)) {
     const raw = JSON.parse(readFileSync(path, 'utf-8'));
@@ -82,10 +87,10 @@ function atomicWriteSync(filePath: string, data: string): void {
   renameSync(tmp, filePath);
 }
 
-function writeDashboard(config: DashboardConfig): void {
+function writeDashboard(config: DashboardConfig, dashboardId?: string): void {
   ensureDashboardsDir();
   config.updatedAt = new Date().toISOString();
-  const id = getActiveDashboardId();
+  const id = resolveId(dashboardId);
   const json = JSON.stringify(config, null, 2);
   atomicWriteSync(getDashboardPath(id), json);
 }
@@ -156,75 +161,85 @@ export function deleteDashboard(id: string): void {
   }
 }
 
-// ── Panel/section operations (operate on active dashboard) ──
+// ── Panel/section operations ──
+// All functions accept an optional `dashboardId` for session isolation.
+// When provided, they operate on that specific dashboard without changing
+// the global active pointer. When omitted, they use the active dashboard.
 
-export function addChart(chart: PanelConfig): DashboardConfig {
-  const dashboard = readDashboard();
+export function addChart(chart: PanelConfig, dashboardId?: string): DashboardConfig {
+  const dashboard = readDashboard(dashboardId);
   const idx = dashboard.charts.findIndex((c) => c.id === chart.id);
   if (idx >= 0) {
     dashboard.charts[idx] = chart;
   } else {
     dashboard.charts.push(chart);
   }
-  writeDashboard(dashboard);
+  writeDashboard(dashboard, dashboardId);
   return dashboard;
 }
 
-export function removeChart(chartId: string): DashboardConfig {
-  const dashboard = readDashboard();
+export function removeChart(chartId: string, dashboardId?: string): DashboardConfig {
+  const dashboard = readDashboard(dashboardId);
   dashboard.charts = dashboard.charts.filter((c) => c.id !== chartId);
   for (const section of dashboard.sections) {
     section.panelIds = section.panelIds.filter((id) => id !== chartId);
   }
-  writeDashboard(dashboard);
+  writeDashboard(dashboard, dashboardId);
   return dashboard;
 }
 
-export function setDashboardTitle(title: string): DashboardConfig {
-  const dashboard = readDashboard();
+export function setDashboardTitle(title: string, dashboardId?: string): DashboardConfig {
+  const dashboard = readDashboard(dashboardId);
   dashboard.title = title;
-  writeDashboard(dashboard);
+  writeDashboard(dashboard, dashboardId);
   return dashboard;
 }
 
-export function getDashboard(): DashboardConfig {
-  return readDashboard();
+export function getDashboard(dashboardId?: string): DashboardConfig {
+  return readDashboard(dashboardId);
 }
 
-export function clearDashboard(): DashboardConfig {
+export function clearDashboard(dashboardId?: string): DashboardConfig {
   const config = emptyDashboard();
-  writeDashboard(config);
+  writeDashboard(config, dashboardId);
   return config;
 }
 
-export function addSection(section: SectionConfig): DashboardConfig {
-  const dashboard = readDashboard();
+export function addSection(section: SectionConfig, dashboardId?: string): DashboardConfig {
+  const dashboard = readDashboard(dashboardId);
   const idx = dashboard.sections.findIndex((s) => s.id === section.id);
   if (idx >= 0) {
     dashboard.sections[idx] = section;
   } else {
     dashboard.sections.push(section);
   }
-  writeDashboard(dashboard);
+  writeDashboard(dashboard, dashboardId);
   return dashboard;
 }
 
-export function removeSection(sectionId: string): DashboardConfig {
-  const dashboard = readDashboard();
+export function removeSection(sectionId: string, dashboardId?: string): DashboardConfig {
+  const dashboard = readDashboard(dashboardId);
   dashboard.sections = dashboard.sections.filter((s) => s.id !== sectionId);
-  writeDashboard(dashboard);
+  writeDashboard(dashboard, dashboardId);
   return dashboard;
 }
 
-export function saveDashboardLayout(gridLayout: DashboardConfig['gridLayout']): DashboardConfig {
-  const dashboard = readDashboard();
+export function saveDashboardLayout(
+  gridLayout: DashboardConfig['gridLayout'],
+  dashboardId?: string
+): DashboardConfig {
+  const dashboard = readDashboard(dashboardId);
   dashboard.gridLayout = gridLayout;
-  writeDashboard(dashboard);
+  writeDashboard(dashboard, dashboardId);
   return dashboard;
 }
 
-export function movePanelToSection(panelId: string, sectionId: string): DashboardConfig {
-  const dashboard = readDashboard();
+export function movePanelToSection(
+  panelId: string,
+  sectionId: string,
+  dashboardId?: string
+): DashboardConfig {
+  const dashboard = readDashboard(dashboardId);
   for (const section of dashboard.sections) {
     section.panelIds = section.panelIds.filter((id) => id !== panelId);
   }
@@ -232,6 +247,6 @@ export function movePanelToSection(panelId: string, sectionId: string): Dashboar
   if (target) {
     target.panelIds.push(panelId);
   }
-  writeDashboard(dashboard);
+  writeDashboard(dashboard, dashboardId);
   return dashboard;
 }

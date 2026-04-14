@@ -63,6 +63,12 @@ export function registerCreateHeatmap(server: McpServer): void {
             'Optional date field for time filtering, e.g. "@timestamp". ' +
               'Set this when the index has multiple date fields.'
           ),
+        dashboardId: z
+          .string()
+          .optional()
+          .describe(
+            'Target dashboard ID for session isolation. If omitted, uses the active dashboard.'
+          ),
       },
       _meta: {
         ui: { resourceUri: CHART_PREVIEW_RESOURCE_URI },
@@ -113,7 +119,7 @@ export function registerCreateHeatmap(server: McpServer): void {
         timeField,
       };
 
-      const dashboard = addChart(heatmap);
+      const dashboard = addChart(heatmap, args.dashboardId);
 
       const values = data.map((d) => Number(d[valueField])).filter((v) => !isNaN(v));
       const min = Math.min(...values);

@@ -29,6 +29,7 @@ One-click export to Kibana as Lens visualizations
 - **Custom color themes** — apply custom palettes to charts, heatmaps, and metrics
 - **Time picker** — filter data by time range with automatic time field detection
 - **Multiple dashboards** — create, switch between, and manage multiple dashboards
+- **Session isolation** — parallel chat conversations work on separate dashboards via `dashboardId` threading
 - **Elastic Cloud support** — works with local Elasticsearch and Elastic Cloud (Cloud ID + API key)
 - **Server instructions** — workflow, tips, and capabilities exposed to every MCP client via the `initialize` response
 - **Dataviz best practices** — built-in guidelines for chart selection and dashboard composition

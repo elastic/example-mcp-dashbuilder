@@ -18,6 +18,11 @@ import {
 } from '../utils/dashboard-store.js';
 import { registerTool } from '../utils/register-tool.js';
 
+const dashboardIdParam = z
+  .string()
+  .optional()
+  .describe('Target dashboard ID for session isolation. If omitted, uses the active dashboard.');
+
 export function registerManageDashboard(server: McpServer): void {
   registerTool(
     server,
@@ -26,7 +31,8 @@ export function registerManageDashboard(server: McpServer): void {
       title: 'Create Dashboard',
       description:
         'Create a new empty dashboard and make it the active one. ' +
-        'The previous dashboard is preserved and can be switched back to with switch_dashboard.',
+        'The previous dashboard is preserved and can be switched back to with switch_dashboard. ' +
+        'Returns the new dashboard ID — pass it as dashboardId on subsequent tool calls to maintain session isolation.',
       inputSchema: {
         title: z.string().describe('Dashboard title, e.g. "Ecommerce Overview"'),
         id: z
@@ -41,7 +47,7 @@ export function registerManageDashboard(server: McpServer): void {
         content: [
           {
             type: 'text',
-            text: `Dashboard "${dashboard.title}" created (id: ${dashId}) and set as active.`,
+            text: `Dashboard "${dashboard.title}" created (id: ${dashId}) and set as active. Use dashboardId: "${dashId}" on subsequent calls.`,
           },
         ],
       };
@@ -127,11 +133,14 @@ export function registerManageDashboard(server: McpServer): void {
     'set_dashboard_title',
     {
       title: 'Set Dashboard Title',
-      description: 'Set or update the active dashboard title.',
-      inputSchema: { title: z.string().describe('The dashboard title') },
+      description: 'Set or update the dashboard title.',
+      inputSchema: {
+        title: z.string().describe('The dashboard title'),
+        dashboardId: dashboardIdParam,
+      },
     },
     async (args) => {
-      const dashboard = setDashboardTitle(args.title);
+      const dashboard = setDashboardTitle(args.title, args.dashboardId);
       return { content: [{ type: 'text', text: `Dashboard title set to "${dashboard.title}".` }] };
     }
   );
@@ -141,11 +150,14 @@ export function registerManageDashboard(server: McpServer): void {
     'remove_chart',
     {
       title: 'Remove Chart',
-      description: 'Remove a chart from the active dashboard by its id.',
-      inputSchema: { chartId: z.string().describe('The id of the chart to remove') },
+      description: 'Remove a chart from the dashboard by its id.',
+      inputSchema: {
+        chartId: z.string().describe('The id of the chart to remove'),
+        dashboardId: dashboardIdParam,
+      },
     },
     async (args) => {
-      const dashboard = removeChart(args.chartId);
+      const dashboard = removeChart(args.chartId, args.dashboardId);
       return {
         content: [
           {
@@ -162,11 +174,13 @@ export function registerManageDashboard(server: McpServer): void {
     'get_dashboard',
     {
       title: 'Get Dashboard',
-      description: 'Get the active dashboard configuration including all charts.',
-      inputSchema: {},
+      description: 'Get the dashboard configuration including all charts.',
+      inputSchema: {
+        dashboardId: dashboardIdParam,
+      },
     },
-    async () => {
-      const dashboard = getDashboard();
+    async (args) => {
+      const dashboard = getDashboard(args.dashboardId);
       return { content: [{ type: 'text', text: JSON.stringify(dashboard, null, 2) }] };
     }
   );
@@ -176,11 +190,13 @@ export function registerManageDashboard(server: McpServer): void {
     'clear_dashboard',
     {
       title: 'Clear Dashboard',
-      description: 'Remove all charts and reset the active dashboard to a blank state.',
-      inputSchema: {},
+      description: 'Remove all charts and reset the dashboard to a blank state.',
+      inputSchema: {
+        dashboardId: dashboardIdParam,
+      },
     },
-    async () => {
-      clearDashboard();
+    async (args) => {
+      clearDashboard(args.dashboardId);
       return { content: [{ type: 'text', text: 'Dashboard cleared.' }] };
     }
   );

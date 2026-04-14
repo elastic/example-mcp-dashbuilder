@@ -177,8 +177,14 @@ function Root() {
             }
           });
       } else {
+        // Pass dashboardId from the tool arguments so the MCP App shows
+        // the correct dashboard for this conversation's session.
+        const dashboardId = toolInputRef.current?.dashboardId as string | undefined;
         mcpApp
-          .callServerTool({ name: 'app_only_get_dashboard_config', arguments: {} })
+          .callServerTool({
+            name: 'app_only_get_dashboard_config',
+            arguments: dashboardId ? { dashboardId } : {},
+          })
           .then((r) => {
             const data = parseToolResult(r) as DashboardConfig | null;
             if (data) {

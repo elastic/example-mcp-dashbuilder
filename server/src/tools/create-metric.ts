@@ -80,6 +80,12 @@ export function registerCreateMetric(server: McpServer): void {
             'Optional date field for time filtering, e.g. "@timestamp". ' +
               'Set this when the index has multiple date fields.'
           ),
+        dashboardId: z
+          .string()
+          .optional()
+          .describe(
+            'Target dashboard ID for session isolation. If omitted, uses the active dashboard.'
+          ),
       },
       _meta: {
         ui: { resourceUri: CHART_PREVIEW_RESOURCE_URI },
@@ -179,7 +185,7 @@ export function registerCreateMetric(server: McpServer): void {
         timeField,
       };
 
-      const dashboard = addChart(metric);
+      const dashboard = addChart(metric, args.dashboardId);
 
       const formattedValue = `${valuePrefix || ''}${value.toLocaleString()}${valueSuffix || ''}`;
       const statusText =

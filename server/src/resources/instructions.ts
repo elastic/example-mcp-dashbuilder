@@ -15,13 +15,15 @@ Elasticsearch visualizations using ES|QL and Elastic Charts.
 ## Workflow
 
 1. Read the \`dataviz://guidelines\` and \`esql://reference\` resources before creating charts.
-2. Create a new dashboard with \`create_dashboard\` (or use the active one).
-3. Use \`list_indices\` and \`get_fields\` to explore available data.
-4. Use \`run_esql\` to test queries before creating charts.
-5. Create visualizations with \`create_chart\`, \`create_metric\`, \`create_heatmap\`.
-6. Organize with \`create_section\` and \`move_panel_to_section\`.
-7. Call \`view_dashboard\` to show the interactive preview.
-8. Export with \`export_to_kibana\` when ready.
+2. Create a new dashboard with \`create_dashboard\` — note the returned \`dashboardId\`.
+3. **Pass \`dashboardId\` on every subsequent tool call** in this conversation to ensure \
+session isolation. This prevents different chat sessions from interfering with each other.
+4. Use \`list_indices\` and \`get_fields\` to explore available data.
+5. Use \`run_esql\` to test queries before creating charts.
+6. Create visualizations with \`create_chart\`, \`create_metric\`, \`create_heatmap\`.
+7. Organize with \`create_section\` and \`move_panel_to_section\`.
+8. Call \`view_dashboard\` to show the interactive preview.
+9. Export with \`export_to_kibana\` when ready.
 
 ## Tips
 
