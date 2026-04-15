@@ -22,13 +22,16 @@ export function PanelChrome({ title, isLoading, children }: PanelChromeProps) {
       flexDirection: 'column',
       height: '100%',
       overflow: 'hidden',
+      backgroundColor: `var(--color-background-secondary, ${euiTheme.colors.emptyShade})`,
+      borderColor: `var(--color-border-primary, ${euiTheme.border.color})`,
+      color: `var(--color-text-primary, ${euiTheme.colors.text})`,
     }),
-    []
+    [euiTheme.border.color, euiTheme.colors.emptyShade, euiTheme.colors.text]
   );
   const headerStyle = useMemo<React.CSSProperties>(
     () => ({
       padding: `${euiTheme.size.xs} ${euiTheme.size.m}`,
-      borderBottom: `1px solid ${euiTheme.border.color}`,
+      borderBottom: `1px solid var(--color-border-primary, ${euiTheme.border.color})`,
       minHeight: 32,
       display: 'flex',
       alignItems: 'center',
@@ -49,9 +52,9 @@ export function PanelChrome({ title, isLoading, children }: PanelChromeProps) {
       flex: 1,
       padding: Number.parseInt(euiTheme.size.s, 10) || 8,
       minHeight: 0,
-      fontFamily: "'Elastic UI Numeric', Inter, sans-serif",
+      fontFamily: `'Elastic UI Numeric', var(--font-sans, ${euiTheme.font.family})`,
     }),
-    [euiTheme.size.s]
+    [euiTheme.font.family, euiTheme.size.s]
   );
 
   return (

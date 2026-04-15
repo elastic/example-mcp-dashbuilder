@@ -4,13 +4,22 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { EuiProvider } from '@elastic/eui';
-import { App as McpApp } from '@modelcontextprotocol/ext-apps';
+import { App as McpApp, type McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import { App } from './App';
 import { ChartPreview } from './components/ChartPreview';
 import { McpAppProvider } from './context/McpAppContext';
+import {
+  clearHostStyleVariables,
+  mergeHostThemeContext,
+  resolveHostTheme,
+  syncHostStyleVariables,
+  type HostThemeContext,
+  NEUTRAL_DARK_EUI_MODIFY,
+  NEUTRAL_DARK_GLOBAL_CSS,
+} from './themes';
 import type { DashboardConfig, PanelConfig } from './types';
 
 import '@elastic/charts/dist/theme_light.css';
@@ -102,15 +111,27 @@ interface ChartPreviewData {
 
 type ViewMode = 'dashboard' | 'chart-preview';
 
+function toHostThemeContext(
+  context?: Pick<McpUiHostContext, 'styles' | 'theme'>
+): HostThemeContext | undefined {
+  if (!context) return undefined;
+  return {
+    styles: context.styles,
+    theme: context.theme,
+  };
+}
+
 function Root() {
   const [viewMode, setViewMode] = useState<ViewMode | null>(null);
   const [dashboard, setDashboard] = useState<DashboardConfig | null>(null);
   const [chartPreview, setChartPreview] = useState<ChartPreviewData | null>(null);
-  const [colorMode, setColorMode] = useState<'light' | 'dark'>('dark');
+  const [themeState, setThemeState] = useState(() => resolveHostTheme(undefined));
   const [fontsReady, setFontsReady] = useState(false);
   const [mcpApp] = useState(
     () => new McpApp({ name: 'example-mcp-dashbuilder', version: '0.1.0' })
   );
+  const appliedHostStyleKeysRef = useRef<Set<string>>(new Set());
+  const hostThemeContextRef = useRef<HostThemeContext | undefined>();
 
   // Register fonts via FontFace API with ArrayBuffer source.
   // CSS @font-face and FontFace url() are both blocked in Cursor's sandbox,
@@ -146,9 +167,19 @@ function Root() {
 
   // Store the tool input so we can extract the chart ID for preview lookup.
   // ontoolinput fires before ontoolresult with the tool call arguments.
-  const toolInputRef = React.useRef<Record<string, unknown> | undefined>();
+  const toolInputRef = useRef<Record<string, unknown> | undefined>();
 
   useEffect(() => {
+    const applyHostTheme = (ctx?: HostThemeContext) => {
+      hostThemeContextRef.current = ctx;
+      setThemeState(resolveHostTheme(ctx));
+      appliedHostStyleKeysRef.current = syncHostStyleVariables(
+        document.documentElement,
+        ctx?.styles?.variables,
+        appliedHostStyleKeysRef.current
+      );
+    };
+
     mcpApp.ontoolinput = (params: { arguments?: Record<string, unknown> }) => {
       toolInputRef.current = params.arguments;
     };
@@ -197,9 +228,7 @@ function Root() {
 
     // Adapt to host theme preference
     mcpApp.onhostcontextchanged = (ctx) => {
-      if (ctx.theme) {
-        setColorMode(ctx.theme === 'dark' ? 'dark' : 'light');
-      }
+      applyHostTheme(mergeHostThemeContext(hostThemeContextRef.current, toHostThemeContext(ctx)));
     };
 
     // Clean up on teardown
@@ -209,15 +238,20 @@ function Root() {
 
     // Connect to host and pick up initial theme
     mcpApp.connect().then(() => {
-      const ctx = mcpApp.getHostContext();
-      if (ctx?.theme) {
-        setColorMode(ctx.theme === 'dark' ? 'dark' : 'light');
-      }
+      applyHostTheme(toHostThemeContext(mcpApp.getHostContext()));
     });
+
+    return () => {
+      clearHostStyleVariables(document.documentElement, appliedHostStyleKeysRef.current);
+    };
   }, [mcpApp]);
 
   return (
-    <EuiProvider colorMode={colorMode}>
+    <EuiProvider
+      colorMode={themeState.colorMode}
+      modify={themeState.useNeutralDarkFallback ? NEUTRAL_DARK_EUI_MODIFY : undefined}
+    >
+      {themeState.useNeutralDarkFallback ? <style>{NEUTRAL_DARK_GLOBAL_CSS}</style> : null}
       <RootContent
         viewMode={fontsReady ? viewMode : null}
         chartPreview={chartPreview}

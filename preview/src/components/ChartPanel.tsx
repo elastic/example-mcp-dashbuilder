@@ -22,8 +22,7 @@ import {
 } from '@elastic/charts';
 import type { MetricDatum, HeatmapBandsColorScale } from '@elastic/charts';
 import { euiPaletteForTemperature, useEuiTheme } from '@elastic/eui';
-import { getElasticChartsTheme, KIBANA_PALETTE } from '../theme';
-import type { ChartsTheme } from '../theme';
+import { getElasticChartsTheme, KIBANA_PALETTE, type ChartsTheme } from '../themes';
 import type {
   RenderablePanelConfig,
   XYChartPanelConfig,
@@ -46,13 +45,44 @@ function formatDateTime(d: Date): string {
   return `${month} ${day}, ${year} @ ${h}:${m}:${s}.${ms}`;
 }
 
+function getCssVariableValue(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value.length > 0 ? value : undefined;
+}
+
 // ── Router ──
 
 export function ChartPanel({ config }: { config: RenderablePanelConfig }) {
   const { euiTheme, colorMode } = useEuiTheme();
+  const borderColor = getCssVariableValue('--color-border-primary') ?? euiTheme.border.color;
+  const backgroundColor = getCssVariableValue('--color-background-primary') ?? euiTheme.colors.body;
+  const panelBackgroundColor =
+    getCssVariableValue('--color-background-secondary') ?? euiTheme.colors.emptyShade;
+  const textColor = getCssVariableValue('--color-text-primary') ?? euiTheme.colors.text;
+  const subduedTextColor =
+    getCssVariableValue('--color-text-secondary') ?? euiTheme.colors.subduedText;
+  const accentColor = getCssVariableValue('--color-brand-primary');
   const chartTheme = useMemo(
-    () => getElasticChartsTheme(euiTheme.border.color, colorMode === 'DARK'),
-    [euiTheme.border.color, colorMode]
+    () =>
+      getElasticChartsTheme({
+        heatmapBorderColor: borderColor,
+        isDarkMode: colorMode === 'DARK',
+        backgroundColor,
+        panelBackgroundColor,
+        textColor,
+        subduedTextColor,
+        accentColor,
+      }),
+    [
+      accentColor,
+      backgroundColor,
+      borderColor,
+      colorMode,
+      panelBackgroundColor,
+      subduedTextColor,
+      textColor,
+    ]
   );
 
   if (config.chartType === 'metric') {

@@ -24,11 +24,41 @@ vi.mock('@elastic/charts', () => ({
   Position: { Bottom: 'bottom', Left: 'left', Right: 'right' },
   ScaleType: { Time: 'time', Ordinal: 'ordinal' },
   getChartsTheme: () => ({
-    background: { color: '#1D1E24' },
+    background: { color: '#1D1E24', fallbackColor: '#1D1E24' },
     axes: {
       tickLabel: { fontFamily: 'Inter, sans-serif', fill: '#DFE5EF' },
       axisTitle: { fontFamily: 'Inter, sans-serif', fill: '#DFE5EF', fontWeight: 400 },
       axisPanelTitle: { fontFamily: 'Inter, sans-serif', fill: '#DFE5EF', fontWeight: 400 },
+      axisLine: { stroke: '#2F3D4C' },
+      tickLine: { stroke: '#2F3D4C' },
+      gridLine: {
+        horizontal: { stroke: '#2F3D4C' },
+        vertical: { stroke: '#2F3D4C' },
+      },
+    },
+    crosshair: {
+      line: { stroke: '#61A2FF' },
+      crossLine: { stroke: '#61A2FF' },
+    },
+    lineSeriesStyle: {
+      point: {
+        fill: '#1D1E24',
+        dimmed: { fill: '#1D1E24' },
+      },
+    },
+    partition: {
+      linkLabel: { textColor: '#DFE5EF' },
+      sectorLineStroke: '#1D1E24',
+    },
+    metric: {
+      border: '#2F3D4C',
+      barBackground: '#1D1E24',
+      textLightColor: '#DFE5EF',
+      textSubtitleLightColor: '#98A2B3',
+      textExtraLightColor: '#98A2B3',
+      textDarkColor: '#DFE5EF',
+      textSubtitleDarkColor: '#98A2B3',
+      textExtraDarkColor: '#98A2B3',
     },
   }),
 }));
@@ -49,6 +79,12 @@ vi.mock('@elastic/eui', () => ({
     euiTheme: {
       border: {
         color: '#2F3D4C',
+      },
+      colors: {
+        body: '#111318',
+        emptyShade: '#171A20',
+        text: '#F5F7FA',
+        subduedText: '#A9B1BD',
       },
     },
     colorMode: 'DARK',

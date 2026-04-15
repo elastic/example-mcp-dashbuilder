@@ -159,9 +159,9 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
 
   const appStyle: React.CSSProperties = {
     padding: `${euiTheme.size.l} ${euiTheme.size.xl}`,
-    fontFamily: 'Inter, system-ui, sans-serif',
-    background: euiTheme.colors.body,
-    color: euiTheme.colors.text,
+    fontFamily: `var(--font-sans, ${euiTheme.font.family})`,
+    background: `var(--color-background-primary, ${euiTheme.colors.body})`,
+    color: `var(--color-text-primary, ${euiTheme.colors.text})`,
     minHeight: '100vh',
   };
   const subduedTextStyle: React.CSSProperties = {
