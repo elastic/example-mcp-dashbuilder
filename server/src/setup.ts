@@ -32,7 +32,9 @@ function ask(question: string, defaultValue?: string): Promise<string> {
   });
 }
 
-async function testConnection(config: ConnectionConfig): Promise<string> {
+async function testConnection(
+  config: ConnectionConfig & { serverless?: boolean }
+): Promise<string> {
   const auth = config.apiKey
     ? { apiKey: config.apiKey }
     : config.username
@@ -44,6 +46,14 @@ async function testConnection(config: ConnectionConfig): Promise<string> {
   const client = config.cloudId
     ? new Client({ cloud: { id: config.cloudId }, auth, tls })
     : new Client({ node: config.node || DEFAULT_ES_NODE, auth, tls });
+
+  if (config.serverless) {
+    // Serverless API keys often lack cluster:monitor privileges needed by
+    // client.info(). Use _has_privileges instead — every authenticated user
+    // can call it on themselves with no extra grants.
+    const res = await client.security.hasPrivileges({ cluster: ['monitor'] });
+    return res.username;
+  }
 
   const info = await client.info();
   return info.cluster_name;
@@ -63,40 +73,52 @@ async function main() {
   }
 
   // Choose connection type
+  const defaultConnectionType = existing.ES_CLOUD_ID
+    ? 'cloud-hosted'
+    : existing.ES_NODE && !/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(existing.ES_NODE)
+      ? 'cloud-serverless'
+      : 'local';
   const connectionType = await ask(
-    'Connection type (local / cloud)',
-    existing.ES_CLOUD_ID ? 'cloud' : 'local'
+    'Connection type (local / cloud-hosted / cloud-serverless)',
+    defaultConnectionType
   );
-  const isCloud = connectionType.toLowerCase() === 'cloud';
+  const connType = connectionType.toLowerCase();
+  const isCloudHosted = connType === 'cloud-hosted';
+  const isServerless = connType === 'cloud-serverless';
 
   let cloudId = '';
   let esNode = '';
-  if (isCloud) {
+  if (isCloudHosted) {
     cloudId = await ask('Cloud ID', existing.ES_CLOUD_ID || '');
+  } else if (isServerless) {
+    esNode = await ask('Elasticsearch URL', existing.ES_NODE || '');
   } else {
     esNode = await ask('Elasticsearch URL', existing.ES_NODE || DEFAULT_ES_NODE);
   }
 
-  // Choose auth type
-  const authType = await ask(
-    'Auth type (password / apikey)',
-    existing.ES_API_KEY ? 'apikey' : 'password'
-  );
-  const useApiKey = authType.toLowerCase() === 'apikey';
-
+  // Choose auth type (serverless always uses API keys)
   let apiKey = '';
   let esUsername = '';
   let esPassword = '';
-  if (useApiKey) {
+  if (isServerless) {
     apiKey = await ask('API Key', existing.ES_API_KEY || '');
   } else {
-    esUsername = await ask('Username', existing.ES_USERNAME || 'elastic');
-    esPassword = await ask('Password', existing.ES_PASSWORD || 'changeme');
+    const authType = await ask(
+      'Auth type (password / apikey)',
+      existing.ES_API_KEY ? 'apikey' : 'password'
+    );
+    const useApiKey = authType.toLowerCase() === 'apikey';
+    if (useApiKey) {
+      apiKey = await ask('API Key', existing.ES_API_KEY || '');
+    } else {
+      esUsername = await ask('Username', existing.ES_USERNAME || 'elastic');
+      esPassword = await ask('Password', existing.ES_PASSWORD || 'changeme');
+    }
   }
 
   const kibanaUrl = await ask(
     'Kibana URL',
-    existing.KIBANA_URL || (isCloud ? '' : DEFAULT_KIBANA_URL)
+    existing.KIBANA_URL || (isCloudHosted || isServerless ? '' : DEFAULT_KIBANA_URL)
   );
 
   // Ask about self-signed certificates when using HTTPS with localhost
@@ -115,15 +137,17 @@ async function main() {
   // Test the connection
   process.stdout.write('\n  Testing connection... ');
   try {
-    const clusterName = await testConnection({
+    const label = await testConnection({
       cloudId: cloudId || undefined,
       node: esNode || undefined,
       apiKey: apiKey || undefined,
       username: esUsername || undefined,
       password: esPassword || undefined,
       unsafeSsl,
+      serverless: isServerless,
     });
-    console.log(`Connected! (cluster: ${clusterName})\n`);
+    const detail = isServerless ? `user: ${label}` : `cluster: ${label}`;
+    console.log(`Connected! (${detail})\n`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.log(`Failed!\n\n  Error: ${message}\n`);
