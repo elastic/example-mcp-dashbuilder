@@ -18,6 +18,15 @@ import {
 } from './dashboard-store.js';
 import type { ChartConfig } from '../types.js';
 
+const DASHBOARDS_DIR = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  'preview',
+  'public',
+  'dashboards'
+);
+
 describe('slugify', () => {
   it('converts title to lowercase slug', () => {
     expect(slugify('My Cool Dashboard')).toBe('my-cool-dashboard');
@@ -39,15 +48,6 @@ describe('slugify', () => {
     expect(slugify('--hello--')).toBe('hello');
   });
 });
-
-const DASHBOARDS_DIR = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  '..',
-  '..',
-  'preview',
-  'public',
-  'dashboards'
-);
 
 describe('session isolation via dashboardId', () => {
   const chartA: ChartConfig = {
@@ -77,6 +77,7 @@ describe('session isolation via dashboardId', () => {
   });
 
   afterEach(() => {
+    // Clean up test dashboard files
     for (const id of testIds) {
       const path = resolve(DASHBOARDS_DIR, `${id}.json`);
       if (existsSync(path)) unlinkSync(path);
