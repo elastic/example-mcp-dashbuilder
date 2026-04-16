@@ -98,6 +98,8 @@ Credentials are saved to a `.env` file (gitignored).
 
 No environment variables are needed if you ran `npm run setup` — credentials are loaded from `.env` automatically.
 
+The repo includes a `start-server.sh` script that handles nvm/node path resolution automatically. This is the recommended way to configure the server.
+
 **Cursor** (`.cursor/mcp.json`):
 
 ```json
@@ -105,8 +107,7 @@ No environment variables are needed if you ran `npm run setup` — credentials a
   "mcpServers": {
     "example-mcp-dashbuilder": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["tsx", "server/src/index.ts"]
+      "command": "./start-server.sh"
     }
   }
 }
@@ -119,8 +120,7 @@ No environment variables are needed if you ran `npm run setup` — credentials a
   "mcpServers": {
     "example-mcp-dashbuilder": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["tsx", "server/src/index.ts"]
+      "command": "./start-server.sh"
     }
   }
 }
@@ -132,18 +132,23 @@ No environment variables are needed if you ran `npm run setup` — credentials a
 {
   "mcpServers": {
     "example-mcp-dashbuilder": {
-      "command": "npx",
-      "args": ["tsx", "/absolute/path/to/example-mcp-dashbuilder/server/src/index.ts"]
+      "command": "/absolute/path/to/example-mcp-dashbuilder/start-server.sh"
     }
   }
 }
 ```
 
-Note: Claude Desktop requires an absolute path to the server entry point.
+Note: Claude Desktop requires an absolute path.
 
 ### 4. Open the project in your MCP client
 
 Open the `example-mcp-dashbuilder` folder in your MCP client. The MCP server will auto-connect. In Cursor, you should see it listed in Settings > MCP.
+
+### Troubleshooting
+
+- **`npx: command not found`** — Cursor/Claude Desktop may not inherit your shell PATH when launched from the dock. Either open your client from the terminal (e.g. `cursor .`) or use the `start-server.sh` script which loads nvm automatically.
+- **`EPERM: operation not permitted`** — Claude Desktop's macOS sandbox blocks access to `~/Documents`. Move the repo to a non-protected location like `~/example-mcp-dashbuilder` or `/tmp`.
+- **Wrong Node version** — The project requires Node 18+. If you use nvm, `start-server.sh` handles this. For manual config, use the full path to your Node binary: `/Users/you/.nvm/versions/node/v22.x.x/bin/node`.
 
 ## Usage
 
