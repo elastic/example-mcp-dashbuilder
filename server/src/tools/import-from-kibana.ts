@@ -16,7 +16,7 @@ import {
 import { translateLensToPanel } from '../utils/lens-reverse-translator.js';
 import { registerTool } from '../utils/register-tool.js';
 import {
-  KIBANA_URL,
+  getKibanaUrl,
   getKibanaAuthHeader,
   getKibanaBasePath,
   parseDashboardId,
@@ -69,7 +69,7 @@ export function registerImportFromKibana(server: McpServer): void {
           content: [
             {
               type: 'text',
-              text: 'ES_USERNAME and ES_PASSWORD must be set to import from Kibana.',
+              text: 'Either ES_API_KEY or ES_USERNAME/ES_PASSWORD must be set to import from Kibana. If using an API key, it must include Kibana application privileges.',
             },
           ],
           isError: true,
@@ -82,17 +82,20 @@ export function registerImportFromKibana(server: McpServer): void {
       // Fetch the dashboard from Kibana
       let response: Response;
       try {
-        response = await kibanaFetch(`${KIBANA_URL}${basePath}/api/saved_objects/dashboard/${id}`, {
-          headers: {
-            Authorization: authHeader,
-            'kbn-xsrf': 'true',
-          },
-        });
+        response = await kibanaFetch(
+          `${getKibanaUrl()}${basePath}/api/saved_objects/dashboard/${id}`,
+          {
+            headers: {
+              Authorization: authHeader,
+              'kbn-xsrf': 'true',
+            },
+          }
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return {
           content: [
-            { type: 'text', text: `Failed to connect to Kibana at ${KIBANA_URL}: ${message}` },
+            { type: 'text', text: `Failed to connect to Kibana at ${getKibanaUrl()}: ${message}` },
           ],
           isError: true,
         };

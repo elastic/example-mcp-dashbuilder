@@ -8,7 +8,10 @@ import { Agent } from 'undici';
 
 import { DEFAULT_KIBANA_URL } from './config.js';
 
-export const KIBANA_URL = process.env.KIBANA_URL || DEFAULT_KIBANA_URL;
+/** Read lazily so .env has time to load (ESM imports run before top-level code in index.ts). */
+export function getKibanaUrl(): string {
+  return process.env.KIBANA_URL || DEFAULT_KIBANA_URL;
+}
 
 const unsafeSslAgent = new Agent({ connect: { rejectUnauthorized: false } });
 
@@ -21,22 +24,28 @@ export function kibanaFetch(url: string, init?: RequestInit): Promise<Response> 
 }
 
 export function getKibanaAuthHeader(): string {
+  const apiKey = process.env.ES_API_KEY;
+  if (apiKey) {
+    return `ApiKey ${apiKey}`;
+  }
   const username = process.env.ES_USERNAME;
   const password = process.env.ES_PASSWORD;
-  if (!username || !password) throw new Error('ES_USERNAME and ES_PASSWORD must be set');
-  return 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
+  if (username && password) {
+    return 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
+  }
+  throw new Error('Either ES_API_KEY or ES_USERNAME/ES_PASSWORD must be set');
 }
 
 /** Discover Kibana's base path by following the redirect from /api/status. */
 export async function getKibanaBasePath(): Promise<string> {
   try {
-    const res = await kibanaFetch(`${KIBANA_URL}/api/status`, {
+    const res = await kibanaFetch(`${getKibanaUrl()}/api/status`, {
       redirect: 'manual',
       headers: { Authorization: getKibanaAuthHeader() },
     });
     const location = res.headers.get('location');
     if (location && res.status >= 300 && res.status < 400) {
-      const url = new URL(location, KIBANA_URL);
+      const url = new URL(location, getKibanaUrl());
       return url.pathname.replace(/\/status$/, '');
     }
   } catch {

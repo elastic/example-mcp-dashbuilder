@@ -10,7 +10,7 @@ import { getDashboard } from '../utils/dashboard-store.js';
 import { translateDashboardToSavedObject } from '../utils/dashboard-translator.js';
 import { registerTool } from '../utils/register-tool.js';
 import {
-  KIBANA_URL,
+  getKibanaUrl,
   getKibanaAuthHeader,
   getKibanaBasePath,
   kibanaFetch,
@@ -53,7 +53,7 @@ export function registerExportToKibana(server: McpServer): void {
           content: [
             {
               type: 'text',
-              text: 'ES_USERNAME and ES_PASSWORD environment variables must be set to export to Kibana.',
+              text: 'Either ES_API_KEY or ES_USERNAME/ES_PASSWORD must be set to export to Kibana. If using an API key, it must include Kibana application privileges.',
             },
           ],
           isError: true,
@@ -99,7 +99,7 @@ export function registerExportToKibana(server: McpServer): void {
 
       let response: Response;
       try {
-        response = await kibanaFetch(`${KIBANA_URL}${basePath}/api/saved_objects/dashboard`, {
+        response = await kibanaFetch(`${getKibanaUrl()}${basePath}/api/saved_objects/dashboard`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export function registerExportToKibana(server: McpServer): void {
         const message = err instanceof Error ? err.message : String(err);
         return {
           content: [
-            { type: 'text', text: `Failed to connect to Kibana at ${KIBANA_URL}: ${message}` },
+            { type: 'text', text: `Failed to connect to Kibana at ${getKibanaUrl()}: ${message}` },
           ],
           isError: true,
         };
@@ -140,7 +140,7 @@ export function registerExportToKibana(server: McpServer): void {
         };
       }
 
-      const dashboardUrl = `${KIBANA_URL}${basePath}/app/dashboards#/view/${dashboardId}`;
+      const dashboardUrl = `${getKibanaUrl()}${basePath}/app/dashboards#/view/${dashboardId}`;
 
       return {
         content: [
