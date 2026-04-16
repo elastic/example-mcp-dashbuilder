@@ -17,8 +17,6 @@ import {
   resolveHostTheme,
   syncHostStyleVariables,
   type HostThemeContext,
-  NEUTRAL_DARK_EUI_MODIFY,
-  NEUTRAL_DARK_GLOBAL_CSS,
 } from './themes';
 import type { DashboardConfig, PanelConfig } from './types';
 
@@ -247,11 +245,7 @@ function Root() {
   }, [mcpApp]);
 
   return (
-    <EuiProvider
-      colorMode={themeState.colorMode}
-      modify={themeState.useNeutralDarkFallback ? NEUTRAL_DARK_EUI_MODIFY : undefined}
-    >
-      {themeState.useNeutralDarkFallback ? <style>{NEUTRAL_DARK_GLOBAL_CSS}</style> : null}
+    <EuiProvider colorMode={themeState.colorMode}>
       <RootContent
         viewMode={fontsReady ? viewMode : null}
         chartPreview={chartPreview}

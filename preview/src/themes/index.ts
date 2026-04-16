@@ -6,4 +6,3 @@
 
 export * from './charts_theme';
 export * from './host_theme';
-export * from './neutral_dark_theme';

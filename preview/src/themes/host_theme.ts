@@ -16,7 +16,6 @@ export type HostThemeContext = Pick<McpUiHostContext, 'styles' | 'theme'>;
 export interface ResolvedHostTheme {
   colorMode: AppColorMode;
   hasActiveStyles: boolean;
-  useNeutralDarkFallback: boolean;
 }
 
 function getActiveHostStyleVariables(variables?: McpUiStyles): McpUiStyles | undefined {
@@ -47,7 +46,6 @@ export function resolveHostTheme(
   return {
     colorMode,
     hasActiveStyles,
-    useNeutralDarkFallback: !hasActiveStyles && colorMode === 'dark',
   };
 }
 

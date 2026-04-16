@@ -23,11 +23,10 @@ import {
 } from './host_theme';
 
 describe('host theme adapter', () => {
-  it('keeps the legacy fallback when host theme is absent', () => {
+  it('falls back to the default dark EUI theme when host theme is absent', () => {
     expect(resolveHostTheme(undefined)).toEqual({
       colorMode: 'dark',
       hasActiveStyles: false,
-      useNeutralDarkFallback: true,
     });
   });
 
@@ -35,11 +34,10 @@ describe('host theme adapter', () => {
     expect(resolveHostTheme({ theme: 'light' })).toEqual({
       colorMode: 'light',
       hasActiveStyles: false,
-      useNeutralDarkFallback: false,
     });
   });
 
-  it('keeps the neutral dark fallback when host only sends non-color variables', () => {
+  it('falls back to the default dark EUI theme when host only sends non-color variables', () => {
     expect(
       resolveHostTheme({
         theme: 'dark',
@@ -52,7 +50,6 @@ describe('host theme adapter', () => {
     ).toEqual({
       colorMode: 'dark',
       hasActiveStyles: false,
-      useNeutralDarkFallback: true,
     });
   });
 
@@ -69,7 +66,6 @@ describe('host theme adapter', () => {
     ).toEqual({
       colorMode: 'dark',
       hasActiveStyles: true,
-      useNeutralDarkFallback: false,
     });
   });
 
