@@ -5,7 +5,7 @@
  */
 
 import { getESClient } from './es-client.js';
-import { columnarToRows } from './esql-transform.js';
+import { columnarToRows, validateFields } from './esql-transform.js';
 import type { PanelConfig, ESQLResponse } from '../types.js';
 
 export interface ChartData {
@@ -14,25 +14,42 @@ export interface ChartData {
 }
 
 /**
+ * Execute an ES|QL query and return the rows.
+ * Throws on query failure.
+ */
+export async function runEsqlQuery(query: string): Promise<Record<string, unknown>[]> {
+  const client = getESClient();
+  const response = (await client.esql.query({
+    query,
+    format: 'json',
+  })) as unknown as ESQLResponse;
+  return columnarToRows(response);
+}
+
+/**
+ * Validate query results: check for empty data and that expected fields exist.
+ * Returns an error string if invalid, or null if OK.
+ */
+export function validateChartData(
+  data: Record<string, unknown>[],
+  requiredFields: string[]
+): string | null {
+  if (data.length === 0) {
+    return 'Query returned no results. Check the query and try again.';
+  }
+  return validateFields(data, requiredFields);
+}
+
+/**
  * Execute the ES|QL queries for a chart and return the data.
  * For metrics with a trend query, also fetches the trend data.
  */
 export async function fetchChartData(chart: PanelConfig): Promise<ChartData> {
-  const client = getESClient();
-
-  const response = (await client.esql.query({
-    query: chart.esqlQuery,
-    format: 'json',
-  })) as unknown as ESQLResponse;
-  const data = columnarToRows(response);
+  const data = await runEsqlQuery(chart.esqlQuery);
 
   let trendData: Record<string, unknown>[] | undefined;
   if (chart.chartType === 'metric' && chart.trendEsqlQuery) {
-    const trendResponse = (await client.esql.query({
-      query: chart.trendEsqlQuery,
-      format: 'json',
-    })) as unknown as ESQLResponse;
-    trendData = columnarToRows(trendResponse);
+    trendData = await runEsqlQuery(chart.trendEsqlQuery);
   }
 
   return { data, trendData };

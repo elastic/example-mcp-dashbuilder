@@ -6,12 +6,11 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getESClient } from '../utils/es-client.js';
-import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart, slugify } from '../utils/dashboard-store.js';
 import { registerAppOnlyTool } from '../utils/register-tool.js';
 import { setChartPreview } from '../utils/chart-preview-store.js';
-import type { MetricConfig, ESQLResponse } from '../types.js';
+import { runEsqlQuery, validateChartData } from '../utils/fetch-chart-data.js';
+import type { MetricConfig } from '../types.js';
 import { CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
 
 export function registerCreateMetric(server: McpServer): void {
@@ -108,42 +107,12 @@ export function registerCreateMetric(server: McpServer): void {
       const id = args.id || `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`;
       const trendShape = args.trendShape || 'area';
 
-      const client = getESClient();
       const statusWarnings: string[] = [];
 
       // Execute the main metric query
-      let value: number;
+      let rows: Record<string, unknown>[];
       try {
-        const response = (await client.esql.query({
-          query: esqlQuery,
-          format: 'json',
-        })) as unknown as ESQLResponse;
-        const rows = columnarToRows(response);
-
-        if (rows.length === 0) {
-          return {
-            content: [{ type: 'text', text: 'Metric query returned no results.' }],
-            isError: true,
-          };
-        }
-
-        const fieldError = validateFields(rows, [valueField]);
-        if (fieldError) {
-          return { content: [{ type: 'text', text: fieldError }], isError: true };
-        }
-
-        value = Number(rows[0][valueField]);
-        if (isNaN(value)) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Column "${valueField}" is not a number. Got: ${rows[0][valueField]}`,
-              },
-            ],
-            isError: true,
-          };
-        }
+        rows = await runEsqlQuery(esqlQuery);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return {
@@ -152,15 +121,29 @@ export function registerCreateMetric(server: McpServer): void {
         };
       }
 
+      const validationError = validateChartData(rows, [valueField]);
+      if (validationError) {
+        return { content: [{ type: 'text', text: validationError }], isError: true };
+      }
+
+      const value = Number(rows[0][valueField]);
+      if (isNaN(value)) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Column "${valueField}" is not a number. Got: ${rows[0][valueField]}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
       // Validate the optional trend query
       let trendData: Record<string, unknown>[] = [];
       if (trendEsqlQuery && trendXField && trendYField) {
         try {
-          const trendResponse = (await client.esql.query({
-            query: trendEsqlQuery,
-            format: 'json',
-          })) as unknown as ESQLResponse;
-          trendData = columnarToRows(trendResponse);
+          trendData = await runEsqlQuery(trendEsqlQuery);
         } catch (err) {
           const trendErr = err instanceof Error ? err.message : String(err);
           // Trend is optional — report the error but don't fail the metric
