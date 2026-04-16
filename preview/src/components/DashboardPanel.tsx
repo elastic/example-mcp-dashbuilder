@@ -10,6 +10,7 @@ import { PanelChrome } from './PanelChrome';
 import { ChartPanel } from './ChartPanel';
 import { useEsqlQuery } from '../hooks/useEsqlQuery';
 import { useTimeRange } from '../context/TimeRangeContext';
+import { buildRenderableConfig } from '../utils/build-renderable-config';
 import type { PanelConfig } from '../types';
 
 export function DashboardPanel({ config }: { config: PanelConfig }) {
@@ -20,22 +21,10 @@ export function DashboardPanel({ config }: { config: PanelConfig }) {
   const trendQuery = config.chartType === 'metric' ? config.trendEsqlQuery : undefined;
   const { data: trendData } = useEsqlQuery(trendQuery, timeRange, config.timeField);
 
-  const liveConfig = useMemo(() => {
-    const base = { ...config, data };
-    if (config.chartType === 'metric' && trendData.length > 0) {
-      return {
-        ...base,
-        trend: {
-          data: trendData.map((row) => ({
-            x: new Date(row[config.trendXField!] as string).getTime(),
-            y: Number(row[config.trendYField!]) || 0,
-          })),
-          shape: config.trendShape || 'area',
-        },
-      };
-    }
-    return base;
-  }, [config, data, trendData]);
+  const liveConfig = useMemo(
+    () => buildRenderableConfig(config, data, trendData),
+    [config, data, trendData]
+  );
 
   return (
     <PanelChrome title={config.title} isLoading={isLoading}>

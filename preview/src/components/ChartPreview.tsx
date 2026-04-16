@@ -7,7 +7,8 @@
 import React, { useMemo } from 'react';
 import { ChartPanel } from './ChartPanel';
 import { PanelChrome } from './PanelChrome';
-import type { PanelConfig, RenderablePanelConfig } from '../types';
+import { buildRenderableConfig } from '../utils/build-renderable-config';
+import type { PanelConfig } from '../types';
 
 interface ChartPreviewData {
   mode: 'chart-preview';
@@ -23,24 +24,10 @@ interface ChartPreviewData {
 export function ChartPreview({ preview }: { preview: ChartPreviewData }) {
   const { chart, data, trendData } = preview;
 
-  const renderableConfig: RenderablePanelConfig = useMemo(() => {
-    const base = { ...chart, data };
-
-    if (chart.chartType === 'metric' && trendData && trendData.length > 0) {
-      return {
-        ...base,
-        trend: {
-          data: trendData.map((row) => ({
-            x: new Date(row[chart.trendXField!] as string).getTime(),
-            y: Number(row[chart.trendYField!]) || 0,
-          })),
-          shape: chart.trendShape || 'area',
-        },
-      };
-    }
-
-    return base;
-  }, [chart, data, trendData]);
+  const renderableConfig = useMemo(
+    () => buildRenderableConfig(chart, data, trendData),
+    [chart, data, trendData]
+  );
 
   const height = chart.chartType === 'metric' ? 200 : 350;
 

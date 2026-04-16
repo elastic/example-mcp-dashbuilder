@@ -41,18 +41,10 @@ function injectExportDataIntoHtml(html: string, exportData: ExportData): string 
   return html.replace('<head>', `<head>${boot}`);
 }
 
-/**
- * Render a chart to PNG using Puppeteer.
- * Puppeteer is lazily imported so the server works without it installed.
- */
 export async function renderChartToPng(exportData: ExportData): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let puppeteer: any;
-  try {
-    puppeteer = await import('puppeteer');
-  } catch {
+  const { default: puppeteer } = await import('puppeteer').catch(() => {
     throw new Error('Puppeteer is not installed. Run: npm install puppeteer --workspace=server');
-  }
+  });
 
   const html = readFileSync(MCP_APP_HTML_PATH, 'utf-8');
   const htmlWithExport = injectExportDataIntoHtml(html, exportData);
@@ -75,8 +67,7 @@ export async function renderChartToPng(exportData: ExportData): Promise<string> 
 
     try {
       await page.waitForFunction(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        () => (window as any).__EXPORT_READY__ === true,
+        () => (window as unknown as { __EXPORT_READY__?: boolean }).__EXPORT_READY__ === true,
         { timeout: RENDER_TIMEOUT_MS }
       );
     } catch {
