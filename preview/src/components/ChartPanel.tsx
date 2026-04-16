@@ -22,8 +22,7 @@ import {
 } from '@elastic/charts';
 import type { MetricDatum, HeatmapBandsColorScale } from '@elastic/charts';
 import { euiPaletteForTemperature, useEuiTheme } from '@elastic/eui';
-import { getElasticChartsTheme, KIBANA_PALETTE } from '../theme';
-import type { ChartsTheme } from '../theme';
+import { getElasticChartsTheme, KIBANA_PALETTE, type ChartsTheme } from '../themes';
 import type {
   RenderablePanelConfig,
   XYChartPanelConfig,

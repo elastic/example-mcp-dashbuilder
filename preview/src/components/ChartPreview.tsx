@@ -5,6 +5,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { useEuiTheme } from '@elastic/eui';
 import { ChartPanel } from './ChartPanel';
 import { PanelChrome } from './PanelChrome';
 import type { PanelConfig, RenderablePanelConfig } from '../types';
@@ -22,7 +23,7 @@ interface ChartPreviewData {
  */
 export function ChartPreview({ preview }: { preview: ChartPreviewData }) {
   const { chart, data, trendData } = preview;
-
+  const { euiTheme } = useEuiTheme();
   const renderableConfig: RenderablePanelConfig = useMemo(() => {
     const base = { ...chart, data };
 
@@ -51,7 +52,8 @@ export function ChartPreview({ preview }: { preview: ChartPreviewData }) {
         maxWidth: 600,
         height,
         padding: 16,
-        fontFamily: "'Elastic UI Numeric', Inter, sans-serif",
+        color: `var(--color-text-primary, ${euiTheme.colors.text})`,
+        fontFamily: `'Elastic UI Numeric', var(--font-sans, ${euiTheme.font.family})`,
       }}
     >
       <PanelChrome title={chart.title}>

@@ -15,14 +15,6 @@ export interface ChartsTheme {
   theme: PartialTheme;
 }
 
-/**
- * Recursively prepends the Elastic UI Numeric font to every `fontFamily` found
- * in the theme tree. This mirrors Kibana's `applyNumericFontFamily` helper so
- * that *any* new fontFamily property added by `@elastic/charts` is picked up
- * automatically instead of requiring a manual update.
- *
- * @see https://github.com/elastic/kibana/blob/main/src/platform/plugins/shared/charts/public/services/theme/helpers.ts
- */
 const NUMERIC_FONT_FAMILY = "'Elastic UI Numeric'";
 
 function applyNumericFontFamily(value: unknown): void {
@@ -45,16 +37,6 @@ function applyNumericFontFamily(value: unknown): void {
   }
 }
 
-/**
- * Builds the Elastic Charts theme matching Kibana's rendering.
- *
- * Uses `getChartsTheme()` from `@elastic/charts` with the Borealis theme name
- * (matching Kibana's default), then applies the same numeric font family and
- * axis title overrides that Kibana's charts plugin applies.
- *
- * @see https://github.com/elastic/kibana/blob/main/src/platform/plugins/shared/charts/public/services/theme/theme.ts
- * @see https://github.com/elastic/kibana/blob/main/src/platform/packages/shared/kbn-charts-theme/index.ts
- */
 export function getElasticChartsTheme(
   heatmapBorderColor: string,
   isDarkMode: boolean
@@ -62,10 +44,8 @@ export function getElasticChartsTheme(
   const colorMode = isDarkMode ? 'DARK' : 'LIGHT';
   const baseTheme = getChartsTheme('borealis', colorMode);
 
-  // Recursively apply numeric font to all fontFamily properties (matches Kibana)
   applyNumericFontFamily(baseTheme);
 
-  // Match Kibana's axis title overrides
   const { fill } = baseTheme.axes.tickLabel;
   baseTheme.axes.axisTitle.fill = fill;
   baseTheme.axes.axisTitle.fontWeight = 500;
