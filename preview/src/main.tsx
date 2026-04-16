@@ -10,6 +10,7 @@ import { EuiProvider } from '@elastic/eui';
 import { App as McpApp } from '@modelcontextprotocol/ext-apps';
 import { App } from './App';
 import { ChartPreview } from './components/ChartPreview';
+import { ExportView } from './components/ExportView';
 import { McpAppProvider } from './context/McpAppContext';
 import type { DashboardConfig, PanelConfig } from './types';
 
@@ -52,6 +53,8 @@ import { icon as popout } from '@elastic/eui/es/components/icon/assets/popout';
 import { icon as refresh } from '@elastic/eui/es/components/icon/assets/refresh';
 import { icon as trash } from '@elastic/eui/es/components/icon/assets/trash';
 import { icon as warning } from '@elastic/eui/es/components/icon/assets/warning';
+import { icon as copy } from '@elastic/eui/es/components/icon/assets/copy';
+import { icon as check } from '@elastic/eui/es/components/icon/assets/check';
 
 appendIconComponentCache({
   arrowDown,
@@ -72,6 +75,8 @@ appendIconComponentCache({
   refresh,
   trash,
   warning,
+  copy,
+  check,
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -258,4 +263,41 @@ function RootContent({
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<Root />);
+// Puppeteer export mode: render directly with injected data, no MCP handshake.
+const rootEl = document.getElementById('root')!;
+const reactRoot = ReactDOM.createRoot(rootEl);
+
+type ExportBootstrap = {
+  mode: 'chart-preview';
+  chart: PanelConfig;
+  data: Record<string, unknown>[];
+  trendData?: Record<string, unknown>[];
+  colorMode?: 'light' | 'dark';
+};
+
+function readExportData(): ExportBootstrap | undefined {
+  return (window as unknown as { __EXPORT_DATA__?: ExportBootstrap }).__EXPORT_DATA__;
+}
+
+function renderExportView(data: ExportBootstrap) {
+  reactRoot.render(
+    <EuiProvider colorMode={data.colorMode ?? 'dark'}>
+      <ExportView exportData={data} />
+    </EuiProvider>
+  );
+}
+
+const exportDataSync = readExportData();
+if (exportDataSync) {
+  renderExportView(exportDataSync);
+} else {
+  // Defer one microtask: host/Puppeteer may assign __EXPORT_DATA__ after this module starts.
+  queueMicrotask(() => {
+    const d = readExportData();
+    if (d) {
+      renderExportView(d);
+    } else {
+      reactRoot.render(<Root />);
+    }
+  });
+}

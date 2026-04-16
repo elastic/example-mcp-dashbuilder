@@ -4,7 +4,10 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { unlinkSync, existsSync, mkdirSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import {
   slugify,
   createDashboard,
@@ -37,6 +40,15 @@ describe('slugify', () => {
   });
 });
 
+const DASHBOARDS_DIR = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  'preview',
+  'public',
+  'dashboards'
+);
+
 describe('session isolation via dashboardId', () => {
   const chartA: ChartConfig = {
     id: 'chart-a',
@@ -56,10 +68,19 @@ describe('session isolation via dashboardId', () => {
     yFields: ['bytes'],
   };
 
+  const testIds = ['session-one', 'session-two'];
+
   beforeEach(() => {
-    // Create two separate dashboards to simulate parallel sessions
+    mkdirSync(DASHBOARDS_DIR, { recursive: true });
     createDashboard('Session One', 'session-one');
     createDashboard('Session Two', 'session-two');
+  });
+
+  afterEach(() => {
+    for (const id of testIds) {
+      const path = resolve(DASHBOARDS_DIR, `${id}.json`);
+      if (existsSync(path)) unlinkSync(path);
+    }
   });
 
   it('addChart with dashboardId only affects the targeted dashboard', () => {
