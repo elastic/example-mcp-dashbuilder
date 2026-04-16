@@ -10,8 +10,8 @@ import { EuiProvider } from '@elastic/eui';
 import { App as McpApp } from '@modelcontextprotocol/ext-apps';
 import { App } from './App';
 import { ChartPreview } from './components/ChartPreview';
-import { ExportView } from './components/ExportView';
 import { McpAppProvider } from './context/McpAppContext';
+import { tryExportMode } from './export-bootstrap';
 import type { DashboardConfig, PanelConfig } from './types';
 
 import '@elastic/charts/dist/theme_light.css';
@@ -260,39 +260,14 @@ function RootContent({
 }
 
 // Puppeteer export mode: render directly with injected data, no MCP handshake.
-const rootEl = document.getElementById('root')!;
-const reactRoot = ReactDOM.createRoot(rootEl);
+// Normal MCP mode: render the Root component which handles the full MCP lifecycle.
+const reactRoot = ReactDOM.createRoot(document.getElementById('root')!);
 
-type ExportBootstrap = {
-  mode: 'chart-preview';
-  chart: PanelConfig;
-  data: Record<string, unknown>[];
-  trendData?: Record<string, unknown>[];
-  colorMode?: 'light' | 'dark';
-};
-
-function readExportData(): ExportBootstrap | undefined {
-  return (window as unknown as { __EXPORT_DATA__?: ExportBootstrap }).__EXPORT_DATA__;
-}
-
-function renderExportView(data: ExportBootstrap) {
-  reactRoot.render(
-    <EuiProvider colorMode={data.colorMode ?? 'dark'}>
-      <ExportView exportData={data} />
-    </EuiProvider>
-  );
-}
-
-const exportDataSync = readExportData();
-if (exportDataSync) {
-  renderExportView(exportDataSync);
-} else {
-  // Defer one microtask: host/Puppeteer may assign __EXPORT_DATA__ after this module starts.
+if (!tryExportMode(reactRoot)) {
+  // Not in export mode — defer one microtask in case __EXPORT_DATA__ is assigned
+  // after this module starts, otherwise render the normal MCP app.
   queueMicrotask(() => {
-    const d = readExportData();
-    if (d) {
-      renderExportView(d);
-    } else {
+    if (!tryExportMode(reactRoot)) {
       reactRoot.render(<Root />);
     }
   });

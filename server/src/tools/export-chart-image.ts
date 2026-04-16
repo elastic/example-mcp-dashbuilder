@@ -6,13 +6,11 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getESClient } from '../utils/es-client.js';
 import { getDashboard } from '../utils/dashboard-store.js';
 import { getChartPreview } from '../utils/chart-preview-store.js';
-import { columnarToRows } from '../utils/esql-transform.js';
+import { fetchChartData } from '../utils/fetch-chart-data.js';
 import { registerTool } from '../utils/register-tool.js';
 import { renderChartToPng } from '../utils/puppeteer-export.js';
-import type { ESQLResponse } from '../types.js';
 
 export function registerExportChartImage(server: McpServer): void {
   registerTool(
@@ -57,25 +55,8 @@ export function registerExportChartImage(server: McpServer): void {
           };
         }
 
-        // Re-run the chart's ES|QL query to get fresh data
-        const client = getESClient();
         try {
-          const response = (await client.esql.query({
-            query: chart.esqlQuery,
-            format: 'json',
-          })) as unknown as ESQLResponse;
-          const data = columnarToRows(response);
-
-          // Fetch trend data for metrics
-          let trendData: Record<string, unknown>[] | undefined;
-          if (chart.chartType === 'metric' && chart.trendEsqlQuery) {
-            const trendResponse = (await client.esql.query({
-              query: chart.trendEsqlQuery,
-              format: 'json',
-            })) as unknown as ESQLResponse;
-            trendData = columnarToRows(trendResponse);
-          }
-
+          const { data, trendData } = await fetchChartData(chart);
           preview = { mode: 'chart-preview', chart, data, trendData };
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
