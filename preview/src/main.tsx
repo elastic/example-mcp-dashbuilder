@@ -53,8 +53,6 @@ import { icon as popout } from '@elastic/eui/es/components/icon/assets/popout';
 import { icon as refresh } from '@elastic/eui/es/components/icon/assets/refresh';
 import { icon as trash } from '@elastic/eui/es/components/icon/assets/trash';
 import { icon as warning } from '@elastic/eui/es/components/icon/assets/warning';
-import { icon as copy } from '@elastic/eui/es/components/icon/assets/copy';
-import { icon as check } from '@elastic/eui/es/components/icon/assets/check';
 
 appendIconComponentCache({
   arrowDown,
@@ -75,8 +73,6 @@ appendIconComponentCache({
   refresh,
   trash,
   warning,
-  copy,
-  check,
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────

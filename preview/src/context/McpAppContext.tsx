@@ -18,8 +18,3 @@ export function useMcpApp(): App {
   if (!app) throw new Error('useMcpApp must be used within McpAppProvider');
   return app;
 }
-
-/** Returns the MCP App instance if available, or null if not inside a provider. */
-export function useMcpAppOptional(): App | null {
-  return useContext(McpAppContext);
-}
