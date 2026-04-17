@@ -69,11 +69,37 @@ The MCP App communicates with the server entirely via the MCP Apps protocol (pos
 - Kibana (for export/import)
 - An MCP client: [Cursor](https://cursor.com) (v2.6+ for MCP Apps inline preview), [Claude Desktop](https://claude.ai/download), [Claude Code](https://claude.ai/claude-code), or [VS Code Copilot](https://code.visualstudio.com/)
 
-## Setup
+## Quick install
+
+No need to clone the repo — pick the method that matches your MCP client.
+
+**Claude Desktop:** Download the latest `.mcpb` file from [GitHub Releases](https://github.com/elastic/example-mcp-dashbuilder/releases) and double-click it. Claude Desktop will prompt you for your Elasticsearch credentials.
+
+**Cursor / Claude Code / VS Code:** Point your MCP config at the release tarball — no clone, no npm install:
+
+```json
+{
+  "mcpServers": {
+    "example-mcp-dashbuilder": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "https://github.com/elastic/example-mcp-dashbuilder/releases/latest/download/example-mcp-dashbuilder.tgz"
+      ]
+    }
+  }
+}
+```
+
+Set your Elasticsearch credentials as environment variables (`ES_NODE`, `ES_API_KEY` or `ES_USERNAME`/`ES_PASSWORD`, `KIBANA_URL`) or run `npm run setup` after cloning.
+
+## Setup (from source)
 
 ### 1. Install dependencies
 
 ```bash
+git clone https://github.com/elastic/example-mcp-dashbuilder.git
+cd example-mcp-dashbuilder
 npm install
 ```
 
@@ -127,6 +153,8 @@ No environment variables are needed if you ran `npm run setup` — credentials a
 ```
 
 **Claude Desktop** (`claude_desktop_config.json` — found in `~/Library/Application Support/Claude/` on macOS or `%APPDATA%\Claude\` on Windows):
+
+For the easiest experience, download the `.mcpb` file from [Releases](https://github.com/elastic/example-mcp-dashbuilder/releases). For manual setup from source:
 
 ```json
 {
