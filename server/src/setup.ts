@@ -73,11 +73,8 @@ async function main() {
   }
 
   // Choose connection type
-  const defaultConnectionType = existing.ES_CLOUD_ID
-    ? 'cloud-hosted'
-    : existing.ES_NODE && !/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(existing.ES_NODE)
-      ? 'cloud-serverless'
-      : 'local';
+  const defaultConnectionType =
+    existing.CONNECTION_TYPE || (existing.ES_CLOUD_ID ? 'cloud-hosted' : 'local');
   const connectionType = await ask(
     'Connection type (local / cloud-hosted / cloud-serverless)',
     defaultConnectionType
@@ -161,6 +158,7 @@ async function main() {
 
   // Write .env — only include non-empty values
   const envLines: string[] = [];
+  envLines.push(`CONNECTION_TYPE=${connType}`);
   if (cloudId) envLines.push(`ES_CLOUD_ID=${cloudId}`);
   if (esNode) envLines.push(`ES_NODE=${esNode}`);
   if (apiKey) envLines.push(`ES_API_KEY=${apiKey}`);
