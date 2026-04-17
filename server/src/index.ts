@@ -32,6 +32,7 @@ import { registerExportToKibana } from './tools/export-to-kibana.js';
 import { registerImportFromKibana } from './tools/import-from-kibana.js';
 import { registerViewDashboard } from './tools/view-dashboard.js';
 import { registerAppOnlyTools } from './tools/app-only-tools.js';
+import { registerExportQueries } from './tools/export-queries.js';
 import { DATAVIZ_GUIDELINES } from './resources/dataviz-guidelines.js';
 import { buildEsqlReference } from './resources/esql-reference.js';
 import { SERVER_INSTRUCTIONS } from './resources/instructions.js';
@@ -101,6 +102,7 @@ registerExportToKibana(server);
 registerImportFromKibana(server);
 registerViewDashboard(server);
 registerAppOnlyTools(server);
+registerExportQueries(server);
 
 // Clean up on shutdown
 process.on('SIGINT', () => process.exit(0));
