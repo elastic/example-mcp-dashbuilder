@@ -1,0 +1,101 @@
+{
+  "manifest_version": "0.3",
+  "name": "example-mcp-dashbuilder",
+  "display_name": "Elastic Dashbuilder",
+  "version": "0.1.0",
+  "description": "AI-powered Kibana dashboard creation via MCP — create, preview, and export ES|QL visualizations through natural language.",
+  "long_description": "An MCP App that lets AI assistants build Kibana dashboards through natural language conversation. Powered by ES|QL and Elastic Charts, it connects to Elasticsearch, explores your data, creates interactive visualizations (bar, line, area, pie, metric, heatmap), and renders live dashboard previews directly in the chat. Dashboards can be exported to Kibana as real Lens visualizations or imported from Kibana for AI-assisted editing.",
+  "author": {
+    "name": "Elastic",
+    "url": "https://www.elastic.co"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elastic/example-mcp-dashbuilder.git"
+  },
+  "homepage": "https://github.com/elastic/example-mcp-dashbuilder",
+  "support": "https://github.com/elastic/example-mcp-dashbuilder/issues",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/bundle/server.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/bundle/server.mjs"],
+      "env": {
+        "ES_NODE": "${user_config.es_node}",
+        "ES_API_KEY": "${user_config.es_api_key}",
+        "ES_USERNAME": "${user_config.es_username}",
+        "ES_PASSWORD": "${user_config.es_password}",
+        "KIBANA_URL": "${user_config.kibana_url}"
+      }
+    }
+  },
+  "tools": [
+    { "name": "create_dashboard", "description": "Create a new dashboard" },
+    { "name": "create_chart", "description": "Create bar, line, area, or pie charts" },
+    { "name": "create_metric", "description": "Create metric/KPI panels with sparklines" },
+    { "name": "create_heatmap", "description": "Create heatmap visualizations" },
+    { "name": "run_esql", "description": "Execute ES|QL queries" },
+    { "name": "list_indices", "description": "Discover available indices" },
+    { "name": "get_fields", "description": "Get field mappings for an index" },
+    { "name": "view_dashboard", "description": "Display the live dashboard preview inline" },
+    { "name": "export_to_kibana", "description": "Export to Kibana as Lens visualizations" },
+    { "name": "import_from_kibana", "description": "Import an existing Kibana dashboard" }
+  ],
+  "tools_generated": true,
+  "user_config": {
+    "es_node": {
+      "type": "string",
+      "title": "Elasticsearch URL",
+      "description": "Elasticsearch URL (e.g. http://localhost:9200 or https://your-cluster.es.cloud.example.com)",
+      "required": true,
+      "sensitive": false
+    },
+    "es_api_key": {
+      "type": "string",
+      "title": "Elasticsearch API Key",
+      "description": "API key for authentication (alternative to username/password)",
+      "required": false,
+      "sensitive": true
+    },
+    "es_username": {
+      "type": "string",
+      "title": "Username",
+      "description": "Username for authentication (alternative to API key)",
+      "required": false,
+      "sensitive": false
+    },
+    "es_password": {
+      "type": "string",
+      "title": "Password",
+      "description": "Password for authentication",
+      "required": false,
+      "sensitive": true
+    },
+    "kibana_url": {
+      "type": "string",
+      "title": "Kibana URL",
+      "description": "Kibana URL for export/import (e.g. http://localhost:5601)",
+      "required": false,
+      "sensitive": false
+    }
+  },
+  "keywords": [
+    "dashboard",
+    "elastic",
+    "elasticsearch",
+    "kibana",
+    "esql",
+    "visualization",
+    "charts",
+    "mcp-app"
+  ],
+  "license": "Elastic-2.0",
+  "privacy_policies": ["https://www.elastic.co/legal/privacy-statement"],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=22.0.0"
+    }
+  }
+}
