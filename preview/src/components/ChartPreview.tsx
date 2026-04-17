@@ -4,10 +4,10 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ChartPanel } from './ChartPanel';
 import { PanelChrome } from './PanelChrome';
-import { buildRenderableConfig } from '../utils/build-renderable-config';
+import { useBuildRenderableConfig } from '../hooks/useBuildRenderableConfig';
 import type { PanelConfig } from '../types';
 
 interface ChartPreviewData {
@@ -24,10 +24,7 @@ interface ChartPreviewData {
 export function ChartPreview({ preview }: { preview: ChartPreviewData }) {
   const { chart, data, trendData } = preview;
 
-  const renderableConfig = useMemo(
-    () => buildRenderableConfig(chart, data, trendData),
-    [chart, data, trendData]
-  );
+  const renderableConfig = useBuildRenderableConfig(chart, data, trendData);
 
   const height = chart.chartType === 'metric' ? 200 : 350;
 
