@@ -11,6 +11,7 @@ import { App as McpApp } from '@modelcontextprotocol/ext-apps';
 import { App } from './App';
 import { ChartPreview } from './components/ChartPreview';
 import { McpAppProvider } from './context/McpAppContext';
+import { tryExportMode } from './export-bootstrap';
 import type { DashboardConfig, PanelConfig } from './types';
 
 import '@elastic/charts/dist/theme_light.css';
@@ -258,4 +259,16 @@ function RootContent({
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<Root />);
+// Puppeteer export mode: render directly with injected data, no MCP handshake.
+// Normal MCP mode: render the Root component which handles the full MCP lifecycle.
+const reactRoot = ReactDOM.createRoot(document.getElementById('root')!);
+
+if (!tryExportMode(reactRoot)) {
+  // Not in export mode — defer one microtask in case __EXPORT_DATA__ is assigned
+  // after this module starts, otherwise render the normal MCP app.
+  queueMicrotask(() => {
+    if (!tryExportMode(reactRoot)) {
+      reactRoot.render(<Root />);
+    }
+  });
+}

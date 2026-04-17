@@ -15,7 +15,7 @@ export default tseslint.config({
     'preview/src/**/*.tsx',
     'preview/*.ts',
   ],
-  ignores: ['**/grid-layout/**'],
+  ignores: ['**/grid-layout/**', '**/dist/**'],
   extends: [tseslint.configs.recommended],
   plugins: {
     'local-rules': {
