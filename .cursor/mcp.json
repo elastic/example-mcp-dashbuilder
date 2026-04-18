@@ -2,8 +2,7 @@
   "mcpServers": {
     "example-mcp-dashbuilder": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["tsx", "server/src/index.ts"]
+      "command": "./start-server.sh"
     }
   }
 }
