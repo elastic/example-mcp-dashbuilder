@@ -8,15 +8,20 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getDashboard } from '../utils/dashboard-store.js';
 import { translateDashboardToSavedObject } from '../utils/dashboard-translator.js';
+import { translateDashboardToApiPayload } from '../utils/dashboard-api-translator.js';
 import { registerTool } from '../utils/register-tool.js';
 import {
   getKibanaUrl,
   getKibanaAuthHeader,
   getKibanaBasePath,
+  getKibanaCapabilities,
   kibanaFetch,
 } from '../utils/kibana-client.js';
 import { parseIndexPattern } from '../utils/esql-parser.js';
 import { detectTimeField } from '../utils/time-field.js';
+import type { DashboardConfig } from '../types.js';
+
+const DASHBOARD_API_VERSION = '2023-10-31';
 
 export function registerExportToKibana(server: McpServer): void {
   registerTool(
@@ -73,88 +78,178 @@ export function registerExportToKibana(server: McpServer): void {
         dashboard.title = String(args.title);
       }
 
-      // Build time field map: use explicit chart.timeField if set, otherwise detect via field_caps
-      const timeFieldMap = new Map<string, string>();
-      const seenIndices = new Set<string>();
-      for (const chart of dashboard.charts) {
-        if (!chart.esqlQuery) continue;
-        const index = parseIndexPattern(chart.esqlQuery);
-        if (!index || seenIndices.has(index)) continue;
-        seenIndices.add(index);
-
-        if (chart.timeField) {
-          timeFieldMap.set(index, chart.timeField);
-        } else {
-          const detected = await detectTimeField(index);
-          if (detected) timeFieldMap.set(index, detected);
-        }
-      }
-
-      // Translate to Kibana saved object format
-      const { attributes, references } = translateDashboardToSavedObject(dashboard, timeFieldMap);
-
-      // Create dashboard via saved_objects API
-      // TODO: Use the new Dashboard API instead
       const basePath = await getKibanaBasePath();
+      const caps = await getKibanaCapabilities();
 
-      let response: Response;
-      try {
-        response = await kibanaFetch(`${getKibanaUrl()}${basePath}/api/saved_objects/dashboard`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'kbn-xsrf': 'true',
-            Authorization: authHeader,
-          },
-          body: JSON.stringify({ attributes, references }),
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        return {
-          content: [
-            { type: 'text', text: `Failed to connect to Kibana at ${getKibanaUrl()}: ${message}` },
-          ],
-          isError: true,
-        };
+      if (caps.hasDashboardApi) {
+        return exportViaDashboardApi(dashboard, authHeader, basePath);
+      } else {
+        return exportViaSavedObjects(dashboard, authHeader, basePath);
       }
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        return {
-          content: [{ type: 'text', text: `Kibana API returned ${response.status}: ${errorBody}` }],
-          isError: true,
-        };
-      }
-
-      const result = (await response.json()) as { id?: string };
-      const dashboardId = result?.id;
-
-      if (!dashboardId) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Dashboard created but could not extract ID: ${JSON.stringify(result)}`,
-            },
-          ],
-        };
-      }
-
-      const dashboardUrl = `${getKibanaUrl()}${basePath}/app/dashboards#/view/${dashboardId}`;
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text:
-              `Dashboard "${dashboard.title}" exported to Kibana!\n\n` +
-              `URL: ${dashboardUrl}\n\n` +
-              `Panels exported: ${dashboard.charts.length}\n` +
-              `Sections exported: ${(dashboard.sections || []).length}\n` +
-              `Chart types: ${[...new Set(dashboard.charts.map((c) => c.chartType))].join(', ')}`,
-          },
-        ],
-      };
     }
   );
+}
+
+// ---------------------------------------------------------------------------
+// New path: Dashboard API (Kibana 9.4+ / Serverless)
+// ---------------------------------------------------------------------------
+
+async function exportViaDashboardApi(
+  dashboard: DashboardConfig,
+  authHeader: string,
+  basePath: string
+) {
+  const payload = translateDashboardToApiPayload(dashboard);
+  const url = `${getKibanaUrl()}${basePath}/api/dashboards`;
+
+  let response: Response;
+  try {
+    response = await kibanaFetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'kbn-xsrf': 'true',
+        'Elastic-Api-Version': DASHBOARD_API_VERSION,
+        Authorization: authHeader,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      content: [
+        { type: 'text', text: `Failed to connect to Kibana at ${getKibanaUrl()}: ${message}` },
+      ],
+      isError: true,
+    };
+  }
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    return {
+      content: [
+        { type: 'text', text: `Kibana Dashboard API returned ${response.status}: ${errorBody}` },
+      ],
+      isError: true,
+    };
+  }
+
+  const result = (await response.json()) as { id?: string };
+  const dashboardId = result?.id;
+
+  if (!dashboardId) {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Dashboard created but could not extract ID: ${JSON.stringify(result)}`,
+        },
+      ],
+    };
+  }
+
+  const dashboardUrl = `${getKibanaUrl()}${basePath}/app/dashboards#/view/${dashboardId}`;
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text:
+          `Dashboard "${dashboard.title}" exported to Kibana (Dashboard API)!\n\n` +
+          `URL: ${dashboardUrl}\n\n` +
+          `Panels exported: ${dashboard.charts.length}\n` +
+          `Sections exported: ${(dashboard.sections || []).length}\n` +
+          `Chart types: ${[...new Set(dashboard.charts.map((c) => c.chartType))].join(', ')}`,
+      },
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Legacy path: Saved Objects API (Kibana < 9.4)
+// ---------------------------------------------------------------------------
+
+async function exportViaSavedObjects(
+  dashboard: DashboardConfig,
+  authHeader: string,
+  basePath: string
+) {
+  // Build time field map: use explicit chart.timeField if set, otherwise detect via field_caps
+  const timeFieldMap = new Map<string, string>();
+  const seenIndices = new Set<string>();
+  for (const chart of dashboard.charts) {
+    if (!chart.esqlQuery) continue;
+    const index = parseIndexPattern(chart.esqlQuery);
+    if (!index || seenIndices.has(index)) continue;
+    seenIndices.add(index);
+
+    if (chart.timeField) {
+      timeFieldMap.set(index, chart.timeField);
+    } else {
+      const detected = await detectTimeField(index);
+      if (detected) timeFieldMap.set(index, detected);
+    }
+  }
+
+  // Translate to Kibana saved object format
+  const { attributes, references } = translateDashboardToSavedObject(dashboard, timeFieldMap);
+
+  let response: Response;
+  try {
+    response = await kibanaFetch(`${getKibanaUrl()}${basePath}/api/saved_objects/dashboard`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'kbn-xsrf': 'true',
+        Authorization: authHeader,
+      },
+      body: JSON.stringify({ attributes, references }),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      content: [
+        { type: 'text', text: `Failed to connect to Kibana at ${getKibanaUrl()}: ${message}` },
+      ],
+      isError: true,
+    };
+  }
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    return {
+      content: [{ type: 'text', text: `Kibana API returned ${response.status}: ${errorBody}` }],
+      isError: true,
+    };
+  }
+
+  const result = (await response.json()) as { id?: string };
+  const dashboardId = result?.id;
+
+  if (!dashboardId) {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Dashboard created but could not extract ID: ${JSON.stringify(result)}`,
+        },
+      ],
+    };
+  }
+
+  const dashboardUrl = `${getKibanaUrl()}${basePath}/app/dashboards#/view/${dashboardId}`;
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text:
+          `Dashboard "${dashboard.title}" exported to Kibana!\n\n` +
+          `URL: ${dashboardUrl}\n\n` +
+          `Panels exported: ${dashboard.charts.length}\n` +
+          `Sections exported: ${(dashboard.sections || []).length}\n` +
+          `Chart types: ${[...new Set(dashboard.charts.map((c) => c.chartType))].join(', ')}`,
+      },
+    ],
+  };
 }
