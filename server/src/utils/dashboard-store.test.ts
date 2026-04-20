@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { unlinkSync, existsSync } from 'fs';
+import { unlinkSync, existsSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import {
@@ -71,7 +71,7 @@ describe('session isolation via dashboardId', () => {
   const testIds = ['session-one', 'session-two'];
 
   beforeEach(() => {
-    // Create two separate dashboards to simulate parallel sessions
+    mkdirSync(DASHBOARDS_DIR, { recursive: true });
     createDashboard('Session One', 'session-one');
     createDashboard('Session Two', 'session-two');
   });

@@ -4,13 +4,12 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ChartPanel } from './ChartPanel';
-import { PanelChrome } from './PanelChrome';
 import { useBuildRenderableConfig } from '../hooks/useBuildRenderableConfig';
 import type { PanelConfig } from '../types';
 
-interface ChartPreviewData {
+interface ExportData {
   mode: 'chart-preview';
   chart: PanelConfig;
   data: Record<string, unknown>[];
@@ -18,29 +17,37 @@ interface ChartPreviewData {
 }
 
 /**
- * Renders a single chart with pre-loaded data.
- * Used for inline chart previews after create_chart/create_metric/create_heatmap.
+ * Static chart renderer for Puppeteer export.
+ * Renders the chart with pre-loaded data and signals readiness
+ * via window.__EXPORT_READY__ for the screenshot.
  */
-export function ChartPreview({ preview }: { preview: ChartPreviewData }) {
-  const { chart, data, trendData } = preview;
+export function ExportView({ exportData }: { exportData: ExportData }) {
+  const { chart, data, trendData } = exportData;
 
   const renderableConfig = useBuildRenderableConfig(chart, data, trendData);
 
   const height = chart.chartType === 'metric' ? 200 : 350;
 
+  // Signal to Puppeteer that the chart has rendered
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      (window as unknown as { __EXPORT_READY__: boolean }).__EXPORT_READY__ = true;
+    });
+  }, []);
+
   return (
     <div
       style={{
         width: '100%',
-        maxWidth: 600,
         height,
         padding: 16,
         fontFamily: "'Elastic UI Numeric', Inter, sans-serif",
       }}
     >
-      <PanelChrome title={chart.title}>
+      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>{chart.title}</div>
+      <div style={{ height: height - 50 }}>
         <ChartPanel config={renderableConfig} />
-      </PanelChrome>
+      </div>
     </div>
   );
 }

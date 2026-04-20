@@ -6,12 +6,11 @@
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getESClient } from '../utils/es-client.js';
-import { columnarToRows, validateFields } from '../utils/esql-transform.js';
 import { addChart, slugify } from '../utils/dashboard-store.js';
 import { registerAppOnlyTool } from '../utils/register-tool.js';
 import { setChartPreview } from '../utils/chart-preview-store.js';
-import type { HeatmapConfig, ESQLResponse } from '../types.js';
+import { runEsqlQuery, validateChartData } from '../utils/fetch-chart-data.js';
+import type { HeatmapConfig } from '../types.js';
 import { CHART_PREVIEW_RESOURCE_URI } from '../utils/resource-uris.js';
 
 export function registerCreateHeatmap(server: McpServer): void {
@@ -78,15 +77,9 @@ export function registerCreateHeatmap(server: McpServer): void {
       const { title, esqlQuery, xField, yField, valueField, colorRamp, timeField } = args;
       const id = args.id || `${slugify(title)}-${Math.random().toString(36).slice(2, 6)}`;
 
-      const client = getESClient();
-
       let data: Record<string, unknown>[];
       try {
-        const response = (await client.esql.query({
-          query: esqlQuery,
-          format: 'json',
-        })) as unknown as ESQLResponse;
-        data = columnarToRows(response);
+        data = await runEsqlQuery(esqlQuery);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return {
@@ -95,16 +88,9 @@ export function registerCreateHeatmap(server: McpServer): void {
         };
       }
 
-      if (data.length === 0) {
-        return {
-          content: [{ type: 'text', text: 'Query returned no results.' }],
-          isError: true,
-        };
-      }
-
-      const fieldError = validateFields(data, [xField, yField, valueField]);
-      if (fieldError) {
-        return { content: [{ type: 'text', text: fieldError }], isError: true };
+      const validationError = validateChartData(data, [xField, yField, valueField]);
+      if (validationError) {
+        return { content: [{ type: 'text', text: validationError }], isError: true };
       }
 
       const heatmap: HeatmapConfig = {
