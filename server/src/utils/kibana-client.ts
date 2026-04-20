@@ -54,6 +54,86 @@ export async function getKibanaBasePath(): Promise<string> {
   return '';
 }
 
+// ---------------------------------------------------------------------------
+// Kibana capabilities detection
+// ---------------------------------------------------------------------------
+
+export interface KibanaCapabilities {
+  /** Kibana version string, e.g. "9.4.0" */
+  version: string;
+  /** True for Elastic Cloud Serverless deployments */
+  serverless: boolean;
+  /** True when the new Dashboard API (/api/dashboards) is available (9.4+ or serverless) */
+  hasDashboardApi: boolean;
+}
+
+const DASHBOARD_API_MIN_VERSION = [9, 4];
+
+export function parseVersion(version: string): [number, number] {
+  const parts = version.split('.');
+  return [parseInt(parts[0], 10) || 0, parseInt(parts[1], 10) || 0];
+}
+
+export function meetsMinVersion(version: string): boolean {
+  const [major, minor] = parseVersion(version);
+  return (
+    major > DASHBOARD_API_MIN_VERSION[0] ||
+    (major === DASHBOARD_API_MIN_VERSION[0] && minor >= DASHBOARD_API_MIN_VERSION[1])
+  );
+}
+
+/**
+ * Build KibanaCapabilities from a /api/status response body.
+ * Exported for testability.
+ */
+export function parseKibanaStatus(body: {
+  version?: { number?: string; build_flavor?: string };
+}): KibanaCapabilities {
+  const version = body.version?.number ?? '0.0.0';
+  const serverless = body.version?.build_flavor === 'serverless';
+  const hasDashboardApi = serverless || meetsMinVersion(version);
+  return { version, serverless, hasDashboardApi };
+}
+
+let cachedCapabilities: KibanaCapabilities | null = null;
+
+/**
+ * Detect Kibana version and capabilities by probing /api/status.
+ * Result is cached for the process lifetime. Call resetKibanaCapabilities() to clear.
+ */
+export async function getKibanaCapabilities(): Promise<KibanaCapabilities> {
+  if (cachedCapabilities) return cachedCapabilities;
+
+  const basePath = await getKibanaBasePath();
+  const url = `${getKibanaUrl()}${basePath}/api/status`;
+
+  try {
+    const res = await kibanaFetch(url, {
+      headers: { Authorization: getKibanaAuthHeader() },
+    });
+
+    if (!res.ok) {
+      throw new Error(`/api/status returned ${res.status}`);
+    }
+
+    const body = (await res.json()) as {
+      version?: { number?: string; build_flavor?: string };
+    };
+
+    cachedCapabilities = parseKibanaStatus(body);
+    return cachedCapabilities;
+  } catch {
+    // If we can't reach /api/status, assume legacy
+    cachedCapabilities = { version: '0.0.0', serverless: false, hasDashboardApi: false };
+    return cachedCapabilities;
+  }
+}
+
+/** Reset cached capabilities (for testing or after reconnection). */
+export function resetKibanaCapabilities(): void {
+  cachedCapabilities = null;
+}
+
 /** Parse a dashboard ID from a URL or return the raw string. */
 export function parseDashboardId(input: string): string {
   // Handle URLs like http://host:5601/app/dashboards#/view/UUID
