@@ -4,52 +4,103 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import { writeFileSync } from 'fs';
+import { randomUUID } from 'crypto';
+import { mkdirSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getDashboard } from '../utils/dashboard-store.js';
 import { registerTool } from '../utils/register-tool.js';
-import type { PanelConfig } from '../types.js';
+import { translateDashboardToSavedObject } from '../utils/dashboard-translator.js';
+import { parseIndexPattern } from '../utils/esql-parser.js';
+import { detectTimeField } from '../utils/time-field.js';
+import type { DashboardConfig, PanelConfig } from '../types.js';
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const JUPYTER_EXPORT_DIR = resolve(PROJECT_ROOT, 'jupyter-exports');
+const KIBANA_EXPORT_DIR = resolve(PROJECT_ROOT, 'kibana-exports');
+
+/** Quote a string as a valid Python literal (reuses JSON string syntax). */
+function pyStr(value: string): string {
+  return JSON.stringify(value);
+}
+
+/** Escape a user-controlled string for safe interpolation into HTML text content. */
+function htmlEscape(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Collapse any CR/LF into a single space so the value is safe inside a single-line comment. */
+function singleLine(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ');
+}
+
+/**
+ * Make an ES|QL query safe to embed inside a Python triple-quoted string.
+ * ES|QL supports `"""..."""` literals (for regex patterns), which would otherwise
+ * close the enclosing Python block and allow arbitrary code to follow.
+ */
+function escapeForPyTripleQuote(query: string): string {
+  return query.replace(/"""/g, '\\"\\"\\"');
+}
 
 /** Map chart types to pandas visualization code. Returns { code, usesMatplotlib }. */
-function pandasVisualization(chart: PanelConfig): { code: string; usesMatplotlib: boolean } {
+export function pandasVisualization(chart: PanelConfig): { code: string; usesMatplotlib: boolean } {
   switch (chart.chartType) {
     case 'bar':
       return {
-        code: `df.plot.bar(x="${chart.xField}", y=${JSON.stringify(chart.yFields)}, title="${chart.title}")`,
+        code: `df.plot.bar(x=${pyStr(chart.xField)}, y=${JSON.stringify(chart.yFields)}, title=${pyStr(chart.title)})`,
         usesMatplotlib: true,
       };
     case 'line':
       return {
-        code: `df.plot.line(x="${chart.xField}", y=${JSON.stringify(chart.yFields)}, title="${chart.title}")`,
+        code: `df.plot.line(x=${pyStr(chart.xField)}, y=${JSON.stringify(chart.yFields)}, title=${pyStr(chart.title)})`,
         usesMatplotlib: true,
       };
     case 'area':
       return {
-        code: `df.plot.area(x="${chart.xField}", y=${JSON.stringify(chart.yFields)}, title="${chart.title}")`,
+        code: `df.plot.area(x=${pyStr(chart.xField)}, y=${JSON.stringify(chart.yFields)}, title=${pyStr(chart.title)})`,
         usesMatplotlib: true,
       };
     case 'pie':
       return {
-        code: `df.set_index("${chart.xField}")[${JSON.stringify(chart.yFields)}].plot.pie(subplots=True, title="${chart.title}")`,
+        code: `df.set_index(${pyStr(chart.xField)})[${JSON.stringify(chart.yFields)}].plot.pie(subplots=True, title=${pyStr(chart.title)})`,
         usesMatplotlib: true,
       };
     case 'metric':
       return {
-        code: `print(f"${chart.title}: {df.iloc[0]['${chart.valueField}']}")`,
+        code:
+          `from IPython.display import HTML, display\n` +
+          `value = df.iloc[0][${pyStr(chart.valueField)}]\n` +
+          `display(HTML(f'''\n` +
+          `<div style="padding: 20px 24px; border: 1px solid #e0e0e0; border-radius: 8px; background: #fafafa; display: inline-block; min-width: 220px;">\n` +
+          `  <div style="font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">${htmlEscape(chart.title)}</div>\n` +
+          `  <div style="font-size: 42px; font-weight: 600; color: #1a1a1a; line-height: 1;">{value}</div>\n` +
+          `</div>\n` +
+          `'''))`,
         usesMatplotlib: false,
       };
     case 'heatmap':
       return {
         code:
-          `import seaborn as sns\n` +
-          `pivot = df.pivot_table(index="${chart.yField}", columns="${chart.xField}", values="${chart.valueField}")\n` +
-          `sns.heatmap(pivot, annot=True, fmt=".0f", cmap="YlOrRd")\n` +
-          `plt.title("${chart.title}")`,
+          `pivot = df.pivot_table(index=${pyStr(chart.yField)}, columns=${pyStr(chart.xField)}, values=${pyStr(chart.valueField)})\n` +
+          `fig, ax = plt.subplots()\n` +
+          `im = ax.imshow(pivot.values, cmap="YlOrRd", aspect="auto")\n` +
+          `ax.set_xticks(range(len(pivot.columns)))\n` +
+          `ax.set_xticklabels(pivot.columns, rotation=45, ha="right")\n` +
+          `ax.set_yticks(range(len(pivot.index)))\n` +
+          `ax.set_yticklabels(pivot.index)\n` +
+          `for i in range(pivot.shape[0]):\n` +
+          `    for j in range(pivot.shape[1]):\n` +
+          `        ax.text(j, i, f"{pivot.values[i, j]:.0f}", ha="center", va="center")\n` +
+          `fig.colorbar(im, ax=ax)\n` +
+          `ax.set_title(${pyStr(chart.title)})`,
         usesMatplotlib: true,
       };
     default:
@@ -57,17 +108,17 @@ function pandasVisualization(chart: PanelConfig): { code: string; usesMatplotlib
   }
 }
 
-function buildKibanaConsole(charts: PanelConfig[], title: string): string {
-  const lines: string[] = [`# ${title}`, ''];
+export function buildKibanaConsole(charts: PanelConfig[], title: string): string {
+  const lines: string[] = [`# ${singleLine(title)}`, ''];
 
   for (const chart of charts) {
-    lines.push(`# ${chart.title} (${chart.chartType})`);
+    lines.push(`# ${singleLine(chart.title)} (${chart.chartType})`);
     lines.push(`POST /_query`);
     lines.push(`{"query": ${JSON.stringify(chart.esqlQuery)}}`);
     lines.push('');
 
     if (chart.chartType === 'metric' && chart.trendEsqlQuery) {
-      lines.push(`# ${chart.title} — trend sparkline`);
+      lines.push(`# ${singleLine(chart.title)} — trend sparkline`);
       lines.push(`POST /_query`);
       lines.push(`{"query": ${JSON.stringify(chart.trendEsqlQuery)}}`);
       lines.push('');
@@ -77,7 +128,7 @@ function buildKibanaConsole(charts: PanelConfig[], title: string): string {
   return lines.join('\n');
 }
 
-function buildJupyterNotebook(charts: PanelConfig[], title: string): string {
+export function buildJupyterNotebook(charts: PanelConfig[], title: string): string {
   const cells: Array<{
     cell_type: 'markdown' | 'code';
     source: string[];
@@ -89,37 +140,36 @@ function buildJupyterNotebook(charts: PanelConfig[], title: string): string {
   // Title cell
   cells.push({
     cell_type: 'markdown',
-    source: [`# ${title}\n`, '\n', 'Dashboard exported from example-mcp-dashbuilder\n'],
+    source: [
+      `# ${singleLine(title)}\n`,
+      '\n',
+      'Dashboard exported from example-mcp-dashbuilder\n',
+      '\n',
+      'Set `ES_NODE` and one of `ES_API_KEY` or `ES_USERNAME`/`ES_PASSWORD` in your environment before running.\n',
+    ],
     metadata: {},
   });
 
-  // Setup cell — pre-fill credentials from environment if available
-  const esNode = process.env.ES_NODE || 'http://localhost:9200';
-  const apiKey = process.env.ES_API_KEY;
-  const username = process.env.ES_USERNAME;
-  const password = process.env.ES_PASSWORD;
-
-  const authLines: string[] = [];
-  if (apiKey) {
-    authLines.push(`    api_key="${apiKey}",\n`);
-  } else if (username && password) {
-    authLines.push(`    basic_auth=("${username}", "${password}"),\n`);
-  } else {
-    authLines.push('    # api_key="your-api-key-here",\n');
-    authLines.push('    # basic_auth=("elastic", "changeme"),\n');
-  }
-
+  // Setup cell — read credentials from env at runtime so the notebook is safe to share
   cells.push({
     cell_type: 'code',
     source: [
+      'import os\n',
       'from elasticsearch import Elasticsearch\n',
       'import pandas as pd\n',
       'import matplotlib.pyplot as plt\n',
       '\n',
-      'es = Elasticsearch(\n',
-      `    "${esNode}",\n`,
-      ...authLines,
-      ')\n',
+      'es_node = os.environ.get("ES_NODE", "http://localhost:9200")\n',
+      'es_api_key = os.environ.get("ES_API_KEY")\n',
+      'es_username = os.environ.get("ES_USERNAME")\n',
+      'es_password = os.environ.get("ES_PASSWORD")\n',
+      '\n',
+      'if es_api_key:\n',
+      '    es = Elasticsearch(es_node, api_key=es_api_key)\n',
+      'elif es_username and es_password:\n',
+      '    es = Elasticsearch(es_node, basic_auth=(es_username, es_password))\n',
+      'else:\n',
+      '    es = Elasticsearch(es_node)\n',
     ],
     metadata: {},
     outputs: [],
@@ -130,14 +180,14 @@ function buildJupyterNotebook(charts: PanelConfig[], title: string): string {
     // Markdown header
     cells.push({
       cell_type: 'markdown',
-      source: [`## ${chart.title}\n`, `\n`, `Chart type: **${chart.chartType}**\n`],
+      source: [`## ${singleLine(chart.title)}\n`, `\n`, `Chart type: **${chart.chartType}**\n`],
       metadata: {},
     });
 
     // Query + visualization cell
-    const queryLines = chart.esqlQuery
+    const queryLines = escapeForPyTripleQuote(chart.esqlQuery)
       .split('\n')
-      .map((line, i, arr) => (i < arr.length - 1 ? `    ${line}\n` : `    ${line}\n`));
+      .map((line) => `    ${line}\n`);
 
     const viz = pandasVisualization(chart);
 
@@ -168,12 +218,14 @@ function buildJupyterNotebook(charts: PanelConfig[], title: string): string {
 
     // Trend cell for metrics
     if (chart.chartType === 'metric' && chart.trendEsqlQuery) {
-      const trendLines = chart.trendEsqlQuery.split('\n').map((line) => `    ${line}\n`);
+      const trendLines = escapeForPyTripleQuote(chart.trendEsqlQuery)
+        .split('\n')
+        .map((line) => `    ${line}\n`);
 
       cells.push({
         cell_type: 'code',
         source: [
-          `# ${chart.title} — trend sparkline\n`,
+          `# ${singleLine(chart.title)} — trend sparkline\n`,
           `trend_result = es.esql.query(\n`,
           `    query="""\n`,
           ...trendLines,
@@ -182,7 +234,7 @@ function buildJupyterNotebook(charts: PanelConfig[], title: string): string {
           `)\n`,
           `\n`,
           `trend_df = pd.DataFrame(trend_result["values"], columns=[c["name"] for c in trend_result["columns"]])\n`,
-          `trend_df.plot(title="${chart.title} — Trend")\n`,
+          `trend_df.plot(title=${pyStr(`${chart.title} — Trend`)})\n`,
           `plt.tight_layout()\n`,
           `plt.show()\n`,
         ],
@@ -213,6 +265,44 @@ function buildJupyterNotebook(charts: PanelConfig[], title: string): string {
   return JSON.stringify(notebook, null, 2);
 }
 
+export async function buildKibanaNdjson(dashboard: DashboardConfig): Promise<string> {
+  const timeFieldMap = new Map<string, string>();
+  const seenIndices = new Set<string>();
+  for (const chart of dashboard.charts) {
+    if (!chart.esqlQuery) continue;
+    const index = parseIndexPattern(chart.esqlQuery);
+    if (!index || seenIndices.has(index)) continue;
+    seenIndices.add(index);
+
+    if (chart.timeField) {
+      timeFieldMap.set(index, chart.timeField);
+    } else {
+      const detected = await detectTimeField(index);
+      if (detected) timeFieldMap.set(index, detected);
+    }
+  }
+
+  const { attributes, references } = translateDashboardToSavedObject(dashboard, timeFieldMap);
+
+  const savedObject = {
+    attributes,
+    id: randomUUID(),
+    references,
+    type: 'dashboard',
+    managed: false,
+  };
+
+  const summary = {
+    exportedCount: 1,
+    missingRefCount: 0,
+    missingReferences: [],
+    excludedObjects: [],
+    excludedObjectsCount: 0,
+  };
+
+  return `${JSON.stringify(savedObject)}\n${JSON.stringify(summary)}\n`;
+}
+
 export function registerExportQueries(server: McpServer): void {
   registerTool(
     server,
@@ -220,14 +310,15 @@ export function registerExportQueries(server: McpServer): void {
     {
       title: 'Export Queries',
       description:
-        'Export all ES|QL queries from the dashboard as a shareable notebook. ' +
-        'Supports two formats: "console" for Kibana Dev Tools, or "jupyter" for a Python notebook. ' +
-        'The content is returned as text in the chat — copy and save it.',
+        'Export the dashboard in a shareable format. ' +
+        'Supports three formats: "console" for Kibana Dev Tools queries, ' +
+        '"jupyter" for a Python .ipynb notebook, ' +
+        'or "ndjson" for a Kibana saved-object file that can be committed to a repo or imported into Kibana via Stack Management → Saved Objects.',
       inputSchema: {
         format: z
-          .enum(['console', 'jupyter'])
+          .enum(['console', 'jupyter', 'ndjson'])
           .describe(
-            'Export format: "console" for Kibana Dev Tools queries, "jupyter" for a Python .ipynb notebook.'
+            'Export format: "console" for Kibana Dev Tools queries, "jupyter" for a Python .ipynb notebook, "ndjson" for a Kibana saved-object export file.'
           ),
         dashboardId: z
           .string()
@@ -263,13 +354,37 @@ export function registerExportQueries(server: McpServer): void {
         };
       }
 
+      const slug =
+        dashboard.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') || 'dashboard';
+
+      if (args.format === 'ndjson') {
+        const ndjson = await buildKibanaNdjson(dashboard);
+        const fileName = `${slug}.ndjson`;
+        mkdirSync(KIBANA_EXPORT_DIR, { recursive: true });
+        writeFileSync(resolve(KIBANA_EXPORT_DIR, fileName), ndjson);
+        const relativePath = `kibana-exports/${fileName}`;
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `Kibana NDJSON export for "${dashboard.title}" (${dashboard.charts.length} charts).\n\n` +
+                `**Saved to:** \`${relativePath}\`\n` +
+                `**Import via:** Kibana → Stack Management → Saved Objects → Import`,
+            },
+          ],
+        };
+      }
+
       const content = buildJupyterNotebook(dashboard.charts, dashboard.title);
-      const slug = dashboard.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-      const fileName = `${slug || 'dashboard'}.ipynb`;
-      const filePath = resolve(PROJECT_ROOT, fileName);
+      const fileName = `${slug}.ipynb`;
+      mkdirSync(JUPYTER_EXPORT_DIR, { recursive: true });
+      const filePath = resolve(JUPYTER_EXPORT_DIR, fileName);
+      const relativePath = `jupyter-exports/${fileName}`;
       writeFileSync(filePath, content);
 
       return {
@@ -278,9 +393,9 @@ export function registerExportQueries(server: McpServer): void {
             type: 'text',
             text:
               `Jupyter notebook for "${dashboard.title}" (${dashboard.charts.length} charts).\n\n` +
-              `**Saved to:** \`${fileName}\`\n` +
-              `**Open with:** \`jupyter notebook ${fileName}\`\n` +
-              `**Requirements:** \`pip install elasticsearch pandas matplotlib seaborn\`\n\n` +
+              `**Saved to:** \`${relativePath}\`\n` +
+              `**Open with:** \`jupyter notebook ${relativePath}\`\n` +
+              `**Requirements:** \`pip install elasticsearch pandas matplotlib\`\n\n` +
               `The raw notebook JSON is below — you can also paste it directly into Jupyter:`,
           },
           {

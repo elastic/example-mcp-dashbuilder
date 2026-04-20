@@ -4,6 +4,8 @@ dist-mcp-app/
 *.tsbuildinfo
 preview/public/dashboards/
 preview/public/dashboard.json
+jupyter-exports/
+kibana-exports/
 .claude/
 .env
 .DS_Store
