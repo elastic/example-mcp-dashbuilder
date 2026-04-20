@@ -99,7 +99,10 @@ async function exportViaDashboardApi(
   authHeader: string,
   basePath: string
 ) {
+  // Translate internal dashboard config to the simplified Dashboard API format
   const payload = translateDashboardToApiPayload(dashboard);
+
+  // Create dashboard via the new Dashboard API
   const url = `${getKibanaUrl()}${basePath}/api/dashboards`;
 
   let response: Response;

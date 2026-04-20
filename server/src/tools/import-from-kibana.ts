@@ -14,15 +14,22 @@ import {
   slugify,
 } from '../utils/dashboard-store.js';
 import { translateLensToPanel } from '../utils/lens-reverse-translator.js';
+import {
+  translateDashboardApiPanel,
+  type DashboardApiResponse,
+} from '../utils/dashboard-api-reverse.js';
 import { registerTool } from '../utils/register-tool.js';
 import {
   getKibanaUrl,
   getKibanaAuthHeader,
   getKibanaBasePath,
+  getKibanaCapabilities,
   parseDashboardId,
   kibanaFetch,
 } from '../utils/kibana-client.js';
 import type { SectionConfig } from '../types.js';
+
+const DASHBOARD_API_VERSION = '2023-10-31';
 
 interface KibanaPanel {
   panelIndex: string;
@@ -78,140 +85,252 @@ export function registerImportFromKibana(server: McpServer): void {
 
       const id = parseDashboardId(args.dashboardId);
       const basePath = await getKibanaBasePath();
+      const caps = await getKibanaCapabilities();
 
-      // Fetch the dashboard from Kibana
-      let response: Response;
-      try {
-        response = await kibanaFetch(
-          `${getKibanaUrl()}${basePath}/api/saved_objects/dashboard/${id}`,
-          {
-            headers: {
-              Authorization: authHeader,
-              'kbn-xsrf': 'true',
-            },
-          }
-        );
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        return {
-          content: [
-            { type: 'text', text: `Failed to connect to Kibana at ${getKibanaUrl()}: ${message}` },
-          ],
-          isError: true,
-        };
+      if (caps.hasDashboardApi) {
+        return importViaDashboardApi(id, args.title, authHeader, basePath);
+      } else {
+        return importViaSavedObjects(id, args.title, authHeader, basePath);
       }
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        return {
-          content: [{ type: 'text', text: `Kibana API returned ${response.status}: ${errorBody}` }],
-          isError: true,
-        };
-      }
-
-      const savedObject = (await response.json()) as {
-        attributes: {
-          title: string;
-          panelsJSON: string;
-          sections?: KibanaSection[];
-        };
-      };
-
-      const dashboardTitle = args.title || savedObject.attributes.title || 'Imported Dashboard';
-
-      // Parse panels
-      let panels: KibanaPanel[];
-      try {
-        panels = JSON.parse(savedObject.attributes.panelsJSON || '[]');
-      } catch {
-        return {
-          content: [{ type: 'text', text: 'Failed to parse panelsJSON from Kibana dashboard.' }],
-          isError: true,
-        };
-      }
-
-      // Create a new dashboard
-      createDashboard(dashboardTitle, slugify(dashboardTitle));
-
-      // Translate each panel
-      const imported: string[] = [];
-      const skipped: string[] = [];
-      const gridLayout: Record<
-        string,
-        { type: 'panel'; column: number; row: number; width: number; height: number }
-      > = {};
-
-      for (const panel of panels) {
-        if (panel.type !== 'lens') {
-          skipped.push(`${panel.panelIndex} (type: ${panel.type})`);
-          continue;
-        }
-
-        const attrs = panel.embeddableConfig?.attributes;
-        if (!attrs) {
-          skipped.push(`${panel.panelIndex} (no attributes — by-reference panel)`);
-          continue;
-        }
-
-        const panelTitle = (attrs.title as string) || panel.panelIndex;
-        const panelId = slugify(panelTitle);
-
-        // This is going to translate only the supported chart types, and only ES|QL-based panels are supported.
-        const result = translateLensToPanel(attrs, panelId);
-        if ('skip' in result) {
-          skipped.push(`"${panelTitle}" — ${result.skip}`);
-          continue;
-        }
-
-        addChart(result.config);
-        imported.push(`"${panelTitle}" (${result.config.chartType})`);
-
-        // Preserve grid position
-        gridLayout[panelId] = {
-          type: 'panel',
-          column: panel.gridData.x,
-          row: panel.gridData.y,
-          width: panel.gridData.w,
-          height: panel.gridData.h,
-        };
-      }
-
-      // Save preserved grid positions
-      if (Object.keys(gridLayout).length > 0) {
-        saveDashboardLayout(gridLayout);
-      }
-
-      // Import sections
-      const kibanaSections = savedObject.attributes.sections || [];
-      for (const section of kibanaSections) {
-        const sectionId = section.gridData.i;
-        const panelIds = panels
-          .filter((p) => p.gridData.sectionId === sectionId)
-          .map((p) => {
-            const attrs = p.embeddableConfig?.attributes;
-            const panelTitle = String(attrs?.title) || p.panelIndex;
-            return slugify(panelTitle);
-          });
-
-        const sectionConfig: SectionConfig = {
-          id: sectionId,
-          title: section.title,
-          collapsed: section.collapsed,
-          panelIds,
-        };
-        addSection(sectionConfig);
-      }
-
-      const statusText =
-        `Dashboard "${dashboardTitle}" imported from Kibana!\n\n` +
-        `Panels imported: ${imported.length}\n` +
-        imported.map((p) => `  - ${p}`).join('\n') +
-        (skipped.length > 0
-          ? `\n\nSkipped: ${skipped.length}\n` + skipped.map((p) => `  - ${p}`).join('\n')
-          : '') +
-        `\n`;
-
-      return { content: [{ type: 'text', text: statusText }] };
     }
   );
+}
+
+// ---------------------------------------------------------------------------
+// New path: Dashboard API (Kibana 9.4+ / Serverless)
+// ---------------------------------------------------------------------------
+
+async function importViaDashboardApi(
+  id: string,
+  titleOverride: string | undefined,
+  authHeader: string,
+  basePath: string
+) {
+  // Fetch the dashboard from Kibana via the new Dashboard API
+  const url = `${getKibanaUrl()}${basePath}/api/dashboards/${id}`;
+
+  let response: Response;
+  try {
+    response = await kibanaFetch(url, {
+      headers: {
+        Authorization: authHeader,
+        'kbn-xsrf': 'true',
+        'Elastic-Api-Version': DASHBOARD_API_VERSION,
+      },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      content: [
+        { type: 'text', text: `Failed to connect to Kibana at ${getKibanaUrl()}: ${message}` },
+      ],
+      isError: true,
+    };
+  }
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    return {
+      content: [
+        { type: 'text', text: `Kibana Dashboard API returned ${response.status}: ${errorBody}` },
+      ],
+      isError: true,
+    };
+  }
+
+  const dashboardResponse = (await response.json()) as DashboardApiResponse;
+  const dashboardTitle = titleOverride || dashboardResponse.data.title || 'Imported Dashboard';
+  const panels = dashboardResponse.data.panels || [];
+
+  // Create a new dashboard in the local store
+  createDashboard(dashboardTitle, slugify(dashboardTitle));
+
+  // Translate each panel — only ES|QL-based vis panels are supported
+  const imported: string[] = [];
+  const skipped: string[] = [];
+  const gridLayout: Record<
+    string,
+    { type: 'panel'; column: number; row: number; width: number; height: number }
+  > = {};
+
+  for (const panel of panels) {
+    const panelTitle = (panel.config.title as string) || panel.id;
+    const panelId = slugify(panelTitle);
+
+    const result = translateDashboardApiPanel(panel, panelId, panelTitle);
+    if ('skip' in result) {
+      skipped.push(`"${panelTitle}" — ${result.skip}`);
+      continue;
+    }
+
+    addChart(result.config);
+    imported.push(`"${panelTitle}" (${result.config.chartType})`);
+
+    // Preserve grid position from the Kibana dashboard layout
+    gridLayout[panelId] = {
+      type: 'panel',
+      column: panel.grid.x,
+      row: panel.grid.y,
+      width: panel.grid.w,
+      height: panel.grid.h,
+    };
+  }
+
+  // Save preserved grid positions so the preview app matches Kibana's layout
+  if (Object.keys(gridLayout).length > 0) {
+    saveDashboardLayout(gridLayout);
+  }
+
+  const statusText =
+    `Dashboard "${dashboardTitle}" imported from Kibana (Dashboard API)!\n\n` +
+    `Panels imported: ${imported.length}\n` +
+    imported.map((p) => `  - ${p}`).join('\n') +
+    (skipped.length > 0
+      ? `\n\nSkipped: ${skipped.length}\n` + skipped.map((p) => `  - ${p}`).join('\n')
+      : '') +
+    `\n`;
+
+  return { content: [{ type: 'text', text: statusText }] };
+}
+
+// ---------------------------------------------------------------------------
+// Legacy path: Saved Objects API (Kibana < 9.4)
+// ---------------------------------------------------------------------------
+
+async function importViaSavedObjects(
+  id: string,
+  titleOverride: string | undefined,
+  authHeader: string,
+  basePath: string
+) {
+  // Fetch the dashboard from Kibana via the saved objects API
+  let response: Response;
+  try {
+    response = await kibanaFetch(`${getKibanaUrl()}${basePath}/api/saved_objects/dashboard/${id}`, {
+      headers: {
+        Authorization: authHeader,
+        'kbn-xsrf': 'true',
+      },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      content: [
+        { type: 'text', text: `Failed to connect to Kibana at ${getKibanaUrl()}: ${message}` },
+      ],
+      isError: true,
+    };
+  }
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    return {
+      content: [{ type: 'text', text: `Kibana API returned ${response.status}: ${errorBody}` }],
+      isError: true,
+    };
+  }
+
+  const savedObject = (await response.json()) as {
+    attributes: {
+      title: string;
+      panelsJSON: string;
+      sections?: KibanaSection[];
+    };
+  };
+
+  const dashboardTitle = titleOverride || savedObject.attributes.title || 'Imported Dashboard';
+
+  // Parse panels from the saved object's panelsJSON
+  let panels: KibanaPanel[];
+  try {
+    panels = JSON.parse(savedObject.attributes.panelsJSON || '[]');
+  } catch {
+    return {
+      content: [{ type: 'text', text: 'Failed to parse panelsJSON from Kibana dashboard.' }],
+      isError: true,
+    };
+  }
+
+  // Create a new dashboard in the local store
+  createDashboard(dashboardTitle, slugify(dashboardTitle));
+
+  // Translate each panel — only inline Lens ES|QL-based panels are supported
+  const imported: string[] = [];
+  const skipped: string[] = [];
+  const gridLayout: Record<
+    string,
+    { type: 'panel'; column: number; row: number; width: number; height: number }
+  > = {};
+
+  for (const panel of panels) {
+    if (panel.type !== 'lens') {
+      skipped.push(`${panel.panelIndex} (type: ${panel.type})`);
+      continue;
+    }
+
+    const attrs = panel.embeddableConfig?.attributes;
+    if (!attrs) {
+      skipped.push(`${panel.panelIndex} (no attributes — by-reference panel)`);
+      continue;
+    }
+
+    const panelTitle = (attrs.title as string) || panel.panelIndex;
+    const panelId = slugify(panelTitle);
+
+    // Translate only supported chart types; only ES|QL-based panels are supported
+    const result = translateLensToPanel(attrs, panelId);
+    if ('skip' in result) {
+      skipped.push(`"${panelTitle}" — ${result.skip}`);
+      continue;
+    }
+
+    addChart(result.config);
+    imported.push(`"${panelTitle}" (${result.config.chartType})`);
+
+    // Preserve grid position from the Kibana dashboard layout
+    gridLayout[panelId] = {
+      type: 'panel',
+      column: panel.gridData.x,
+      row: panel.gridData.y,
+      width: panel.gridData.w,
+      height: panel.gridData.h,
+    };
+  }
+
+  // Save preserved grid positions so the preview app matches Kibana's layout
+  if (Object.keys(gridLayout).length > 0) {
+    saveDashboardLayout(gridLayout);
+  }
+
+  // Import sections
+  const kibanaSections = savedObject.attributes.sections || [];
+  for (const section of kibanaSections) {
+    const sectionId = section.gridData.i;
+    const panelIds = panels
+      .filter((p) => p.gridData.sectionId === sectionId)
+      .map((p) => {
+        const attrs = p.embeddableConfig?.attributes;
+        const pTitle = String(attrs?.title) || p.panelIndex;
+        return slugify(pTitle);
+      });
+
+    const sectionConfig: SectionConfig = {
+      id: sectionId,
+      title: section.title,
+      collapsed: section.collapsed,
+      panelIds,
+    };
+    addSection(sectionConfig);
+  }
+
+  const statusText =
+    `Dashboard "${dashboardTitle}" imported from Kibana!\n\n` +
+    `Panels imported: ${imported.length}\n` +
+    imported.map((p) => `  - ${p}`).join('\n') +
+    (skipped.length > 0
+      ? `\n\nSkipped: ${skipped.length}\n` + skipped.map((p) => `  - ${p}`).join('\n')
+      : '') +
+    `\n`;
+
+  return { content: [{ type: 'text', text: statusText }] };
 }
