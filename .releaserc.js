@@ -46,7 +46,10 @@ export default {
             {
               assets: [
                 { path: '*.mcpb', label: 'MCP Bundle (${nextRelease.gitTag})' },
-                { path: 'example-mcp-dashbuilder.tgz', label: 'Server tarball (${nextRelease.gitTag})' },
+                {
+                  path: 'example-mcp-dashbuilder.tgz',
+                  label: 'Server tarball (${nextRelease.gitTag})',
+                },
               ],
               successComment: false,
               failComment: false,
