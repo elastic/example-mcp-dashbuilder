@@ -5,8 +5,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { translateDashboardApiPanel } from './dashboard-api-reverse.js';
-import type { DashboardApiPanelResponse } from './dashboard-api-reverse.js';
+import { translateDashboardApiPanel, isDashboardApiSection } from './dashboard-api-reverse.js';
+import type {
+  DashboardApiPanelResponse,
+  DashboardApiSectionResponse,
+} from './dashboard-api-reverse.js';
 import type { ChartConfig, MetricConfig, HeatmapConfig } from '../types.js';
 
 function makePanel(config: Record<string, unknown>): DashboardApiPanelResponse {
@@ -177,6 +180,42 @@ describe('reverse heatmap', () => {
         valueField: 'c',
       } satisfies HeatmapConfig,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isDashboardApiSection type guard
+// ---------------------------------------------------------------------------
+
+describe('isDashboardApiSection', () => {
+  it('returns true for a section entry', () => {
+    const section: DashboardApiSectionResponse = {
+      title: 'My Section',
+      collapsed: false,
+      grid: { y: 0 },
+      panels: [{ type: 'vis', id: 'p1', grid: { x: 0, y: 0, w: 24, h: 15 }, config: {} }],
+    };
+    expect(isDashboardApiSection(section)).toBe(true);
+  });
+
+  it('returns true for a section with empty panels array', () => {
+    const section: DashboardApiSectionResponse = {
+      title: 'Empty Section',
+      collapsed: true,
+      grid: { y: 10 },
+      panels: [],
+    };
+    expect(isDashboardApiSection(section)).toBe(true);
+  });
+
+  it('returns false for a panel entry', () => {
+    const panel: DashboardApiPanelResponse = {
+      type: 'vis',
+      id: 'p1',
+      grid: { x: 0, y: 0, w: 24, h: 15 },
+      config: { type: 'xy' },
+    };
+    expect(isDashboardApiSection(panel)).toBe(false);
   });
 });
 
