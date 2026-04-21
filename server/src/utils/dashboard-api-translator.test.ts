@@ -12,6 +12,7 @@ import {
   translateHeatmapPanel,
   translatePanelConfig,
   translateDashboardToApiPayload,
+  type DashboardApiPanel,
 } from './dashboard-api-translator.js';
 import type { ChartConfig, MetricConfig, HeatmapConfig, DashboardConfig } from '../types.js';
 
@@ -237,22 +238,24 @@ describe('translateDashboardToApiPayload', () => {
     const payload = translateDashboardToApiPayload(dashboard);
     // Bar (w=24) + Metric (w=12) fit in one row (36 < 48)
     // With balanced widths: 2 panels → 24+24
-    expect(payload.panels[0].grid.y).toBe(0);
-    expect(payload.panels[1].grid.y).toBe(0);
-    expect(payload.panels[0].grid.x).toBe(0);
-    expect(payload.panels[1].grid.x).toBe(24);
+    const p0 = payload.panels[0] as DashboardApiPanel;
+    const p1 = payload.panels[1] as DashboardApiPanel;
+    expect(p0.grid.y).toBe(0);
+    expect(p1.grid.y).toBe(0);
+    expect(p0.grid.x).toBe(0);
+    expect(p1.grid.x).toBe(24);
   });
 
   it('all panels have type "vis"', () => {
     const payload = translateDashboardToApiPayload(dashboard);
     for (const panel of payload.panels) {
-      expect(panel.type).toBe('vis');
+      expect((panel as DashboardApiPanel).type).toBe('vis');
     }
   });
 
   it('each panel has a unique UUID id', () => {
     const payload = translateDashboardToApiPayload(dashboard);
-    const ids = payload.panels.map((p) => p.id);
+    const ids = payload.panels.map((p) => (p as DashboardApiPanel).id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) {
       expect(id).toMatch(/^[a-f0-9-]{36}$/);
@@ -268,17 +271,17 @@ describe('translateDashboardToApiPayload', () => {
       },
     };
     const payload = translateDashboardToApiPayload(withLayout);
-    expect(payload.panels[0].grid).toEqual({ x: 10, y: 5, w: 20, h: 12 });
-    expect(payload.panels[1].grid).toEqual({ x: 30, y: 5, w: 18, h: 8 });
+    expect((payload.panels[0] as DashboardApiPanel).grid).toEqual({ x: 10, y: 5, w: 20, h: 12 });
+    expect((payload.panels[1] as DashboardApiPanel).grid).toEqual({ x: 30, y: 5, w: 18, h: 8 });
   });
 
   it('panel configs contain correct visualization structures', () => {
     const payload = translateDashboardToApiPayload(dashboard);
     // First panel is a bar chart → xy
-    expect(payload.panels[0].config.type).toBe('xy');
-    expect(payload.panels[0].config.layers).toBeDefined();
+    expect((payload.panels[0] as DashboardApiPanel).config.type).toBe('xy');
+    expect((payload.panels[0] as DashboardApiPanel).config.layers).toBeDefined();
     // Second panel is a metric
-    expect(payload.panels[1].config.type).toBe('metric');
-    expect(payload.panels[1].config.metrics).toBeDefined();
+    expect((payload.panels[1] as DashboardApiPanel).config.type).toBe('metric');
+    expect((payload.panels[1] as DashboardApiPanel).config.metrics).toBeDefined();
   });
 });

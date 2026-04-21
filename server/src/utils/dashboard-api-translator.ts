@@ -34,9 +34,16 @@ export interface DashboardApiPanel {
   config: Record<string, unknown>;
 }
 
+export interface DashboardApiSection {
+  title: string;
+  collapsed: boolean;
+  grid: { y: number };
+  panels: DashboardApiPanel[];
+}
+
 export interface DashboardApiPayload {
   title: string;
-  panels: DashboardApiPanel[];
+  panels: (DashboardApiPanel | DashboardApiSection)[];
   time_range?: { from: string; to: string };
   description?: string;
 }
@@ -244,38 +251,146 @@ function autoPlacePanels(charts: PanelConfig[], startRow = 0): GridPlacement[] {
  * otherwise auto-places panels.
  */
 export function translateDashboardToApiPayload(config: DashboardConfig): DashboardApiPayload {
-  const panels: DashboardApiPanel[] = [];
+  const topLevelPanels: (DashboardApiPanel | DashboardApiSection)[] = [];
   const gridLayout = config.gridLayout;
+  const sections = config.sections || [];
+
+  // Build a set of panel IDs that belong to sections so we can exclude them from top-level
+  const sectionPanelIds = new Set<string>();
+  for (const section of sections) {
+    for (const pid of section.panelIds) {
+      sectionPanelIds.add(pid);
+    }
+  }
+
+  // Build a lookup of charts by id
+  const chartById = new Map<string, PanelConfig>();
+  for (const chart of config.charts) {
+    chartById.set(chart.id, chart);
+  }
+
+  // Helper: translate a chart to an API panel using grid layout or auto-placement grid
+  function makeApiPanel(
+    chart: PanelConfig,
+    grid: { x: number; y: number; w: number; h: number }
+  ): DashboardApiPanel {
+    return {
+      type: 'vis',
+      id: randomUUID(),
+      grid,
+      config: translatePanelConfig(chart),
+    };
+  }
 
   if (gridLayout) {
-    // Use positions from user's drag/resize in the preview app
+    // Top-level panels (not in any section)
     for (const chart of config.charts) {
+      if (sectionPanelIds.has(chart.id)) continue;
       const widget = gridLayout[chart.id];
       if (widget && widget.type === 'panel') {
-        panels.push({
-          type: 'vis',
-          id: randomUUID(),
-          grid: { x: widget.column, y: widget.row, w: widget.width, h: widget.height },
-          config: translatePanelConfig(chart),
-        });
+        topLevelPanels.push(
+          makeApiPanel(chart, {
+            x: widget.column,
+            y: widget.row,
+            w: widget.width,
+            h: widget.height,
+          })
+        );
       }
     }
-  } else {
-    // Auto-place
-    const placements = autoPlacePanels(config.charts);
-    for (const { panel, grid } of placements) {
-      panels.push({
-        type: 'vis',
-        id: randomUUID(),
-        grid,
-        config: translatePanelConfig(panel),
+
+    // Sections with their nested panels
+    for (const section of sections) {
+      const sectionWidget = gridLayout[section.id];
+      const sectionRow = sectionWidget && sectionWidget.type === 'section' ? sectionWidget.row : 0;
+
+      const sectionCharts = section.panelIds
+        .map((pid) => chartById.get(pid))
+        .filter((c): c is PanelConfig => c != null);
+
+      const nestedPanels: DashboardApiPanel[] = [];
+      for (const chart of sectionCharts) {
+        const widget = gridLayout[chart.id];
+        if (widget && widget.type === 'panel') {
+          nestedPanels.push(
+            makeApiPanel(chart, {
+              x: widget.column,
+              y: widget.row,
+              w: widget.width,
+              h: widget.height,
+            })
+          );
+        }
+      }
+
+      // Also handle section-level panel positions stored inside GridSection.panels
+      if (
+        nestedPanels.length === 0 &&
+        sectionWidget &&
+        sectionWidget.type === 'section' &&
+        sectionWidget.panels
+      ) {
+        for (const chart of sectionCharts) {
+          const pos = sectionWidget.panels[chart.id];
+          if (pos) {
+            nestedPanels.push(
+              makeApiPanel(chart, { x: pos.column, y: pos.row, w: pos.width, h: pos.height })
+            );
+          }
+        }
+      }
+
+      // If we still have no positioned panels, auto-place them
+      if (nestedPanels.length === 0 && sectionCharts.length > 0) {
+        const placements = autoPlacePanels(sectionCharts, 0);
+        for (const { panel, grid } of placements) {
+          nestedPanels.push(makeApiPanel(panel, grid));
+        }
+      }
+
+      topLevelPanels.push({
+        title: section.title,
+        collapsed: section.collapsed,
+        grid: { y: sectionRow },
+        panels: nestedPanels,
       });
+    }
+  } else {
+    // Auto-place: top-level charts first
+    const topCharts = config.charts.filter((c) => !sectionPanelIds.has(c.id));
+    const placements = autoPlacePanels(topCharts);
+    for (const { panel, grid } of placements) {
+      topLevelPanels.push(makeApiPanel(panel, grid));
+    }
+
+    // Then sections
+    let nextRow =
+      placements.length > 0 ? Math.max(...placements.map((p) => p.grid.y + p.grid.h)) : 0;
+
+    for (const section of sections) {
+      const sectionCharts = section.panelIds
+        .map((pid) => chartById.get(pid))
+        .filter((c): c is PanelConfig => c != null);
+
+      const sectionPlacements = autoPlacePanels(sectionCharts, 0);
+      const nestedPanels: DashboardApiPanel[] = [];
+      for (const { panel, grid } of sectionPlacements) {
+        nestedPanels.push(makeApiPanel(panel, grid));
+      }
+
+      topLevelPanels.push({
+        title: section.title,
+        collapsed: section.collapsed,
+        grid: { y: nextRow },
+        panels: nestedPanels,
+      });
+      nextRow++;
     }
   }
 
   return {
     title: config.title,
-    panels,
+    panels: topLevelPanels,
     description: `Exported from MCP Dashboard App on ${new Date().toLocaleDateString()}`,
   };
 }
