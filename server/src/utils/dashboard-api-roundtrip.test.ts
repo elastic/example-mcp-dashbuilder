@@ -65,6 +65,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
     };
     const out = roundTrip(input, translateXYPanel) as ChartConfig;
     expect(out.chartType).toBe('line');
+    expect(out.title).toBe(input.title);
     expect(out.xField).toBe('minute');
     expect(out.yFields).toEqual(['avg_cpu']);
   });
@@ -80,6 +81,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
     };
     const out = roundTrip(input, translateXYPanel) as ChartConfig;
     expect(out.chartType).toBe('area');
+    expect(out.title).toBe(input.title);
     expect(out.xField).toBe('hour');
     expect(out.yFields).toEqual(['sum_bytes']);
   });
@@ -95,6 +97,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       splitField: 'region',
     };
     const out = roundTrip(input, translateXYPanel) as ChartConfig;
+    expect(out.title).toBe(input.title);
     expect(out.splitField).toBe('region');
   });
 
@@ -108,6 +111,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       yFields: ['a', 'b'],
     };
     const out = roundTrip(input, translateXYPanel) as ChartConfig;
+    expect(out.title).toBe(input.title);
     expect(out.yFields).toEqual(['a', 'b']);
   });
 
@@ -122,6 +126,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
     };
     const out = roundTrip(input, translatePiePanel) as ChartConfig;
     expect(out.chartType).toBe('pie');
+    expect(out.title).toBe(input.title);
     expect(out.xField).toBe('status');
     expect(out.yFields).toEqual(['count']);
   });
@@ -136,6 +141,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
     };
     const out = roundTrip(input, translateMetricPanel) as MetricConfig;
     expect(out.chartType).toBe('metric');
+    expect(out.title).toBe(input.title);
     expect(out.valueField).toBe('total');
   });
 
@@ -151,6 +157,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
     };
     const out = roundTrip(input, translateHeatmapPanel) as HeatmapConfig;
     expect(out.chartType).toBe('heatmap');
+    expect(out.title).toBe(input.title);
     expect(out.xField).toBe('hour');
     expect(out.yField).toBe('day');
     expect(out.valueField).toBe('c');

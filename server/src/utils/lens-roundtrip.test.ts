@@ -47,6 +47,7 @@ describe('Lens round-trip: export then import', () => {
     const result = roundTrip(original);
     if ('config' in result) {
       expect(result.config.chartType).toBe('line');
+      expect(result.config.title).toBe(original.title);
       expect((result.config as ChartConfig).xField).toBe('BUCKET(@timestamp, 1 day)');
     }
   });
@@ -63,6 +64,7 @@ describe('Lens round-trip: export then import', () => {
     const result = roundTrip(original);
     if ('config' in result) {
       expect(result.config.chartType).toBe('pie');
+      expect(result.config.title).toBe(original.title);
       expect((result.config as ChartConfig).xField).toBe('status');
       expect((result.config as ChartConfig).yFields).toEqual(['c']);
     }
@@ -81,6 +83,7 @@ describe('Lens round-trip: export then import', () => {
     const result = roundTrip(original);
     if ('config' in result) {
       expect(result.config.chartType).toBe('metric');
+      expect(result.config.title).toBe(original.title);
       const m = result.config as MetricConfig;
       expect(m.valueField).toBe('total');
       expect(m.subtitle).toBe('All time');
@@ -101,6 +104,7 @@ describe('Lens round-trip: export then import', () => {
     expect('config' in result).toBe(true);
     if ('config' in result) {
       expect(result.config.chartType).toBe('area');
+      expect(result.config.title).toBe(original.title);
       expect((result.config as ChartConfig).xField).toBe('hour');
       expect((result.config as ChartConfig).yFields).toEqual(['sum_bytes']);
     }
@@ -119,6 +123,7 @@ describe('Lens round-trip: export then import', () => {
     const result = roundTrip(original);
     expect('config' in result).toBe(true);
     if ('config' in result) {
+      expect(result.config.title).toBe(original.title);
       expect((result.config as ChartConfig).splitField).toBe('region');
     }
   });
@@ -136,6 +141,7 @@ describe('Lens round-trip: export then import', () => {
     const result = roundTrip(original);
     expect('config' in result).toBe(true);
     if ('config' in result) {
+      expect(result.config.title).toBe(original.title);
       expect((result.config as ChartConfig).palette).toEqual(['#E91E63']);
     }
   });
@@ -153,6 +159,7 @@ describe('Lens round-trip: export then import', () => {
     const result = roundTrip(original);
     expect('config' in result).toBe(true);
     if ('config' in result) {
+      expect(result.config.title).toBe(original.title);
       expect((result.config as ChartConfig).yFields).toEqual(['a', 'b']);
       expect((result.config as ChartConfig).palette).toEqual(['#FF0000', '#00FF00']);
     }
@@ -171,6 +178,7 @@ describe('Lens round-trip: export then import', () => {
     const result = roundTrip(original);
     if ('config' in result) {
       expect(result.config.chartType).toBe('heatmap');
+      expect(result.config.title).toBe(original.title);
       const h = result.config as HeatmapConfig;
       expect(h.xField).toBe('hour');
       expect(h.yField).toBe('day');
@@ -192,6 +200,7 @@ describe('Lens round-trip: export then import', () => {
     const result = roundTrip(original);
     expect('config' in result).toBe(true);
     if ('config' in result) {
+      expect(result.config.title).toBe(original.title);
       expect((result.config as HeatmapConfig).colorRamp).toEqual(['#aaa', '#bbb', '#ccc']);
     }
   });
