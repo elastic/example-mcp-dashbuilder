@@ -11,6 +11,7 @@ import {
   addChart,
   addSection,
   saveDashboardLayout,
+  saveDashboardTimeRange,
   slugify,
 } from '../utils/dashboard-store.js';
 import { translateLensToPanel } from '../utils/lens-reverse-translator.js';
@@ -212,6 +213,11 @@ async function importViaDashboardApi(
   // Save preserved grid positions so the preview app matches Kibana's layout
   if (Object.keys(gridLayout).length > 0) {
     saveDashboardLayout(gridLayout);
+  }
+
+  // Preserve dashboard-level time range if present
+  if (dashboardResponse.data.time_range) {
+    saveDashboardTimeRange(dashboardResponse.data.time_range);
   }
 
   const statusText =

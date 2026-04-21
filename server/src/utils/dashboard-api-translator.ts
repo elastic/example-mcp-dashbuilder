@@ -372,6 +372,7 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
   return {
     title: config.title,
     panels: topLevelPanels,
+    ...(config.timeRange ? { time_range: config.timeRange } : {}),
     description: `Exported from MCP Dashboard App on ${new Date().toLocaleDateString()}`,
   };
 }
