@@ -4,8 +4,14 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import { describe, it, expect } from 'vitest';
-import { parseDashboardId, parseKibanaStatus, meetsMinVersion } from './kibana-client.js';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import {
+  parseDashboardId,
+  parseKibanaStatus,
+  meetsMinVersion,
+  getKibanaCapabilities,
+  resetKibanaCapabilities,
+} from './kibana-client.js';
 import type { KibanaCapabilities } from './kibana-client.js';
 
 describe('parseDashboardId', () => {
@@ -77,6 +83,65 @@ describe('parseKibanaStatus', () => {
 
   it('handles empty version object', () => {
     expect(parseKibanaStatus({ version: {} })).toEqual<KibanaCapabilities>({
+      version: '0.0.0',
+      serverless: false,
+      hasDashboardApi: false,
+    });
+  });
+});
+
+describe('getKibanaCapabilities', () => {
+  const originalApiKey = process.env.ES_API_KEY;
+  const originalUrl = process.env.KIBANA_URL;
+
+  afterAll(() => {
+    if (originalApiKey !== undefined) {
+      process.env.ES_API_KEY = originalApiKey;
+    } else {
+      delete process.env.ES_API_KEY;
+    }
+    if (originalUrl !== undefined) {
+      process.env.KIBANA_URL = originalUrl;
+    } else {
+      delete process.env.KIBANA_URL;
+    }
+  });
+
+  beforeEach(() => {
+    resetKibanaCapabilities();
+    process.env.ES_API_KEY = 'test-key';
+  });
+
+  it('returns fallback when Kibana is unreachable', async () => {
+    process.env.KIBANA_URL = 'http://127.0.0.1:1';
+
+    const result = await getKibanaCapabilities();
+    expect(result).toEqual<KibanaCapabilities>({
+      version: '0.0.0',
+      serverless: false,
+      hasDashboardApi: false,
+    });
+  });
+
+  it('clears cache on failure so next call retries', async () => {
+    process.env.KIBANA_URL = 'http://127.0.0.1:1';
+
+    const first = await getKibanaCapabilities();
+    expect(first.version).toBe('0.0.0');
+
+    // If the catch block didn't clear the cache, this second call
+    // would return the cached promise instead of retrying.
+    const second = await getKibanaCapabilities();
+    expect(second.version).toBe('0.0.0');
+  });
+
+  it('returns fallback when auth is missing', async () => {
+    delete process.env.ES_API_KEY;
+    delete process.env.ES_USERNAME;
+    delete process.env.ES_PASSWORD;
+
+    const result = await getKibanaCapabilities();
+    expect(result).toEqual<KibanaCapabilities>({
       version: '0.0.0',
       serverless: false,
       hasDashboardApi: false,
