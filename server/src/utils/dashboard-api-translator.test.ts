@@ -159,8 +159,8 @@ describe('translatePanelConfig', () => {
       xField: 'y',
       yFields: ['c'],
     });
-    expect(result).not.toBeNull();
-    expect(result?.type).toBe('xy');
+    expect('config' in result).toBe(true);
+    if ('config' in result) expect(result.config.type).toBe('xy');
   });
 
   it('dispatches pie to pie', () => {
@@ -172,8 +172,8 @@ describe('translatePanelConfig', () => {
       xField: 'y',
       yFields: ['c'],
     });
-    expect(result).not.toBeNull();
-    expect(result?.type).toBe('pie');
+    expect('config' in result).toBe(true);
+    if ('config' in result) expect(result.config.type).toBe('pie');
   });
 
   it('dispatches metric', () => {
@@ -184,8 +184,8 @@ describe('translatePanelConfig', () => {
       esqlQuery: 'FROM x | STATS c = COUNT()',
       valueField: 'c',
     });
-    expect(result).not.toBeNull();
-    expect(result?.type).toBe('metric');
+    expect('config' in result).toBe(true);
+    if ('config' in result) expect(result.config.type).toBe('metric');
   });
 
   it('dispatches heatmap', () => {
@@ -198,8 +198,8 @@ describe('translatePanelConfig', () => {
       yField: 'b',
       valueField: 'c',
     });
-    expect(result).not.toBeNull();
-    expect(result?.type).toBe('heatmap');
+    expect('config' in result).toBe(true);
+    if ('config' in result) expect(result.config.type).toBe('heatmap');
   });
 });
 

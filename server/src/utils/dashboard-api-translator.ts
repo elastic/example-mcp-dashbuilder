@@ -157,21 +157,23 @@ export function translateHeatmapPanel(heatmap: HeatmapConfig): Record<string, un
  * Translate any PanelConfig to a Dashboard API panel config object.
  * Returns the `config` portion of the panel (to be wrapped with type/id/grid).
  */
-export function translatePanelConfig(panel: PanelConfig): Record<string, unknown> | null {
+export function translatePanelConfig(
+  panel: PanelConfig
+): { config: Record<string, unknown> } | { skip: string } {
   if (isMetricConfig(panel)) {
-    return translateMetricPanel(panel);
+    return { config: translateMetricPanel(panel) };
   }
   if (isHeatmapConfig(panel)) {
-    return translateHeatmapPanel(panel);
+    return { config: translateHeatmapPanel(panel) };
   }
   if (isChartConfig(panel)) {
     if (panel.chartType === 'pie') {
-      return translatePiePanel(panel);
+      return { config: translatePiePanel(panel) };
     }
-    return translateXYPanel(panel);
+    return { config: translateXYPanel(panel) };
   }
   // Should be unreachable with current types
-  return null;
+  return { skip: `Unsupported panel type for chart: ${(panel as PanelConfig).id}` };
 }
 
 // ---------------------------------------------------------------------------
@@ -229,16 +231,16 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
     chart: PanelConfig,
     grid: { x: number; y: number; w: number; h: number }
   ): DashboardApiPanel | null {
-    const config = translatePanelConfig(chart);
-    if (!config) {
-      console.warn(`Skipping unsupported panel type for chart: ${chart.id}`);
+    const result = translatePanelConfig(chart);
+    if ('skip' in result) {
+      console.warn(`Skipping panel: ${result.skip}`);
       return null;
     }
     return {
       type: 'vis',
       id: randomUUID(),
       grid,
-      config,
+      config: result.config,
     };
   }
 
