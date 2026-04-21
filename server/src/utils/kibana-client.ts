@@ -103,39 +103,50 @@ export function parseKibanaStatus(body: {
   return { version, serverless, hasDashboardApi };
 }
 
-let cachedCapabilities: KibanaCapabilities | null = null;
+let capabilitiesPromise: Promise<KibanaCapabilities> | null = null;
 
 /**
  * Detect Kibana version and capabilities by probing /api/status.
  * Uses the same getKibanaAuthHeader() as export/import tools, so auth is
  * consistent between detection and subsequent API calls.
- * Result is cached for the process lifetime.
+ * Result is cached for the process lifetime. Call resetKibanaCapabilities() to clear.
+ * The in-flight promise is cached
+ * (not just the result) so concurrent callers share a single round-trip.
  */
 export async function getKibanaCapabilities(): Promise<KibanaCapabilities> {
-  if (cachedCapabilities) return cachedCapabilities;
+  if (capabilitiesPromise) return capabilitiesPromise;
 
-  const basePath = await getKibanaBasePath();
-  const url = `${getKibanaUrl()}${basePath}/api/status`;
+  capabilitiesPromise = (async () => {
+    const basePath = await getKibanaBasePath();
+    const url = `${getKibanaUrl()}${basePath}/api/status`;
 
-  try {
-    const res = await kibanaFetch(url, {
-      headers: { Authorization: getKibanaAuthHeader() },
-    });
+    try {
+      const res = await kibanaFetch(url, {
+        headers: { Authorization: getKibanaAuthHeader() },
+      });
 
-    if (!res.ok) {
-      throw new Error(`/api/status returned ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`/api/status returned ${res.status}`);
+      }
+
+      const body = (await res.json()) as {
+        version?: { number?: string; build_flavor?: string };
+      };
+
+      return parseKibanaStatus(body);
+    } catch {
+      // Don't cache failures — allow retry next time
+      resetKibanaCapabilities();
+      return { version: '0.0.0', serverless: false, hasDashboardApi: false };
     }
+  })();
 
-    const body = (await res.json()) as {
-      version?: { number?: string; build_flavor?: string };
-    };
+  return capabilitiesPromise;
+}
 
-    cachedCapabilities = parseKibanaStatus(body);
-    return cachedCapabilities;
-  } catch {
-    // If we can't reach /api/status, assume legacy but don't cache so we retry next time
-    return { version: '0.0.0', serverless: false, hasDashboardApi: false };
-  }
+/** Clear the cached capabilities so the next call re-probes /api/status. */
+export function resetKibanaCapabilities(): void {
+  capabilitiesPromise = null;
 }
 
 /** Parse a dashboard ID from a URL or return the raw string. */
