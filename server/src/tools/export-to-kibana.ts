@@ -16,6 +16,7 @@ import {
   getKibanaBasePath,
   getKibanaCapabilities,
   kibanaFetch,
+  readErrorBody,
   DASHBOARD_API_VERSION,
 } from '../utils/kibana-client.js';
 import { parseIndexPattern } from '../utils/esql-parser.js';
@@ -127,7 +128,7 @@ async function exportViaDashboardApi(
   }
 
   if (!response.ok) {
-    const errorBody = await response.text();
+    const errorBody = await readErrorBody(response);
     return {
       content: [
         { type: 'text', text: `Kibana Dashboard API returned ${response.status}: ${errorBody}` },
@@ -218,7 +219,7 @@ async function exportViaSavedObjects(
   }
 
   if (!response.ok) {
-    const errorBody = await response.text();
+    const errorBody = await readErrorBody(response);
     return {
       content: [{ type: 'text', text: `Kibana API returned ${response.status}: ${errorBody}` }],
       isError: true,

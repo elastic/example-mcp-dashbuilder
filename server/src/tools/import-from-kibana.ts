@@ -29,6 +29,7 @@ import {
   getKibanaCapabilities,
   parseDashboardId,
   kibanaFetch,
+  readErrorBody,
   DASHBOARD_API_VERSION,
 } from '../utils/kibana-client.js';
 import type { SectionConfig } from '../types.js';
@@ -131,7 +132,7 @@ async function importViaDashboardApi(
   }
 
   if (!response.ok) {
-    const errorBody = await response.text();
+    const errorBody = await readErrorBody(response);
     return {
       content: [
         { type: 'text', text: `Kibana Dashboard API returned ${response.status}: ${errorBody}` },
@@ -263,7 +264,7 @@ async function importViaSavedObjects(
   }
 
   if (!response.ok) {
-    const errorBody = await response.text();
+    const errorBody = await readErrorBody(response);
     return {
       content: [{ type: 'text', text: `Kibana API returned ${response.status}: ${errorBody}` }],
       isError: true,

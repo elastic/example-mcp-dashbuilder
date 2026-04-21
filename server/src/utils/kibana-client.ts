@@ -11,6 +11,18 @@ import { DEFAULT_KIBANA_URL } from './config.js';
 /** Elastic API version header required by the Dashboard API (9.4+). */
 export const DASHBOARD_API_VERSION = '2023-10-31';
 
+const ERROR_BODY_MAX_LENGTH = 1000;
+
+/** Read the response body for error reporting, truncating to avoid flooding MCP clients. */
+export async function readErrorBody(response: Response): Promise<string> {
+  const body = await response.text();
+  if (body.length <= ERROR_BODY_MAX_LENGTH) return body;
+  if (body.length > ERROR_BODY_MAX_LENGTH) {
+    console.error(`[kibana-client] Full error body (${body.length} chars):`, body);
+  }
+  return body.slice(0, ERROR_BODY_MAX_LENGTH) + `… (truncated, ${body.length} chars total)`;
+}
+
 /** Read lazily so .env has time to load (ESM imports run before top-level code in index.ts). */
 export function getKibanaUrl(): string {
   return process.env.KIBANA_URL || DEFAULT_KIBANA_URL;
