@@ -109,7 +109,7 @@ async function importViaDashboardApi(
   basePath: string
 ) {
   // Fetch the dashboard from Kibana via the new Dashboard API
-  const url = `${getKibanaUrl()}${basePath}/api/dashboards/${id}`;
+  const url = `${getKibanaUrl()}${basePath}/api/dashboards/${encodeURIComponent(id)}`;
 
   let response: Response;
   try {
