@@ -88,6 +88,76 @@ describe('Lens round-trip: export then import', () => {
     }
   });
 
+  it('area chart preserves fields', () => {
+    const original: ChartConfig = {
+      id: 'area-1',
+      title: 'Bytes Over Time',
+      chartType: 'area',
+      esqlQuery: 'FROM metrics | STATS sum_bytes = SUM(bytes) BY hour',
+      xField: 'hour',
+      yFields: ['sum_bytes'],
+    };
+    const result = roundTrip(original);
+    expect('config' in result).toBe(true);
+    if ('config' in result) {
+      expect(result.config.chartType).toBe('area');
+      expect((result.config as ChartConfig).xField).toBe('hour');
+      expect((result.config as ChartConfig).yFields).toEqual(['sum_bytes']);
+    }
+  });
+
+  it('bar chart with splitField preserves split', () => {
+    const original: ChartConfig = {
+      id: 'bar-split',
+      title: 'Split Bar',
+      chartType: 'bar',
+      esqlQuery: 'FROM logs | STATS c = COUNT(*) BY host, region',
+      xField: 'host',
+      yFields: ['c'],
+      splitField: 'region',
+    };
+    const result = roundTrip(original);
+    expect('config' in result).toBe(true);
+    if ('config' in result) {
+      expect((result.config as ChartConfig).splitField).toBe('region');
+    }
+  });
+
+  it('bar chart with palette preserves colors', () => {
+    const original: ChartConfig = {
+      id: 'bar-palette',
+      title: 'Colored Bar',
+      chartType: 'bar',
+      esqlQuery: 'FROM logs | STATS c = COUNT(*) BY host',
+      xField: 'host',
+      yFields: ['c'],
+      palette: ['#E91E63'],
+    };
+    const result = roundTrip(original);
+    expect('config' in result).toBe(true);
+    if ('config' in result) {
+      expect((result.config as ChartConfig).palette).toEqual(['#E91E63']);
+    }
+  });
+
+  it('bar chart with multiple yFields and palette preserves all', () => {
+    const original: ChartConfig = {
+      id: 'bar-multi',
+      title: 'Multi Y',
+      chartType: 'bar',
+      esqlQuery: 'FROM logs | STATS a = COUNT(*), b = SUM(bytes) BY host',
+      xField: 'host',
+      yFields: ['a', 'b'],
+      palette: ['#FF0000', '#00FF00'],
+    };
+    const result = roundTrip(original);
+    expect('config' in result).toBe(true);
+    if ('config' in result) {
+      expect((result.config as ChartConfig).yFields).toEqual(['a', 'b']);
+      expect((result.config as ChartConfig).palette).toEqual(['#FF0000', '#00FF00']);
+    }
+  });
+
   it('heatmap preserves fields', () => {
     const original: HeatmapConfig = {
       id: 'heatmap-1',
@@ -105,6 +175,24 @@ describe('Lens round-trip: export then import', () => {
       expect(h.xField).toBe('hour');
       expect(h.yField).toBe('day');
       expect(h.valueField).toBe('c');
+    }
+  });
+
+  it('heatmap with colorRamp preserves colors', () => {
+    const original: HeatmapConfig = {
+      id: 'heatmap-colors',
+      title: 'Colored Heatmap',
+      chartType: 'heatmap',
+      esqlQuery: 'FROM logs | STATS c = COUNT(*) BY day, hour',
+      xField: 'hour',
+      yField: 'day',
+      valueField: 'c',
+      colorRamp: ['#aaa', '#bbb', '#ccc'],
+    };
+    const result = roundTrip(original);
+    expect('config' in result).toBe(true);
+    if ('config' in result) {
+      expect((result.config as HeatmapConfig).colorRamp).toEqual(['#aaa', '#bbb', '#ccc']);
     }
   });
 });
