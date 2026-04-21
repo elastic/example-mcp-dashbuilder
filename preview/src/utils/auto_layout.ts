@@ -5,79 +5,33 @@
  */
 
 import type { GridLayoutData, GridPanelData } from '../grid-layout';
-import { DEFAULT_SIZES, GRID_SETTINGS } from '../constants';
+import { GRID_SETTINGS } from '../constants';
 import type { PanelConfig, SectionConfig } from '../types';
+import { autoPlacePanels as autoPlacePanelsGeneric } from 'mcp-dashboards-shared';
 
-interface RowPanel {
-  chart: PanelConfig;
-  height: number;
-}
+export { buildBalancedRowWidths } from 'mcp-dashboards-shared';
 
-function finalizeRow(
-  rowPanels: RowPanel[],
-  row: number,
-  panels: Record<string, GridPanelData>,
-  columnCount: number
-): number {
-  if (rowPanels.length === 0) {
-    return 0;
-  }
-
-  const baseWidth = Math.floor(columnCount / rowPanels.length);
-  const remainder = columnCount % rowPanels.length;
-  let column = 0;
-  let maxHeightInRow = 0;
-
-  for (const [index, rowPanel] of rowPanels.entries()) {
-    const width = baseWidth + (index < remainder ? 1 : 0);
-    panels[rowPanel.chart.id] = {
-      id: rowPanel.chart.id,
-      column,
-      row,
-      width,
-      height: rowPanel.height,
-    };
-    column += width;
-    maxHeightInRow = Math.max(maxHeightInRow, rowPanel.height);
-  }
-
-  return maxHeightInRow;
-}
-
+/**
+ * Auto-place panels and return a record keyed by panel id (legacy API shape).
+ */
 export function autoPlacePanels(
   charts: PanelConfig[],
   startRow: number = 0,
   columnCount: number = GRID_SETTINGS.columnCount
 ): { panels: Record<string, GridPanelData>; nextRow: number } {
+  const { placements, nextRow } = autoPlacePanelsGeneric(charts, startRow, columnCount);
   const panels: Record<string, GridPanelData> = {};
-  let nextRow = startRow;
-  let rowPanels: RowPanel[] = [];
-  let widthInRow = 0;
 
-  const flushRow = () => {
-    const maxHeightInRow = finalizeRow(rowPanels, nextRow - startRow, panels, columnCount);
-    if (maxHeightInRow > 0) {
-      nextRow += maxHeightInRow;
-    }
-    rowPanels = [];
-    widthInRow = 0;
-  };
-
-  for (const chart of charts) {
-    const size = DEFAULT_SIZES[chart.chartType] || DEFAULT_SIZES.bar;
-    if (rowPanels.length > 0 && widthInRow + size.w > columnCount) {
-      flushRow();
-    }
-
-    rowPanels.push({ chart, height: size.h });
-    widthInRow += size.w;
-
-    if (widthInRow >= columnCount) {
-      flushRow();
-    }
+  for (const p of placements) {
+    panels[p.id] = {
+      id: p.id,
+      column: p.x,
+      row: p.y,
+      width: p.w,
+      height: p.h,
+    };
   }
 
-  flushRow();
   return { panels, nextRow };
 }
 

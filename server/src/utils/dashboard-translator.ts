@@ -9,18 +9,13 @@ import type { DashboardConfig, PanelConfig } from '../types.js';
 import { translatePanelToLens } from './lens-translator.js';
 import type { TimeFieldContext } from './lens-translator.js';
 import { parseIndexPattern } from './esql-parser.js';
-import { DEFAULT_SIZES, GRID_COLUMN_COUNT } from './grid-constants.js';
+import { autoPlacePanels as autoPlacePanelsGeneric } from 'mcp-dashboards-shared';
 
 interface SavedDashboardPanel {
   panelIndex: string;
   type: string;
   gridData: { x: number; y: number; w: number; h: number; i: string; sectionId?: string };
   embeddableConfig: Record<string, unknown>;
-}
-
-interface RowPanel {
-  chart: PanelConfig;
-  height: number;
 }
 
 function buildSavedPanel(
@@ -44,44 +39,6 @@ function buildSavedPanel(
   };
 }
 
-function buildBalancedRowWidths(panelCount: number, columnCount: number): number[] {
-  const baseWidth = Math.floor(columnCount / panelCount);
-  const remainder = columnCount % panelCount;
-
-  return Array.from({ length: panelCount }, (_, index) => baseWidth + (index < remainder ? 1 : 0));
-}
-
-function flushRow(
-  rowPanels: RowPanel[],
-  nextRow: number,
-  panels: SavedDashboardPanel[],
-  sectionId: string | undefined,
-  ctxFn?: (chart: PanelConfig) => TimeFieldContext | undefined
-): number {
-  if (rowPanels.length === 0) {
-    return 0;
-  }
-
-  const widths = buildBalancedRowWidths(rowPanels.length, GRID_COLUMN_COUNT);
-  let column = 0;
-  let maxHeightInRow = 0;
-
-  for (const [index, rowPanel] of rowPanels.entries()) {
-    panels.push(
-      buildSavedPanel(
-        rowPanel.chart,
-        { x: column, y: nextRow, w: widths[index], h: rowPanel.height },
-        sectionId,
-        ctxFn?.(rowPanel.chart)
-      )
-    );
-    column += widths[index];
-    maxHeightInRow = Math.max(maxHeightInRow, rowPanel.height);
-  }
-
-  return maxHeightInRow;
-}
-
 /**
  * Auto-place panels in a flowing layout (fallback when no grid positions stored).
  */
@@ -91,35 +48,14 @@ function autoPlacePanels(
   sectionId?: string,
   ctxFn?: (chart: PanelConfig) => TimeFieldContext | undefined
 ): { panels: SavedDashboardPanel[]; nextRow: number } {
-  const panels: SavedDashboardPanel[] = [];
-  let nextRow = startRow;
-  let rowPanels: RowPanel[] = [];
-  let widthInRow = 0;
+  const chartMap = new Map(charts.map((c) => [c.id, c]));
+  const { placements, nextRow } = autoPlacePanelsGeneric(charts, startRow);
 
-  const commitRow = () => {
-    const maxHeightInRow = flushRow(rowPanels, nextRow, panels, sectionId, ctxFn);
-    if (maxHeightInRow > 0) {
-      nextRow += maxHeightInRow;
-    }
-    rowPanels = [];
-    widthInRow = 0;
-  };
+  const panels = placements.map((p) => {
+    const chart = chartMap.get(p.id)!;
+    return buildSavedPanel(chart, { x: p.x, y: p.y, w: p.w, h: p.h }, sectionId, ctxFn?.(chart));
+  });
 
-  for (const chart of charts) {
-    const size = DEFAULT_SIZES[chart.chartType] || DEFAULT_SIZES.bar;
-    if (rowPanels.length > 0 && widthInRow + size.w > GRID_COLUMN_COUNT) {
-      commitRow();
-    }
-
-    rowPanels.push({ chart, height: size.h });
-    widthInRow += size.w;
-
-    if (widthInRow >= GRID_COLUMN_COUNT) {
-      commitRow();
-    }
-  }
-
-  commitRow();
   return { panels, nextRow };
 }
 

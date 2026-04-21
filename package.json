@@ -3,6 +3,7 @@
   "private": true,
   "license": "Elastic-2.0",
   "workspaces": [
+    "shared",
     "server",
     "preview"
   ],
@@ -10,12 +11,12 @@
   "scripts": {
     "setup": "npx tsx server/src/setup.ts",
     "dev:server": "npm run dev --workspace=server",
-    "build": "npm run build --workspace=server && npm run build --workspace=preview",
+    "build": "npm run build --workspace=shared && npm run build --workspace=server && npm run build --workspace=preview",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit --project server/tsconfig.json && tsc --noEmit --project preview/tsconfig.json",
+    "typecheck": "tsc --noEmit --project shared/tsconfig.json && tsc --noEmit --project server/tsconfig.json && tsc --noEmit --project preview/tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npm run test --workspace=server && npm run test --workspace=preview",
+    "test": "npm run test --workspace=shared && npm run test --workspace=server && npm run test --workspace=preview",
     "check": "npm run format:check && npm run lint && npm run typecheck",
     "bundle": "bash scripts/bundle.sh",
     "postinstall": "npm run build --workspace=preview",

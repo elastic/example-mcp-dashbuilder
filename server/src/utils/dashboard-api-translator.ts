@@ -15,7 +15,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import { DEFAULT_SIZES, GRID_COLUMN_COUNT } from './grid-constants.js';
+import { autoPlacePanels as autoPlacePanelsGeneric } from 'mcp-dashboards-shared';
 import type {
   DashboardConfig,
   PanelConfig,
@@ -170,12 +170,6 @@ export function translatePanelConfig(panel: PanelConfig): Record<string, unknown
 // Grid layout (auto-placement)
 // ---------------------------------------------------------------------------
 
-function buildBalancedRowWidths(panelCount: number, columnCount: number): number[] {
-  const baseWidth = Math.floor(columnCount / panelCount);
-  const remainder = columnCount % panelCount;
-  return Array.from({ length: panelCount }, (_, i) => baseWidth + (i < remainder ? 1 : 0));
-}
-
 interface GridPlacement {
   panel: PanelConfig;
   grid: { x: number; y: number; w: number; h: number };
@@ -185,40 +179,12 @@ interface GridPlacement {
  * Auto-place panels into rows, returning grid positions.
  */
 function autoPlacePanels(charts: PanelConfig[], startRow = 0): GridPlacement[] {
-  const placements: GridPlacement[] = [];
-  let nextRow = startRow;
-  let rowPanels: Array<{ panel: PanelConfig; h: number }> = [];
-  let widthInRow = 0;
-
-  const commitRow = () => {
-    if (rowPanels.length === 0) return;
-    const widths = buildBalancedRowWidths(rowPanels.length, GRID_COLUMN_COUNT);
-    let col = 0;
-    let maxH = 0;
-    rowPanels.forEach((rp, i) => {
-      placements.push({ panel: rp.panel, grid: { x: col, y: nextRow, w: widths[i], h: rp.h } });
-      col += widths[i];
-      maxH = Math.max(maxH, rp.h);
-    });
-    nextRow += maxH;
-    rowPanels = [];
-    widthInRow = 0;
-  };
-
-  for (const panel of charts) {
-    const size = DEFAULT_SIZES[panel.chartType] || DEFAULT_SIZES.bar;
-    if (rowPanels.length > 0 && widthInRow + size.w > GRID_COLUMN_COUNT) {
-      commitRow();
-    }
-    rowPanels.push({ panel, h: size.h });
-    widthInRow += size.w;
-    if (widthInRow >= GRID_COLUMN_COUNT) {
-      commitRow();
-    }
-  }
-  commitRow();
-
-  return placements;
+  const chartMap = new Map(charts.map((c) => [c.id, c]));
+  const { placements } = autoPlacePanelsGeneric(charts, startRow);
+  return placements.map((p) => ({
+    panel: chartMap.get(p.id)!,
+    grid: { x: p.x, y: p.y, w: p.w, h: p.h },
+  }));
 }
 
 // ---------------------------------------------------------------------------
