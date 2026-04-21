@@ -162,4 +162,56 @@ describe('Dashboard API translate → reverse roundtrip', () => {
     expect(out.yField).toBe('day');
     expect(out.valueField).toBe('c');
   });
+
+  // -------------------------------------------------------------------------
+  // Known gap: timeField is not preserved through the Dashboard API path.
+  // The Kibana ES|QL data source schema is { type: 'esql', query: string }
+  // with no time_field property. If Kibana adds time_field support to the
+  // ES|QL data source schema, these tests should be updated to expect
+  // the timeField to roundtrip.
+  // -------------------------------------------------------------------------
+
+  describe('timeField is not preserved (known schema limitation)', () => {
+    it('bar chart timeField is lost', () => {
+      const input: ChartConfig = {
+        id: 'bar-tf',
+        title: 'Timed Bar',
+        chartType: 'bar',
+        esqlQuery: 'FROM logs | STATS count = COUNT(*) BY host',
+        xField: 'host',
+        yFields: ['count'],
+        timeField: '@timestamp',
+      };
+      const out = roundTrip(input, translateXYPanel) as ChartConfig;
+      expect(out.timeField).toBeUndefined();
+    });
+
+    it('metric timeField is lost', () => {
+      const input: MetricConfig = {
+        id: 'metric-tf',
+        title: 'Timed Metric',
+        chartType: 'metric',
+        valueField: 'total',
+        esqlQuery: 'FROM logs | STATS total = COUNT(*)',
+        timeField: '@timestamp',
+      };
+      const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+      expect(out.timeField).toBeUndefined();
+    });
+
+    it('heatmap timeField is lost', () => {
+      const input: HeatmapConfig = {
+        id: 'heatmap-tf',
+        title: 'Timed Heatmap',
+        chartType: 'heatmap',
+        esqlQuery: 'FROM logs | STATS c = COUNT(*) BY day, hour',
+        xField: 'hour',
+        yField: 'day',
+        valueField: 'c',
+        timeField: '@timestamp',
+      };
+      const out = roundTrip(input, translateHeatmapPanel) as HeatmapConfig;
+      expect(out.timeField).toBeUndefined();
+    });
+  });
 });
