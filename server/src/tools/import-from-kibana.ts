@@ -16,7 +16,9 @@ import {
 import { translateLensToPanel } from '../utils/lens-reverse-translator.js';
 import {
   translateDashboardApiPanel,
+  isDashboardApiSection,
   type DashboardApiResponse,
+  type DashboardApiPanelResponse,
 } from '../utils/dashboard-api-reverse.js';
 import { registerTool } from '../utils/register-tool.js';
 import {
@@ -139,7 +141,7 @@ async function importViaDashboardApi(
 
   const dashboardResponse = (await response.json()) as DashboardApiResponse;
   const dashboardTitle = titleOverride || dashboardResponse.data.title || 'Imported Dashboard';
-  const panels = dashboardResponse.data.panels || [];
+  const entries = dashboardResponse.data.panels || [];
 
   // Create a new dashboard in the local store
   createDashboard(dashboardTitle, slugify(dashboardTitle));
@@ -152,14 +154,18 @@ async function importViaDashboardApi(
     { type: 'panel'; column: number; row: number; width: number; height: number }
   > = {};
 
-  for (const panel of panels) {
+  /**
+   * Import a single panel, recording grid position and tracking
+   * imported / skipped status.
+   */
+  function importPanel(panel: DashboardApiPanelResponse): string | undefined {
     const panelTitle = (panel.config.title as string) || panel.id;
     const panelId = slugify(panelTitle);
 
     const result = translateDashboardApiPanel(panel, panelId, panelTitle);
     if ('skip' in result) {
       skipped.push(`"${panelTitle}" — ${result.skip}`);
-      continue;
+      return undefined;
     }
 
     addChart(result.config);
@@ -173,6 +179,34 @@ async function importViaDashboardApi(
       width: panel.grid.w,
       height: panel.grid.h,
     };
+
+    return panelId;
+  }
+
+  // Process top-level panels and sections
+  let sectionsImported = 0;
+  for (const entry of entries) {
+    if (isDashboardApiSection(entry)) {
+      // Section: import its nested panels, then register the section
+      const sectionId = entry.id || slugify(entry.title);
+      const panelIds: string[] = [];
+
+      for (const panel of entry.panels) {
+        const id = importPanel(panel);
+        if (id) panelIds.push(id);
+      }
+
+      const sectionConfig: SectionConfig = {
+        id: sectionId,
+        title: entry.title,
+        collapsed: entry.collapsed,
+        panelIds,
+      };
+      addSection(sectionConfig);
+      sectionsImported++;
+    } else {
+      importPanel(entry);
+    }
   }
 
   // Save preserved grid positions so the preview app matches Kibana's layout
@@ -184,6 +218,7 @@ async function importViaDashboardApi(
     `Dashboard "${dashboardTitle}" imported from Kibana (Dashboard API)!\n\n` +
     `Panels imported: ${imported.length}\n` +
     imported.map((p) => `  - ${p}`).join('\n') +
+    (sectionsImported > 0 ? `\n\nSections imported: ${sectionsImported}` : '') +
     (skipped.length > 0
       ? `\n\nSkipped: ${skipped.length}\n` + skipped.map((p) => `  - ${p}`).join('\n')
       : '') +

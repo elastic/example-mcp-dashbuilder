@@ -21,7 +21,7 @@ export interface DashboardApiResponse {
   id: string;
   data: {
     title: string;
-    panels: DashboardApiPanelResponse[];
+    panels: Array<DashboardApiPanelResponse | DashboardApiSectionResponse>;
     time_range?: { from: string; to: string };
   };
   meta?: Record<string, unknown>;
@@ -32,6 +32,23 @@ export interface DashboardApiPanelResponse {
   id: string;
   grid: { x: number; y: number; w: number; h: number };
   config: Record<string, unknown>;
+}
+
+export interface DashboardApiSectionResponse {
+  title: string;
+  collapsed: boolean;
+  grid: { y: number };
+  panels: DashboardApiPanelResponse[];
+  id?: string;
+}
+
+/**
+ * Type guard: returns `true` when the entry is a section (has nested `panels`).
+ */
+export function isDashboardApiSection(
+  entry: DashboardApiPanelResponse | DashboardApiSectionResponse
+): entry is DashboardApiSectionResponse {
+  return 'panels' in entry && Array.isArray((entry as DashboardApiSectionResponse).panels);
 }
 
 // ---------------------------------------------------------------------------
