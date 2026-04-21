@@ -300,7 +300,9 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 │       └── theme.ts           # Borealis palette
 ├── .cursor/mcp.json           # Cursor MCP configuration
 ├── .cursorrules               # Cursor-specific AI instructions
-├── .github/workflows/ci.yml   # CI pipeline
+├── .github/workflows/         # CI, Release (semantic-release), PR-title check
+├── .releaserc.js              # semantic-release config
+├── scripts/                   # bundle.sh (release bundler), bump-version.mjs
 └── eslint.config.js           # Linting (no-explicit-any enforced)
 ```
 
@@ -340,6 +342,26 @@ npm run test --workspace=preview      # Preview tests only
 **Server tests** cover pure utility functions (ES|QL transforms, index pattern parsing, time field detection, slugify), the Lens forward/reverse translators, round-trip export-then-import fidelity, and dashboard translation.
 
 **Preview tests** cover chart component rendering (correct chart type for each config), the `useEsqlQuery` hook (fetch, loading, error, abort, time range), and empty data states.
+
+### Releasing
+
+Releases are cut by [semantic-release](https://github.com/semantic-release/semantic-release) from commit history — no hand-picked version numbers.
+
+**How it works**
+
+1. PRs are squash-merged into `main`. The PR title becomes the commit message.
+2. A PR title must follow [Conventional Commits](https://www.conventionalcommits.org/) — enforced by the `PR title` workflow. Allowed types: `feat`, `fix`, `refactor`, `perf`, `build`, `chore`, `docs`, `revert`.
+3. Trigger the `Release` workflow manually from `main` (Actions → Release → Run workflow). semantic-release:
+   - Analyses commits since the last tag and decides the bump level (`feat` → minor, everything else → patch, `BREAKING CHANGE:` footer → major)
+   - Bumps `manifest.json` + `server/package.json` and commits back to `main` with `[skip ci]`
+   - Generates/updates `CHANGELOG.md`
+   - Creates a GitHub release with the `.mcpb` + `.tgz` artifacts attached
+
+**Local dry run** (no GitHub credentials needed):
+
+```bash
+npx semantic-release --dry-run --no-ci
+```
 
 ### Code quality
 
