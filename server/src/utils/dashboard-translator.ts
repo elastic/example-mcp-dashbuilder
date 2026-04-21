@@ -9,22 +9,7 @@ import type { DashboardConfig, PanelConfig } from '../types.js';
 import { translatePanelToLens } from './lens-translator.js';
 import type { TimeFieldContext } from './lens-translator.js';
 import { parseIndexPattern } from './esql-parser.js';
-
-const HALF_WIDTH = 24;
-const THREE_QUARTER_WIDTH = 36;
-const QUARTER_WIDTH = 12;
-const DEFAULT_HEIGHT = 15;
-const METRIC_HEIGHT = 10;
-const GRID_COLUMN_COUNT = 48;
-
-const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
-  bar: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  line: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  area: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  pie: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  metric: { w: QUARTER_WIDTH, h: METRIC_HEIGHT },
-  heatmap: { w: THREE_QUARTER_WIDTH, h: DEFAULT_HEIGHT },
-};
+import { DEFAULT_SIZES, GRID_COLUMN_COUNT } from './grid-constants.js';
 
 interface SavedDashboardPanel {
   panelIndex: string;

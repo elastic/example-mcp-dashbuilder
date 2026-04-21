@@ -15,6 +15,7 @@
  */
 
 import { randomUUID } from 'crypto';
+import { DEFAULT_SIZES, GRID_COLUMN_COUNT } from './grid-constants.js';
 import type {
   DashboardConfig,
   PanelConfig,
@@ -47,26 +48,6 @@ export interface DashboardApiPayload {
   time_range?: { from: string; to: string };
   description?: string;
 }
-
-// ---------------------------------------------------------------------------
-// Grid constants (shared with dashboard-translator.ts)
-// ---------------------------------------------------------------------------
-
-const HALF_WIDTH = 24;
-const THREE_QUARTER_WIDTH = 36;
-const QUARTER_WIDTH = 12;
-const DEFAULT_HEIGHT = 15;
-const METRIC_HEIGHT = 10;
-const GRID_COLUMN_COUNT = 48;
-
-const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
-  bar: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  line: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  area: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  pie: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  metric: { w: QUARTER_WIDTH, h: METRIC_HEIGHT },
-  heatmap: { w: THREE_QUARTER_WIDTH, h: DEFAULT_HEIGHT },
-};
 
 // ---------------------------------------------------------------------------
 // Chart type mapping helpers
