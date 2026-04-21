@@ -17,9 +17,7 @@ const ERROR_BODY_MAX_LENGTH = 1000;
 export async function readErrorBody(response: Response): Promise<string> {
   const body = await response.text();
   if (body.length <= ERROR_BODY_MAX_LENGTH) return body;
-  if (body.length > ERROR_BODY_MAX_LENGTH) {
-    console.error(`[kibana-client] Full error body (${body.length} chars):`, body);
-  }
+  console.error(`[kibana-client] Full error body (${body.length} chars):`, body);
   return body.slice(0, ERROR_BODY_MAX_LENGTH) + `… (truncated, ${body.length} chars total)`;
 }
 
