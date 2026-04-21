@@ -195,11 +195,11 @@ function autoPlacePanels(charts: PanelConfig[], startRow = 0): GridPlacement[] {
     const widths = buildBalancedRowWidths(rowPanels.length, GRID_COLUMN_COUNT);
     let col = 0;
     let maxH = 0;
-    for (const [i, rp] of rowPanels.entries()) {
+    rowPanels.forEach((rp, i) => {
       placements.push({ panel: rp.panel, grid: { x: col, y: nextRow, w: widths[i], h: rp.h } });
       col += widths[i];
       maxH = Math.max(maxH, rp.h);
-    }
+    });
     nextRow += maxH;
     rowPanels = [];
     widthInRow = 0;
