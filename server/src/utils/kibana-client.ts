@@ -126,9 +126,8 @@ export async function getKibanaCapabilities(): Promise<KibanaCapabilities> {
     cachedCapabilities = parseKibanaStatus(body);
     return cachedCapabilities;
   } catch {
-    // If we can't reach /api/status, assume legacy
-    cachedCapabilities = { version: '0.0.0', serverless: false, hasDashboardApi: false };
-    return cachedCapabilities;
+    // If we can't reach /api/status, assume legacy but don't cache so we retry next time
+    return { version: '0.0.0', serverless: false, hasDashboardApi: false };
   }
 }
 
