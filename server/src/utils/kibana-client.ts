@@ -26,6 +26,11 @@ export function kibanaFetch(url: string, init?: RequestInit): Promise<Response> 
   return fetch(url, init);
 }
 
+/**
+ * Build the Authorization header for Kibana requests from env vars.
+ * Both capability detection and actual API calls use this same function,
+ * ensuring auth is consistent across all Kibana interactions.
+ */
 export function getKibanaAuthHeader(): string {
   const apiKey = process.env.ES_API_KEY;
   if (apiKey) {
@@ -102,6 +107,8 @@ let cachedCapabilities: KibanaCapabilities | null = null;
 
 /**
  * Detect Kibana version and capabilities by probing /api/status.
+ * Uses the same getKibanaAuthHeader() as export/import tools, so auth is
+ * consistent between detection and subsequent API calls.
  * Result is cached for the process lifetime. Call resetKibanaCapabilities() to clear.
  */
 export async function getKibanaCapabilities(): Promise<KibanaCapabilities> {
