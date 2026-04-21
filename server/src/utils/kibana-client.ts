@@ -109,7 +109,7 @@ let cachedCapabilities: KibanaCapabilities | null = null;
  * Detect Kibana version and capabilities by probing /api/status.
  * Uses the same getKibanaAuthHeader() as export/import tools, so auth is
  * consistent between detection and subsequent API calls.
- * Result is cached for the process lifetime. Call resetKibanaCapabilities() to clear.
+ * Result is cached for the process lifetime.
  */
 export async function getKibanaCapabilities(): Promise<KibanaCapabilities> {
   if (cachedCapabilities) return cachedCapabilities;
@@ -136,11 +136,6 @@ export async function getKibanaCapabilities(): Promise<KibanaCapabilities> {
     // If we can't reach /api/status, assume legacy but don't cache so we retry next time
     return { version: '0.0.0', serverless: false, hasDashboardApi: false };
   }
-}
-
-/** Reset cached capabilities (for testing or after reconnection). */
-export function resetKibanaCapabilities(): void {
-  cachedCapabilities = null;
 }
 
 /** Parse a dashboard ID from a URL or return the raw string. */
