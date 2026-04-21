@@ -149,7 +149,7 @@ export function translateHeatmapPanel(heatmap: HeatmapConfig): Record<string, un
  * Translate any PanelConfig to a Dashboard API panel config object.
  * Returns the `config` portion of the panel (to be wrapped with type/id/grid).
  */
-export function translatePanelConfig(panel: PanelConfig): Record<string, unknown> {
+export function translatePanelConfig(panel: PanelConfig): Record<string, unknown> | null {
   if (isMetricConfig(panel)) {
     return translateMetricPanel(panel);
   }
@@ -162,8 +162,8 @@ export function translatePanelConfig(panel: PanelConfig): Record<string, unknown
     }
     return translateXYPanel(panel);
   }
-  // Fallback — shouldn't happen with current types
-  return {};
+  // Should be unreachable with current types
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -254,13 +254,25 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
   function makeApiPanel(
     chart: PanelConfig,
     grid: { x: number; y: number; w: number; h: number }
-  ): DashboardApiPanel {
+  ): DashboardApiPanel | null {
+    const config = translatePanelConfig(chart);
+    if (!config) {
+      console.warn(`Skipping unsupported panel type for chart: ${chart.id}`);
+      return null;
+    }
     return {
       type: 'vis',
       id: randomUUID(),
       grid,
-      config: translatePanelConfig(chart),
+      config,
     };
+  }
+
+  function pushPanel(
+    arr: (DashboardApiPanel | DashboardApiSection)[],
+    panel: DashboardApiPanel | null
+  ) {
+    if (panel) arr.push(panel);
   }
 
   if (gridLayout) {
@@ -270,7 +282,8 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
       if (sectionPanelIds.has(chart.id)) continue;
       const widget = gridLayout[chart.id];
       if (widget && widget.type === 'panel') {
-        topLevelPanels.push(
+        pushPanel(
+          topLevelPanels,
           makeApiPanel(chart, {
             x: widget.column,
             y: widget.row,
@@ -293,7 +306,7 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
       }, 0);
       const placements = autoPlacePanels(unpositionedTopCharts, maxY);
       for (const { panel, grid } of placements) {
-        topLevelPanels.push(makeApiPanel(panel, grid));
+        pushPanel(topLevelPanels, makeApiPanel(panel, grid));
       }
     }
 
@@ -311,7 +324,8 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
       for (const chart of sectionCharts) {
         const widget = gridLayout[chart.id];
         if (widget && widget.type === 'panel') {
-          nestedPanels.push(
+          pushPanel(
+            nestedPanels,
             makeApiPanel(chart, {
               x: widget.column,
               y: widget.row,
@@ -334,7 +348,8 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
         for (const chart of sectionCharts) {
           const pos = sectionWidget.panels[chart.id];
           if (pos) {
-            nestedPanels.push(
+            pushPanel(
+              nestedPanels,
               makeApiPanel(chart, { x: pos.column, y: pos.row, w: pos.width, h: pos.height })
             );
           }
@@ -349,7 +364,7 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
         );
         const placements = autoPlacePanels(unpositionedSectionCharts, maxY);
         for (const { panel, grid } of placements) {
-          nestedPanels.push(makeApiPanel(panel, grid));
+          pushPanel(nestedPanels, makeApiPanel(panel, grid));
         }
       }
 
@@ -365,7 +380,7 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
     const topCharts = config.charts.filter((c) => !sectionPanelIds.has(c.id));
     const placements = autoPlacePanels(topCharts);
     for (const { panel, grid } of placements) {
-      topLevelPanels.push(makeApiPanel(panel, grid));
+      pushPanel(topLevelPanels, makeApiPanel(panel, grid));
     }
 
     // Then sections
@@ -380,7 +395,7 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
       const sectionPlacements = autoPlacePanels(sectionCharts, 0);
       const nestedPanels: DashboardApiPanel[] = [];
       for (const { panel, grid } of sectionPlacements) {
-        nestedPanels.push(makeApiPanel(panel, grid));
+        pushPanel(nestedPanels, makeApiPanel(panel, grid));
       }
 
       topLevelPanels.push({
