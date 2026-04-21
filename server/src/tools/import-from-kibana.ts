@@ -26,10 +26,9 @@ import {
   getKibanaCapabilities,
   parseDashboardId,
   kibanaFetch,
+  DASHBOARD_API_VERSION,
 } from '../utils/kibana-client.js';
 import type { SectionConfig } from '../types.js';
-
-const DASHBOARD_API_VERSION = '2023-10-31';
 
 interface KibanaPanel {
   panelIndex: string;

@@ -8,6 +8,9 @@ import { Agent } from 'undici';
 
 import { DEFAULT_KIBANA_URL } from './config.js';
 
+/** Elastic API version header required by the Dashboard API (9.4+). */
+export const DASHBOARD_API_VERSION = '2023-10-31';
+
 /** Read lazily so .env has time to load (ESM imports run before top-level code in index.ts). */
 export function getKibanaUrl(): string {
   return process.env.KIBANA_URL || DEFAULT_KIBANA_URL;

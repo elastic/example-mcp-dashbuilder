@@ -16,12 +16,11 @@ import {
   getKibanaBasePath,
   getKibanaCapabilities,
   kibanaFetch,
+  DASHBOARD_API_VERSION,
 } from '../utils/kibana-client.js';
 import { parseIndexPattern } from '../utils/esql-parser.js';
 import { detectTimeField } from '../utils/time-field.js';
 import type { DashboardConfig } from '../types.js';
-
-const DASHBOARD_API_VERSION = '2023-10-31';
 
 export function registerExportToKibana(server: McpServer): void {
   registerTool(
