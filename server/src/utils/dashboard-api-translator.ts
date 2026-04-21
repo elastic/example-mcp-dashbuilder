@@ -265,6 +265,7 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
 
   if (gridLayout) {
     // Top-level panels (not in any section)
+    const unpositionedTopCharts: PanelConfig[] = [];
     for (const chart of config.charts) {
       if (sectionPanelIds.has(chart.id)) continue;
       const widget = gridLayout[chart.id];
@@ -277,6 +278,22 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
             h: widget.height,
           })
         );
+      } else {
+        unpositionedTopCharts.push(chart);
+      }
+    }
+
+    // Auto-place top-level charts that have no gridLayout entry
+    if (unpositionedTopCharts.length > 0) {
+      const maxY = topLevelPanels.reduce((max, p) => {
+        if ('grid' in p && 'h' in p.grid && 'y' in p.grid) {
+          return Math.max(max, (p.grid.y ?? 0) + (p.grid.h ?? 0));
+        }
+        return max;
+      }, 0);
+      const placements = autoPlacePanels(unpositionedTopCharts, maxY);
+      for (const { panel, grid } of placements) {
+        topLevelPanels.push(makeApiPanel(panel, grid));
       }
     }
 
@@ -290,6 +307,7 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
         .filter((c): c is PanelConfig => c != null);
 
       const nestedPanels: DashboardApiPanel[] = [];
+      const unpositionedSectionCharts: PanelConfig[] = [];
       for (const chart of sectionCharts) {
         const widget = gridLayout[chart.id];
         if (widget && widget.type === 'panel') {
@@ -301,6 +319,8 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
               h: widget.height,
             })
           );
+        } else {
+          unpositionedSectionCharts.push(chart);
         }
       }
 
@@ -321,9 +341,13 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
         }
       }
 
-      // If we still have no positioned panels, auto-place them
-      if (nestedPanels.length === 0 && sectionCharts.length > 0) {
-        const placements = autoPlacePanels(sectionCharts, 0);
+      // Auto-place any section charts that had no grid position
+      if (unpositionedSectionCharts.length > 0) {
+        const maxY = nestedPanels.reduce(
+          (max, p) => Math.max(max, (p.grid.y ?? 0) + (p.grid.h ?? 0)),
+          0
+        );
+        const placements = autoPlacePanels(unpositionedSectionCharts, maxY);
         for (const { panel, grid } of placements) {
           nestedPanels.push(makeApiPanel(panel, grid));
         }
