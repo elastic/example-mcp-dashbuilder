@@ -240,7 +240,10 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
       type: 'vis',
       id: randomUUID(),
       grid,
-      config: result.config,
+      config: {
+        ...result.config,
+        title: chart.title,
+      },
     };
   }
 

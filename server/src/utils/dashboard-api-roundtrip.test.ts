@@ -5,12 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  translateXYPanel,
-  translatePiePanel,
-  translateMetricPanel,
-  translateHeatmapPanel,
-} from './dashboard-api-translator.js';
+import { translatePanelConfig } from './dashboard-api-translator.js';
 import { translateDashboardApiPanel } from './dashboard-api-reverse.js';
 import type { DashboardApiPanelResponse } from './dashboard-api-reverse.js';
 import type { ChartConfig, MetricConfig, HeatmapConfig } from '../types.js';
@@ -19,21 +14,24 @@ import type { ChartConfig, MetricConfig, HeatmapConfig } from '../types.js';
  * Roundtrip: PanelConfig → Dashboard API config → reverse → PanelConfig.
  * Wraps the translated config in the panel envelope that the reverse translator expects.
  */
-function roundTrip(
-  panel: ChartConfig | MetricConfig | HeatmapConfig,
-  translateFn: (p: never) => Record<string, unknown>
-) {
-  const config = translateFn(panel as never);
+/**
+ * Full-circle roundtrip using the same translatePanelConfig used in production.
+ * Title is injected into config the same way makeApiPanel does it.
+ * The reverse translator must recover title from config.title (no explicit arg).
+ */
+function roundTrip(panel: ChartConfig | MetricConfig | HeatmapConfig) {
+  const result = translatePanelConfig(panel);
+  if ('skip' in result) throw new Error(`translatePanelConfig skipped: ${result.skip}`);
   const apiPanel: DashboardApiPanelResponse = {
     type: 'vis',
     id: panel.id,
     grid: { x: 0, y: 0, w: 24, h: 15 },
-    config,
+    config: { ...result.config, title: panel.title },
   };
-  const result = translateDashboardApiPanel(apiPanel, panel.id, panel.title);
-  expect('config' in result).toBe(true);
-  if (!('config' in result)) throw new Error('roundtrip failed');
-  return result.config;
+  const reversed = translateDashboardApiPanel(apiPanel, panel.id);
+  expect('config' in reversed).toBe(true);
+  if (!('config' in reversed)) throw new Error('roundtrip failed');
+  return reversed.config;
 }
 
 describe('Dashboard API translate → reverse roundtrip', () => {
@@ -46,7 +44,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       xField: 'host',
       yFields: ['count'],
     };
-    const out = roundTrip(input, translateXYPanel) as ChartConfig;
+    const out = roundTrip(input) as ChartConfig;
     expect(out.chartType).toBe('bar');
     expect(out.title).toBe(input.title);
     expect(out.esqlQuery).toBe(input.esqlQuery);
@@ -63,7 +61,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       xField: 'minute',
       yFields: ['avg_cpu'],
     };
-    const out = roundTrip(input, translateXYPanel) as ChartConfig;
+    const out = roundTrip(input) as ChartConfig;
     expect(out.chartType).toBe('line');
     expect(out.title).toBe(input.title);
     expect(out.xField).toBe('minute');
@@ -79,7 +77,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       xField: 'hour',
       yFields: ['sum_bytes'],
     };
-    const out = roundTrip(input, translateXYPanel) as ChartConfig;
+    const out = roundTrip(input) as ChartConfig;
     expect(out.chartType).toBe('area');
     expect(out.title).toBe(input.title);
     expect(out.xField).toBe('hour');
@@ -96,7 +94,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       yFields: ['c'],
       splitField: 'region',
     };
-    const out = roundTrip(input, translateXYPanel) as ChartConfig;
+    const out = roundTrip(input) as ChartConfig;
     expect(out.title).toBe(input.title);
     expect(out.splitField).toBe('region');
   });
@@ -110,7 +108,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       xField: 'host',
       yFields: ['a', 'b'],
     };
-    const out = roundTrip(input, translateXYPanel) as ChartConfig;
+    const out = roundTrip(input) as ChartConfig;
     expect(out.title).toBe(input.title);
     expect(out.yFields).toEqual(['a', 'b']);
   });
@@ -124,7 +122,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       xField: 'status',
       yFields: ['count'],
     };
-    const out = roundTrip(input, translatePiePanel) as ChartConfig;
+    const out = roundTrip(input) as ChartConfig;
     expect(out.chartType).toBe('pie');
     expect(out.title).toBe(input.title);
     expect(out.xField).toBe('status');
@@ -139,7 +137,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       valueField: 'total',
       esqlQuery: 'FROM logs | STATS total = COUNT(*)',
     };
-    const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+    const out = roundTrip(input) as MetricConfig;
     expect(out.chartType).toBe('metric');
     expect(out.title).toBe(input.title);
     expect(out.valueField).toBe('total');
@@ -155,7 +153,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       subtitle: 'Selected time range',
       color: '#54B399',
     };
-    const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+    const out = roundTrip(input) as MetricConfig;
     expect(out.chartType).toBe('metric');
     expect(out.title).toBe(input.title);
     expect(out.subtitle).toBe('Selected time range');
@@ -171,7 +169,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       esqlQuery: 'FROM sales | STATS revenue = SUM(price)',
       subtitle: 'All time',
     };
-    const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+    const out = roundTrip(input) as MetricConfig;
     expect(out.subtitle).toBe('All time');
     expect(out.color).toBeUndefined();
   });
@@ -185,7 +183,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       esqlQuery: 'FROM logs | STATS errors = COUNT(*) WHERE level = "error"',
       color: '#E7664C',
     };
-    const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+    const out = roundTrip(input) as MetricConfig;
     expect(out.color).toBe('#E7664C');
     expect(out.subtitle).toBeUndefined();
   });
@@ -200,7 +198,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       yField: 'day',
       valueField: 'c',
     };
-    const out = roundTrip(input, translateHeatmapPanel) as HeatmapConfig;
+    const out = roundTrip(input) as HeatmapConfig;
     expect(out.chartType).toBe('heatmap');
     expect(out.title).toBe(input.title);
     expect(out.xField).toBe('hour');
@@ -231,7 +229,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
         trendYField: 'total',
         trendShape: 'area',
       };
-      const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+      const out = roundTrip(input) as MetricConfig;
       expect(out.trendEsqlQuery).toBeUndefined();
       expect(out.trendXField).toBeUndefined();
       expect(out.trendYField).toBeUndefined();
@@ -258,7 +256,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
         yFields: ['count'],
         timeField: '@timestamp',
       };
-      const out = roundTrip(input, translateXYPanel) as ChartConfig;
+      const out = roundTrip(input) as ChartConfig;
       expect(out.timeField).toBeUndefined();
     });
 
@@ -271,7 +269,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
         esqlQuery: 'FROM logs | STATS total = COUNT(*)',
         timeField: '@timestamp',
       };
-      const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+      const out = roundTrip(input) as MetricConfig;
       expect(out.timeField).toBeUndefined();
     });
 
@@ -286,7 +284,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
         valueField: 'c',
         timeField: '@timestamp',
       };
-      const out = roundTrip(input, translateHeatmapPanel) as HeatmapConfig;
+      const out = roundTrip(input) as HeatmapConfig;
       expect(out.timeField).toBeUndefined();
     });
   });
