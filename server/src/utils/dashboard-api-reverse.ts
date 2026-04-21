@@ -157,12 +157,23 @@ function reverseMetric(
   const primary = metrics.find((m) => m.type === 'primary');
   const valueField = primary ? getColumn(primary) : '';
 
+  const subtitle = primary?.subtitle as string | undefined;
+
+  // Color can be { type: 'static', color: '#hex' } or other shapes
+  let color: string | undefined;
+  const colorObj = primary?.color as { type?: string; color?: string } | undefined;
+  if (colorObj?.type === 'static' && colorObj.color) {
+    color = colorObj.color;
+  }
+
   return {
     id: panelId,
     title,
     chartType: 'metric',
     esqlQuery,
     valueField,
+    ...(subtitle ? { subtitle } : {}),
+    ...(color ? { color } : {}),
   };
 }
 

@@ -145,6 +145,51 @@ describe('Dashboard API translate → reverse roundtrip', () => {
     expect(out.valueField).toBe('total');
   });
 
+  it('metric with subtitle and color', () => {
+    const input: MetricConfig = {
+      id: 'metric-styled',
+      title: 'Total Events',
+      chartType: 'metric',
+      valueField: 'total',
+      esqlQuery: 'FROM logs | STATS total = COUNT(*)',
+      subtitle: 'Selected time range',
+      color: '#54B399',
+    };
+    const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+    expect(out.chartType).toBe('metric');
+    expect(out.title).toBe(input.title);
+    expect(out.subtitle).toBe('Selected time range');
+    expect(out.color).toBe('#54B399');
+  });
+
+  it('metric with subtitle only', () => {
+    const input: MetricConfig = {
+      id: 'metric-sub',
+      title: 'Revenue',
+      chartType: 'metric',
+      valueField: 'revenue',
+      esqlQuery: 'FROM sales | STATS revenue = SUM(price)',
+      subtitle: 'All time',
+    };
+    const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+    expect(out.subtitle).toBe('All time');
+    expect(out.color).toBeUndefined();
+  });
+
+  it('metric with color only', () => {
+    const input: MetricConfig = {
+      id: 'metric-color',
+      title: 'Errors',
+      chartType: 'metric',
+      valueField: 'errors',
+      esqlQuery: 'FROM logs | STATS errors = COUNT(*) WHERE level = "error"',
+      color: '#E7664C',
+    };
+    const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+    expect(out.color).toBe('#E7664C');
+    expect(out.subtitle).toBeUndefined();
+  });
+
   it('heatmap', () => {
     const input: HeatmapConfig = {
       id: 'heatmap-1',
@@ -161,6 +206,37 @@ describe('Dashboard API translate → reverse roundtrip', () => {
     expect(out.xField).toBe('hour');
     expect(out.yField).toBe('day');
     expect(out.valueField).toBe('c');
+  });
+
+  // -------------------------------------------------------------------------
+  // Known gap: trend metadata is not preserved through the Dashboard API path.
+  // Kibana's metric schema supports background_chart type 'trend' for
+  // non-ES|QL (DSL/data-view) charts, but the ES|QL metric schema
+  // (complementaryVizSchemaESQL) only supports 'bar'. Since our pipeline
+  // is ES|QL-only, trend cannot roundtrip. If Kibana adds trend support
+  // to the ES|QL metric schema, these tests should be updated.
+  // See: kbn-lens-embeddable-utils/config_builder/schema/charts/metric.ts
+  // -------------------------------------------------------------------------
+
+  describe('metric trend is not preserved (known schema limitation)', () => {
+    it('trendEsqlQuery is lost', () => {
+      const input: MetricConfig = {
+        id: 'metric-trend',
+        title: 'Trending Metric',
+        chartType: 'metric',
+        valueField: 'total',
+        esqlQuery: 'FROM logs | STATS total = COUNT(*)',
+        trendEsqlQuery: 'FROM logs | STATS total = COUNT(*) BY BUCKET(@timestamp, 1 day)',
+        trendXField: 'BUCKET(@timestamp, 1 day)',
+        trendYField: 'total',
+        trendShape: 'area',
+      };
+      const out = roundTrip(input, translateMetricPanel) as MetricConfig;
+      expect(out.trendEsqlQuery).toBeUndefined();
+      expect(out.trendXField).toBeUndefined();
+      expect(out.trendYField).toBeUndefined();
+      expect(out.trendShape).toBeUndefined();
+    });
   });
 
   // -------------------------------------------------------------------------

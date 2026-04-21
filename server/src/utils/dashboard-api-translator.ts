@@ -119,16 +119,24 @@ export function translatePiePanel(chart: ChartConfig): Record<string, unknown> {
  * Translate a metric to a Dashboard API `vis` panel config.
  */
 export function translateMetricPanel(metric: MetricConfig): Record<string, unknown> {
+  const primary: Record<string, unknown> = {
+    type: 'primary',
+    column: metric.valueField,
+    ...(metric.title ? { label: metric.title } : {}),
+  };
+
+  if (metric.subtitle) {
+    primary.subtitle = metric.subtitle;
+  }
+
+  if (metric.color) {
+    primary.color = { type: 'static', color: metric.color };
+  }
+
   return {
     type: 'metric',
     data_source: makeEsqlDataSource(metric.esqlQuery),
-    metrics: [
-      {
-        type: 'primary',
-        column: metric.valueField,
-        ...(metric.title ? { label: metric.title } : {}),
-      },
-    ],
+    metrics: [primary],
   };
 }
 
