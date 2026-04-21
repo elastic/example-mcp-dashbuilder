@@ -133,6 +133,11 @@ export function translateMetricPanel(metric: MetricConfig): Record<string, unkno
     primary.color = { type: 'static', color: metric.color };
   }
 
+  // Map valueSuffix → format.suffix (Dashboard API numericFormat)
+  if (metric.valueSuffix) {
+    primary.format = { type: 'number', suffix: metric.valueSuffix };
+  }
+
   return {
     type: 'metric',
     data_source: makeEsqlDataSource(metric.esqlQuery),

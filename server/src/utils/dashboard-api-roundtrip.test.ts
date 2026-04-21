@@ -288,4 +288,84 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       expect(out.timeField).toBeUndefined();
     });
   });
+
+  // Fields that survive the roundtrip via Dashboard API format mappings
+  describe('supported optional fields', () => {
+    it('metric valueSuffix survives via format.suffix', () => {
+      const input: MetricConfig = {
+        id: 'metric-suffix',
+        title: 'Suffixed Metric',
+        chartType: 'metric',
+        esqlQuery: 'FROM logs | STATS total = COUNT(*)',
+        valueField: 'total',
+        valueSuffix: ' USD',
+      };
+      const out = roundTrip(input) as MetricConfig;
+      expect(out.valueSuffix).toBe(' USD');
+    });
+  });
+
+  // Known gaps: these fields have no equivalent in the Dashboard API.
+  describe('fields not supported by Dashboard API', () => {
+    it('chart palette is lost', () => {
+      const input: ChartConfig = {
+        id: 'bar-palette',
+        title: 'Palette Bar',
+        chartType: 'bar',
+        esqlQuery: 'FROM logs | STATS c = COUNT(*) BY host',
+        xField: 'host',
+        yFields: ['c'],
+        palette: ['#ff0000', '#00ff00', '#0000ff'],
+      };
+      const out = roundTrip(input) as ChartConfig;
+      expect(out.palette).toBeUndefined();
+    });
+
+    it('metric valuePrefix is lost (no API equivalent)', () => {
+      const input: MetricConfig = {
+        id: 'metric-prefix',
+        title: 'Prefixed Metric',
+        chartType: 'metric',
+        esqlQuery: 'FROM logs | STATS total = COUNT(*)',
+        valueField: 'total',
+        valuePrefix: '$',
+      };
+      const out = roundTrip(input) as MetricConfig;
+      expect(out.valuePrefix).toBeUndefined();
+    });
+
+    it('metric trend fields are lost', () => {
+      const input: MetricConfig = {
+        id: 'metric-trend',
+        title: 'Trend Metric',
+        chartType: 'metric',
+        esqlQuery: 'FROM logs | STATS total = COUNT(*)',
+        valueField: 'total',
+        trendEsqlQuery: 'FROM logs | STATS c = COUNT(*) BY ts = BUCKET(@timestamp, 1 hour)',
+        trendXField: 'ts',
+        trendYField: 'c',
+        trendShape: 'area',
+      };
+      const out = roundTrip(input) as MetricConfig;
+      expect(out.trendEsqlQuery).toBeUndefined();
+      expect(out.trendXField).toBeUndefined();
+      expect(out.trendYField).toBeUndefined();
+      expect(out.trendShape).toBeUndefined();
+    });
+
+    it('heatmap colorRamp is lost', () => {
+      const input: HeatmapConfig = {
+        id: 'heatmap-ramp',
+        title: 'Colored Heatmap',
+        chartType: 'heatmap',
+        esqlQuery: 'FROM logs | STATS c = COUNT(*) BY day, hour',
+        xField: 'hour',
+        yField: 'day',
+        valueField: 'c',
+        colorRamp: ['#ffffff', '#ff0000'],
+      };
+      const out = roundTrip(input) as HeatmapConfig;
+      expect(out.colorRamp).toBeUndefined();
+    });
+  });
 });

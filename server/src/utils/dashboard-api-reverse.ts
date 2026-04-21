@@ -166,6 +166,10 @@ function reverseMetric(
     color = colorObj.color;
   }
 
+  // Extract valueSuffix from format.suffix (numericFormat)
+  const formatObj = primary?.format as { type?: string; suffix?: string } | undefined;
+  const valueSuffix = formatObj?.suffix;
+
   return {
     id: panelId,
     title,
@@ -174,6 +178,7 @@ function reverseMetric(
     valueField,
     ...(subtitle ? { subtitle } : {}),
     ...(color ? { color } : {}),
+    ...(valueSuffix ? { valueSuffix } : {}),
   };
 }
 
