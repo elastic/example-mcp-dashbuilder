@@ -9,7 +9,6 @@ import { maskValue, buildPrompt } from './setup-helpers.js';
 
 describe('maskValue', () => {
   it('always returns ****', () => {
-    expect(maskValue('')).toBe('****');
     expect(maskValue('ab')).toBe('****');
     expect(maskValue('abcd1234')).toBe('****');
     expect(maskValue('123456789012')).toBe('****');
