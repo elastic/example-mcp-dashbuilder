@@ -132,20 +132,33 @@ function translatePie(config: ChartConfig, layerId: string, ctx?: TimeFieldConte
     { columnId: metricColumnId, fieldName: config.yFields[0], meta: { type: 'number' } },
   ];
 
-  const visualization = {
-    shape: 'pie',
-    layers: [
-      {
-        layerId,
-        layerType: 'data',
-        primaryGroups: [groupColumnId],
-        metrics: [metricColumnId],
-        numberDisplay: 'percent',
-        categoryDisplay: 'default',
-        legendDisplay: 'default',
-      },
-    ],
+  const layer: Record<string, unknown> = {
+    layerId,
+    layerType: 'data',
+    primaryGroups: [groupColumnId],
+    metrics: [metricColumnId],
+    numberDisplay: 'percent',
+    categoryDisplay: 'default',
+    legendDisplay: 'default',
   };
+
+  const visualization: Record<string, unknown> = {
+    shape: 'pie',
+    layers: [layer],
+  };
+
+  // Apply custom palette (positional, value-agnostic)
+  if (config.palette && config.palette.length > 0) {
+    visualization.palette = {
+      type: 'palette',
+      name: 'custom',
+      params: {
+        colors: config.palette,
+        gradient: false,
+        reverse: false,
+      },
+    };
+  }
 
   const datasourceStates = {
     textBased: buildTextBasedDatasource(layerId, config.esqlQuery, columns, ctx),
