@@ -374,6 +374,7 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
         sectionWidget.type === 'section' &&
         sectionWidget.panels
       ) {
+        const positioned = new Set<string>();
         for (const chart of sectionCharts) {
           const pos = sectionWidget.panels[chart.id];
           if (pos) {
@@ -381,6 +382,13 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
               nestedPanels,
               makeApiPanel(chart, { x: pos.column, y: pos.row, w: pos.width, h: pos.height })
             );
+            positioned.add(chart.id);
+          }
+        }
+        // Remove positioned charts from the unpositioned list to avoid duplicates
+        for (let i = unpositionedSectionCharts.length - 1; i >= 0; i--) {
+          if (positioned.has(unpositionedSectionCharts[i].id)) {
+            unpositionedSectionCharts.splice(i, 1);
           }
         }
       }
@@ -436,6 +444,13 @@ export function translateDashboardToApiPayload(config: DashboardConfig): Dashboa
       nextRow++;
     }
   }
+
+  // Sort top-level items by grid.y so sections and panels appear in correct order
+  topLevelPanels.sort((a, b) => {
+    const ay = 'grid' in a ? a.grid.y : 0;
+    const by = 'grid' in b ? b.grid.y : 0;
+    return ay - by;
+  });
 
   return {
     title: config.title,

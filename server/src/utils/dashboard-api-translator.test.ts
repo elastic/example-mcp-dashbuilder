@@ -13,6 +13,7 @@ import {
   translatePanelConfig,
   translateDashboardToApiPayload,
   type DashboardApiPanel,
+  type DashboardApiSection,
 } from './dashboard-api-translator.js';
 import type { ChartConfig, MetricConfig, HeatmapConfig, DashboardConfig } from '../types.js';
 
@@ -287,5 +288,74 @@ describe('translateDashboardToApiPayload', () => {
     // Second panel is a metric
     expect((payload.panels[1] as DashboardApiPanel).config.type).toBe('metric');
     expect((payload.panels[1] as DashboardApiPanel).config.metrics).toBeDefined();
+  });
+
+  it('does not duplicate panels when section positions come from sectionWidget.panels', () => {
+    const dashWithSection: DashboardConfig = {
+      title: 'Dup Test',
+      charts: [
+        {
+          id: 'c1',
+          title: 'Chart 1',
+          chartType: 'bar',
+          esqlQuery: 'FROM logs | STATS c = COUNT() BY status',
+          xField: 'status',
+          yFields: ['c'],
+        },
+      ],
+      sections: [{ id: 'sec1', title: 'Section 1', collapsed: false, panelIds: ['c1'] }],
+      gridLayout: {
+        // c1 has NO top-level gridLayout entry — positions come from sectionWidget.panels
+        sec1: {
+          type: 'section',
+          title: 'Section 1',
+          row: 0,
+          panels: { c1: { column: 0, row: 0, width: 24, height: 10 } },
+        },
+      },
+      updatedAt: new Date().toISOString(),
+    };
+    const payload = translateDashboardToApiPayload(dashWithSection);
+    // Should have exactly 1 section with 1 panel inside, no duplicates
+    const section = payload.panels[0] as DashboardApiSection;
+    expect(section.title).toBe('Section 1');
+    expect(section.panels).toHaveLength(1);
+    // No top-level loose panels
+    expect(payload.panels).toHaveLength(1);
+  });
+
+  it('preserves correct order of sections and top-level panels by grid.y', () => {
+    const dashWithMixed: DashboardConfig = {
+      title: 'Order Test',
+      charts: [
+        {
+          id: 'top1',
+          title: 'Top Panel',
+          chartType: 'bar',
+          esqlQuery: 'FROM logs | STATS c = COUNT() BY status',
+          xField: 'status',
+          yFields: ['c'],
+        },
+        {
+          id: 'sec1_c1',
+          title: 'Section Chart',
+          chartType: 'metric',
+          esqlQuery: 'FROM logs | STATS total = COUNT()',
+          valueField: 'total',
+        } as MetricConfig,
+      ],
+      sections: [{ id: 'secA', title: 'First Section', collapsed: false, panelIds: ['sec1_c1'] }],
+      gridLayout: {
+        top1: { type: 'panel' as const, column: 0, row: 20, width: 48, height: 10 },
+        sec1_c1: { type: 'panel' as const, column: 0, row: 0, width: 24, height: 8 },
+        secA: { type: 'section' as const, title: 'First Section', row: 0 },
+      },
+      updatedAt: new Date().toISOString(),
+    };
+    const payload = translateDashboardToApiPayload(dashWithMixed);
+    // Section at row 0 should come before the top-level panel at row 20
+    expect(payload.panels).toHaveLength(2);
+    expect((payload.panels[0] as DashboardApiSection).title).toBe('First Section');
+    expect((payload.panels[1] as DashboardApiPanel).grid.y).toBe(20);
   });
 });
