@@ -20,7 +20,8 @@ interface UseEsqlQueryResult {
 export function useEsqlQuery(
   query: string | undefined,
   timeRange: TimeRange | null,
-  timeField?: string
+  timeField?: string,
+  refreshNonce = 0
 ): UseEsqlQueryResult {
   const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +95,7 @@ export function useEsqlQuery(
     return () => {
       clearTimeout(timer);
     };
-  }, [query, timeRange, timeField, mcpApp]);
+  }, [query, timeRange, timeField, refreshNonce, mcpApp]);
 
   return { data, isLoading, error };
 }

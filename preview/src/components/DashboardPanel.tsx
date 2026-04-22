@@ -14,12 +14,17 @@ import { useBuildRenderableConfig } from '../hooks/useBuildRenderableConfig';
 import type { PanelConfig } from '../types';
 
 export function DashboardPanel({ config }: { config: PanelConfig }) {
-  const { timeRange } = useTimeRange();
-  const { data, isLoading, error } = useEsqlQuery(config.esqlQuery, timeRange, config.timeField);
+  const { timeRange, refreshNonce } = useTimeRange();
+  const { data, isLoading, error } = useEsqlQuery(
+    config.esqlQuery,
+    timeRange,
+    config.timeField,
+    refreshNonce
+  );
 
   // Fetch trend data for metrics with a trend query
   const trendQuery = config.chartType === 'metric' ? config.trendEsqlQuery : undefined;
-  const { data: trendData } = useEsqlQuery(trendQuery, timeRange, config.timeField);
+  const { data: trendData } = useEsqlQuery(trendQuery, timeRange, config.timeField, refreshNonce);
 
   const liveConfig = useBuildRenderableConfig(config, data, trendData);
 

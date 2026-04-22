@@ -95,7 +95,7 @@ export function App({ initialDashboard }: { initialDashboard: DashboardConfig })
 function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
   const dashboard = initialDashboard;
   const hasCharts = dashboard.charts.length > 0;
-  const { setTimeRange } = useTimeRange();
+  const { refreshData, setTimeRange } = useTimeRange();
   const mcpApp = useMcpApp();
   const { euiTheme } = useEuiTheme();
 
@@ -188,20 +188,29 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
             )}
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            {isAllData ? (
-              <EuiButtonEmpty iconType="calendar" onClick={() => setIsAllData(false)}>
-                All data
-              </EuiButtonEmpty>
-            ) : (
-              <EuiSuperDatePicker
-                start={start}
-                end={end}
-                onTimeChange={onTimeChange}
-                commonlyUsedRanges={COMMONLY_USED_RANGES}
-                showUpdateButton={false}
-                showTimeWindowButtons={true}
-              />
-            )}
+            <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+              <EuiFlexItem grow={false}>
+                {isAllData ? (
+                  <EuiButtonEmpty iconType="calendar" onClick={() => setIsAllData(false)}>
+                    All data
+                  </EuiButtonEmpty>
+                ) : (
+                  <EuiSuperDatePicker
+                    start={start}
+                    end={end}
+                    onTimeChange={onTimeChange}
+                    commonlyUsedRanges={COMMONLY_USED_RANGES}
+                    showUpdateButton={false}
+                    showTimeWindowButtons={true}
+                  />
+                )}
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty iconType="refresh" onClick={refreshData}>
+                  Refresh
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+            </EuiFlexGroup>
           </EuiFlexItem>
         </EuiFlexGroup>
       </header>

@@ -41,10 +41,39 @@ function injectExportDataIntoHtml(html: string, exportData: ExportData): string 
   return html.replace('<head>', `<head>${boot}`);
 }
 
-export async function renderChartToPng(exportData: ExportData): Promise<string> {
-  const { default: puppeteer } = await import('puppeteer').catch(() => {
+interface PuppeteerPage {
+  setViewport(viewport: { width: number; height: number }): Promise<void>;
+  setContent(
+    html: string,
+    options: { waitUntil: 'domcontentloaded'; timeout: number }
+  ): Promise<void>;
+  waitForFunction(pageFunction: () => boolean, options: { timeout: number }): Promise<void>;
+  screenshot(options: { type: 'png'; encoding: 'base64'; fullPage: true }): Promise<string>;
+}
+
+interface PuppeteerBrowser {
+  newPage(): Promise<PuppeteerPage>;
+  close(): Promise<void>;
+}
+
+interface PuppeteerModule {
+  default: {
+    launch(options: { headless: boolean; args: string[] }): Promise<PuppeteerBrowser>;
+  };
+}
+
+async function loadPuppeteer(): Promise<PuppeteerModule['default']> {
+  const dynamicImport = new Function('specifier', 'return import(specifier);') as (
+    specifier: string
+  ) => Promise<unknown>;
+  const module = (await dynamicImport('puppeteer').catch(() => {
     throw new Error('Puppeteer is not installed. Run: npm install puppeteer --workspace=server');
-  });
+  })) as PuppeteerModule;
+  return module.default;
+}
+
+export async function renderChartToPng(exportData: ExportData): Promise<string> {
+  const puppeteer = await loadPuppeteer();
 
   const html = readFileSync(MCP_APP_HTML_PATH, 'utf-8');
   const htmlWithExport = injectExportDataIntoHtml(html, exportData);
