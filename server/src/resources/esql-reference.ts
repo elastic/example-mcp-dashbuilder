@@ -6,10 +6,13 @@
 
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SKILL_DIR = resolve(__dirname, '../../vendor/agent-skills/elasticsearch-esql');
+const require = createRequire(import.meta.url);
+const SKILL_DIR = resolve(
+  dirname(require.resolve('elastic-agent-skills/package.json')),
+  'skills/elasticsearch/elasticsearch-esql'
+);
 
 function readSkillFile(name: string): string {
   return readFileSync(resolve(SKILL_DIR, name), 'utf-8').trim();
