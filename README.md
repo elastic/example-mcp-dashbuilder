@@ -197,7 +197,7 @@ Open the `example-mcp-dashbuilder` folder in your MCP client. The MCP server wil
 
 **Analysis:**
 
-> "Analyze my kibana_sample_data_logs data"
+> "Analyze my logs data"
 
 > "What's interesting in the ecommerce orders index?"
 
