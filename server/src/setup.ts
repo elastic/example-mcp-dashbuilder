@@ -110,7 +110,8 @@ async function main() {
       apiKey = await ask('API Key', existing.ES_API_KEY || '', true);
     } else {
       esUsername = await ask('Username', existing.ES_USERNAME || 'elastic');
-      esPassword = await ask('Password', existing.ES_PASSWORD || 'changeme', true);
+      const savedPassword = existing.ES_PASSWORD;
+      esPassword = await ask('Password', savedPassword || 'changeme', !!savedPassword);
     }
   }
 

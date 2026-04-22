@@ -38,4 +38,31 @@ describe('buildPrompt', () => {
     expect(buildPrompt('API Key')).toBe('API Key: ');
     expect(buildPrompt('API Key', undefined, true)).toBe('API Key: ');
   });
+
+  describe('password prompt', () => {
+    // Mirrors the logic in setup.ts:
+    //   const savedPassword = existing.ES_PASSWORD;
+    //   esPassword = await ask('Password', savedPassword || 'changeme', !!savedPassword);
+
+    it('shows changeme in clear text when no saved password', () => {
+      const savedPassword = undefined;
+      expect(buildPrompt('Password', savedPassword || 'changeme', !!savedPassword)).toBe(
+        'Password [changeme]: '
+      );
+    });
+
+    it('masks when saved password is changeme', () => {
+      const savedPassword = 'changeme';
+      expect(buildPrompt('Password', savedPassword || 'changeme', !!savedPassword)).toBe(
+        'Password [****]: '
+      );
+    });
+
+    it('masks when saved password is a custom value', () => {
+      const savedPassword = 'my-super-secret-pw';
+      expect(buildPrompt('Password', savedPassword || 'changeme', !!savedPassword)).toBe(
+        'Password [****t-pw]: '
+      );
+    });
+  });
 });
