@@ -35,6 +35,7 @@ import { registerAppOnlyTools } from './tools/app-only-tools.js';
 import { registerExportChartImage } from './tools/export-chart-image.js';
 import { DATAVIZ_GUIDELINES } from './resources/dataviz-guidelines.js';
 import { buildEsqlReference } from './resources/esql-reference.js';
+import { ANALYSIS_GUIDELINES } from './resources/analysis-guidelines.js';
 import { SERVER_INSTRUCTIONS } from './resources/instructions.js';
 
 const server = new McpServer(
@@ -85,6 +86,30 @@ server.resource(
         uri: 'esql://reference',
         mimeType: 'text/markdown',
         text: buildEsqlReference(),
+      },
+    ],
+  })
+);
+
+// Register deep-analysis skill as a resource
+server.resource(
+  'analysis-guidelines',
+  'analysis://guidelines',
+  {
+    description:
+      'Deep-analysis skill — structured exploration flow for open-ended questions like ' +
+      '"analyze my data" or "what\'s interesting in <index>". Defines trigger phrases, ' +
+      'the four-section response structure, drill-down suggestions, and on-demand ' +
+      'capabilities (field stats, correlations, time-over-time). Read this when the user ' +
+      'asks for insight rather than a specific chart.',
+    mimeType: 'text/markdown',
+  },
+  async () => ({
+    contents: [
+      {
+        uri: 'analysis://guidelines',
+        mimeType: 'text/markdown',
+        text: ANALYSIS_GUIDELINES,
       },
     ],
   })
