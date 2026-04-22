@@ -106,9 +106,20 @@ function reverseXY(
       : 'bar';
 
   const xField = getColumn(layer.x);
-  const yRefs = (layer.y as unknown[]) || [];
+  const yRefs = (layer.y as Array<Record<string, unknown>>) || [];
   const yFields = yRefs.map((ref) => getColumn(ref)).filter(Boolean);
   const splitField = layer.breakdown_by ? getColumn(layer.breakdown_by) : undefined;
+
+  // Extract per-series static colors into palette
+  let palette: string[] | undefined;
+  const colors = yRefs.map((ref) => {
+    const colorObj = ref?.color as { type?: string; color?: string } | undefined;
+    return colorObj?.type === 'static' && colorObj.color ? colorObj.color : '';
+  });
+  if (colors.some(Boolean)) {
+    palette = colors.filter(Boolean);
+    if (palette.length === 0) palette = undefined;
+  }
 
   return {
     id: panelId,
@@ -118,6 +129,7 @@ function reverseXY(
     xField,
     yFields,
     ...(splitField ? { splitField } : {}),
+    ...(palette ? { palette } : {}),
   };
 }
 
@@ -130,10 +142,33 @@ function reversePie(
   if (!esqlQuery) return null;
 
   const metrics = (config.metrics as unknown[]) || [];
-  const groupBy = (config.group_by as unknown[]) || [];
+  const groupBy = (config.group_by as Array<Record<string, unknown>>) || [];
 
   const yFields = metrics.map((ref) => getColumn(ref)).filter(Boolean);
   const xField = groupBy.length > 0 ? getColumn(groupBy[0]) : '';
+
+  // Extract palette from auto-assignment colorMapping (entries with empty values[])
+  let palette: string[] | undefined;
+  if (groupBy.length > 0) {
+    const colorMapping = groupBy[0]?.color as
+      | {
+          mode?: string;
+          mapping?: Array<{ values?: unknown[]; color?: { type?: string; value?: string } }>;
+        }
+      | undefined;
+    if (colorMapping?.mode === 'categorical' && colorMapping.mapping) {
+      const colors = colorMapping.mapping
+        .filter((entry) => {
+          // Auto-assignments have empty values arrays
+          const vals = entry.values;
+          return (
+            (!vals || vals.length === 0) && entry.color?.type === 'color_code' && entry.color.value
+          );
+        })
+        .map((entry) => entry.color!.value!);
+      if (colors.length > 0) palette = colors;
+    }
+  }
 
   return {
     id: panelId,
@@ -142,6 +177,7 @@ function reversePie(
     esqlQuery,
     xField,
     yFields,
+    ...(palette ? { palette } : {}),
   };
 }
 
@@ -190,6 +226,16 @@ function reverseHeatmap(
   const esqlQuery = getEsqlQuery(config);
   if (!esqlQuery) return null;
 
+  // Extract colorRamp from dynamic color steps
+  let colorRamp: string[] | undefined;
+  const metricObj = config.metric as Record<string, unknown> | undefined;
+  const colorObj = metricObj?.color as
+    | { type?: string; range?: string; steps?: Array<{ color: string }> }
+    | undefined;
+  if (colorObj?.type === 'dynamic' && colorObj.steps) {
+    colorRamp = colorObj.steps.map((s) => s.color);
+  }
+
   return {
     id: panelId,
     title,
@@ -198,6 +244,7 @@ function reverseHeatmap(
     xField: getColumn(config.x),
     yField: getColumn(config.y),
     valueField: getColumn(config.metric),
+    ...(colorRamp ? { colorRamp } : {}),
   };
 }
 

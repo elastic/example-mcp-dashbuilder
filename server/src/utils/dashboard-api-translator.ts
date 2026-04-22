@@ -90,7 +90,13 @@ export function translateXYPanel(chart: ChartConfig): Record<string, unknown> {
     type: layerType,
     data_source: makeEsqlDataSource(chart.esqlQuery),
     x: { column: chart.xField },
-    y: chart.yFields.map((col) => ({ column: col })),
+    y: chart.yFields.map((col, i) => {
+      const yEntry: Record<string, unknown> = { column: col };
+      if (chart.palette && chart.palette[i]) {
+        yEntry.color = { type: 'static', color: chart.palette[i] };
+      }
+      return yEntry;
+    }),
   };
 
   if (chart.splitField) {
@@ -107,11 +113,26 @@ export function translateXYPanel(chart: ChartConfig): Record<string, unknown> {
  * Translate a pie chart to a Dashboard API `vis` panel config.
  */
 export function translatePiePanel(chart: ChartConfig): Record<string, unknown> {
+  const groupBy: Record<string, unknown> = { column: chart.xField };
+
+  // Use auto-assignment color mapping: empty values[] entries are matched
+  // positionally to categories by Kibana's color mapping engine.
+  if (chart.palette && chart.palette.length > 0) {
+    groupBy.color = {
+      mode: 'categorical',
+      palette: 'default',
+      mapping: chart.palette.map((color) => ({
+        values: [],
+        color: { type: 'color_code', value: color },
+      })),
+    };
+  }
+
   return {
     type: 'pie',
     data_source: makeEsqlDataSource(chart.esqlQuery),
     metrics: chart.yFields.map((col) => ({ column: col })),
-    group_by: [{ column: chart.xField }],
+    group_by: [groupBy],
   };
 }
 
@@ -149,12 +170,36 @@ export function translateMetricPanel(metric: MetricConfig): Record<string, unkno
  * Translate a heatmap to a Dashboard API `vis` panel config.
  */
 export function translateHeatmapPanel(heatmap: HeatmapConfig): Record<string, unknown> {
+  const metric: Record<string, unknown> = { column: heatmap.valueField };
+
+  if (heatmap.colorRamp && heatmap.colorRamp.length >= 2) {
+    // Map colorRamp to a colorByValue (percentage-based) config
+    const steps = heatmap.colorRamp.map((color, i, arr) => {
+      const stepSize = 100 / arr.length;
+      const step: Record<string, unknown> = { color };
+      if (i === 0) {
+        step.lt = Math.round(stepSize * (i + 1));
+      } else if (i === arr.length - 1) {
+        step.gte = Math.round(stepSize * i);
+      } else {
+        step.gte = Math.round(stepSize * i);
+        step.lt = Math.round(stepSize * (i + 1));
+      }
+      return step;
+    });
+    metric.color = {
+      type: 'dynamic',
+      range: 'percentage',
+      steps,
+    };
+  }
+
   return {
     type: 'heatmap',
     data_source: makeEsqlDataSource(heatmap.esqlQuery),
     x: { column: heatmap.xField },
     y: { column: heatmap.yField },
-    metric: { column: heatmap.valueField },
+    metric,
   };
 }
 

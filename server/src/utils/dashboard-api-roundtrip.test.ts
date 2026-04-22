@@ -127,6 +127,22 @@ describe('Dashboard API translate → reverse roundtrip', () => {
     expect(out.title).toBe(input.title);
     expect(out.xField).toBe('status');
     expect(out.yFields).toEqual(['count']);
+    expect(out.palette).toBeUndefined();
+  });
+
+  it('pie chart with palette', () => {
+    const input: ChartConfig = {
+      id: 'pie-palette',
+      title: 'Colored Pie',
+      chartType: 'pie',
+      esqlQuery: 'FROM logs | STATS count = COUNT(*) BY status',
+      xField: 'status',
+      yFields: ['count'],
+      palette: ['#E91E63', '#54B399', '#D6BF57'],
+    };
+    const out = roundTrip(input) as ChartConfig;
+    expect(out.chartType).toBe('pie');
+    expect(out.palette).toEqual(['#E91E63', '#54B399', '#D6BF57']);
   });
 
   it('metric', () => {
@@ -307,18 +323,32 @@ describe('Dashboard API translate → reverse roundtrip', () => {
 
   // Known gaps: these fields have no equivalent in the Dashboard API.
   describe('fields not supported by Dashboard API', () => {
-    it('chart palette is lost', () => {
+    it('chart palette with matching yFields count survives', () => {
       const input: ChartConfig = {
         id: 'bar-palette',
         title: 'Palette Bar',
         chartType: 'bar',
-        esqlQuery: 'FROM logs | STATS c = COUNT(*) BY host',
+        esqlQuery: 'FROM logs | STATS a = COUNT(*), b = SUM(bytes), c = AVG(cpu) BY host',
         xField: 'host',
-        yFields: ['c'],
+        yFields: ['a', 'b', 'c'],
         palette: ['#ff0000', '#00ff00', '#0000ff'],
       };
       const out = roundTrip(input) as ChartConfig;
-      expect(out.palette).toBeUndefined();
+      expect(out.palette).toEqual(['#ff0000', '#00ff00', '#0000ff']);
+    });
+
+    it('chart palette with fewer colors than yFields survives (only assigned ones)', () => {
+      const input: ChartConfig = {
+        id: 'bar-partial',
+        title: 'Partial Palette',
+        chartType: 'bar',
+        esqlQuery: 'FROM logs | STATS a = COUNT(*), b = SUM(bytes) BY host',
+        xField: 'host',
+        yFields: ['a', 'b'],
+        palette: ['#ff0000'],
+      };
+      const out = roundTrip(input) as ChartConfig;
+      expect(out.palette).toEqual(['#ff0000']);
     });
 
     it('metric valuePrefix is lost (no API equivalent)', () => {
@@ -353,7 +383,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
       expect(out.trendShape).toBeUndefined();
     });
 
-    it('heatmap colorRamp is lost', () => {
+    it('heatmap colorRamp survives roundtrip', () => {
       const input: HeatmapConfig = {
         id: 'heatmap-ramp',
         title: 'Colored Heatmap',
@@ -365,7 +395,7 @@ describe('Dashboard API translate → reverse roundtrip', () => {
         colorRamp: ['#ffffff', '#ff0000'],
       };
       const out = roundTrip(input) as HeatmapConfig;
-      expect(out.colorRamp).toBeUndefined();
+      expect(out.colorRamp).toEqual(['#ffffff', '#ff0000']);
     });
   });
 });

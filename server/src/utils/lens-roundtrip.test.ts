@@ -73,6 +73,23 @@ describe('Lens round-trip: export then import', () => {
     }
   });
 
+  it('pie chart with palette preserves colors (Lens custom palette)', () => {
+    const original: ChartConfig = {
+      id: 'pie-palette',
+      title: 'Colored Pie',
+      chartType: 'pie',
+      esqlQuery: 'FROM logs | STATS c = COUNT(*) BY status',
+      xField: 'status',
+      yFields: ['c'],
+      palette: ['#E91E63', '#54B399', '#D6BF57'],
+    };
+    const result = roundTrip(original);
+    if ('config' in result) {
+      expect(result.config.chartType).toBe('pie');
+      expect((result.config as ChartConfig).palette).toEqual(['#E91E63', '#54B399', '#D6BF57']);
+    }
+  });
+
   it('metric preserves fields', () => {
     const original: MetricConfig = {
       id: 'metric-1',

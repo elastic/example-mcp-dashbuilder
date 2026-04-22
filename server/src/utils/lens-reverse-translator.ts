@@ -106,6 +106,16 @@ function reversePie(
   const primaryGroups = (layer.primaryGroups as string[]) || [];
   const metrics = (layer.metrics as string[]) || [];
 
+  // Extract custom palette from visualization-level palette (legacy positional palette)
+  let palette: string[] | undefined;
+  const vizPalette = visualization.palette as
+    | { name?: string; params?: { colors?: string[] } }
+    | undefined;
+  // Also check top-level state for the palette (Lens stores it outside the layer for legacy palettes)
+  if (vizPalette?.name === 'custom' && vizPalette.params?.colors) {
+    palette = vizPalette.params.colors;
+  }
+
   return {
     id: panelId,
     title,
@@ -113,6 +123,7 @@ function reversePie(
     esqlQuery,
     xField: resolve(columnMap, primaryGroups[0]),
     yFields: metrics.map((m) => resolve(columnMap, m)),
+    ...(palette ? { palette } : {}),
   };
 }
 
