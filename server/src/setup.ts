@@ -9,6 +9,7 @@ import { writeFileSync, existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client } from '@elastic/elasticsearch';
 import { DEFAULT_ES_NODE, DEFAULT_KIBANA_URL, PROJECT_ROOT } from './utils/config.js';
+import { buildPrompt } from './utils/setup-helpers.js';
 
 const ENV_PATH = resolve(PROJECT_ROOT, '.env');
 
@@ -23,14 +24,8 @@ interface ConnectionConfig {
   unsafeSsl?: boolean;
 }
 
-function maskValue(value: string): string {
-  if (value.length <= 4) return '****';
-  return '****' + value.slice(-4);
-}
-
 function ask(question: string, defaultValue?: string, sensitive?: boolean): Promise<string> {
-  const displayDefault = defaultValue && sensitive ? maskValue(defaultValue) : defaultValue;
-  const prompt = displayDefault ? `${question} [${displayDefault}]: ` : `${question}: `;
+  const prompt = buildPrompt(question, defaultValue, sensitive);
   return new Promise((resolve) => {
     rl.question(prompt, (answer) => {
       resolve(answer.trim() || defaultValue || '');
