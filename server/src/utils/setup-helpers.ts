@@ -5,11 +5,10 @@
  */
 
 /**
- * Masks a sensitive value for display, showing only the last 4 characters.
+ * Masks a sensitive value for display.
  */
-export function maskValue(value: string): string {
-  if (value.length < 12) return '****';
-  return '****' + value.slice(-4);
+export function maskValue(_value: string): string {
+  return '****';
 }
 
 /**

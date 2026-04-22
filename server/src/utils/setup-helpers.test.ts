@@ -8,16 +8,12 @@ import { describe, it, expect } from 'vitest';
 import { maskValue, buildPrompt } from './setup-helpers.js';
 
 describe('maskValue', () => {
-  it('masks short values completely', () => {
+  it('always returns ****', () => {
     expect(maskValue('')).toBe('****');
     expect(maskValue('ab')).toBe('****');
     expect(maskValue('abcd1234')).toBe('****');
-    expect(maskValue('12345678901')).toBe('****');
-  });
-
-  it('shows last 4 characters for values with 12+ characters', () => {
-    expect(maskValue('123456789012')).toBe('****9012');
-    expect(maskValue('my-secret-api-key-xY3Q')).toBe('****xY3Q');
+    expect(maskValue('123456789012')).toBe('****');
+    expect(maskValue('my-secret-api-key-xY3Q')).toBe('****');
   });
 });
 
@@ -27,7 +23,7 @@ describe('buildPrompt', () => {
   });
 
   it('masks default when sensitive', () => {
-    expect(buildPrompt('API Key', 'super-secret-key-xY3Q', true)).toBe('API Key [****xY3Q]: ');
+    expect(buildPrompt('API Key', 'super-secret-key-xY3Q', true)).toBe('API Key [****]: ');
   });
 
   it('shows no default when value is empty', () => {
@@ -61,7 +57,7 @@ describe('buildPrompt', () => {
     it('masks when saved password is a custom value', () => {
       const savedPassword = 'my-super-secret-pw';
       expect(buildPrompt('Password', savedPassword || 'changeme', !!savedPassword)).toBe(
-        'Password [****t-pw]: '
+        'Password [****]: '
       );
     });
   });
