@@ -234,6 +234,16 @@ export function saveDashboardLayout(
   return dashboard;
 }
 
+export function saveDashboardTimeRange(
+  timeRange: DashboardConfig['timeRange'],
+  dashboardId?: string
+): DashboardConfig {
+  const dashboard = readDashboard(dashboardId);
+  dashboard.timeRange = timeRange;
+  writeDashboard(dashboard, dashboardId);
+  return dashboard;
+}
+
 export function movePanelToSection(
   panelId: string,
   sectionId: string,

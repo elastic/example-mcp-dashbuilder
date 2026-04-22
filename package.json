@@ -3,6 +3,7 @@
   "private": true,
   "license": "Elastic-2.0",
   "workspaces": [
+    "shared",
     "server",
     "preview"
   ],
@@ -10,23 +11,30 @@
   "scripts": {
     "setup": "npx tsx server/src/setup.ts",
     "dev:server": "npm run dev --workspace=server",
-    "build": "npm run build --workspace=server && npm run build --workspace=preview",
+    "build": "npm run build --workspace=shared && npm run build --workspace=server && npm run build --workspace=preview",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit --project server/tsconfig.json && tsc --noEmit --project preview/tsconfig.json",
+    "typecheck": "tsc --noEmit --project shared/tsconfig.json && tsc --noEmit --project server/tsconfig.json && tsc --noEmit --project preview/tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npm run test --workspace=server && npm run test --workspace=preview",
+    "test": "npm run test --workspace=shared && npm run test --workspace=server && npm run test --workspace=preview",
     "check": "npm run format:check && npm run lint && npm run typecheck",
     "bundle": "bash scripts/bundle.sh",
-    "postinstall": "npm run build --workspace=preview",
+    "postinstall": "npm run build --workspace=shared && npm run build --workspace=preview",
     "prepare": "husky"
   },
   "devDependencies": {
     "@modelcontextprotocol/ext-apps": "^1.3.1",
+    "@semantic-release/changelog": "6.0.3",
+    "@semantic-release/commit-analyzer": "13.0.1",
+    "@semantic-release/exec": "7.1.0",
+    "@semantic-release/git": "10.0.1",
+    "@semantic-release/github": "12.0.6",
+    "@semantic-release/release-notes-generator": "14.1.0",
     "eslint": "^9.0.0",
     "husky": "^9.0.0",
     "lint-staged": "^15.0.0",
     "prettier": "^3.0.0",
+    "semantic-release": "25.0.3",
     "typescript-eslint": "^8.0.0",
     "vite-plugin-singlefile": "^2.3.2"
   },

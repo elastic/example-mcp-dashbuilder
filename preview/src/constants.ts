@@ -6,6 +6,8 @@
 
 import type { GridSettings } from './grid-layout';
 
+export { DEFAULT_SIZES } from 'mcp-dashboards-shared';
+
 export const ALL_DATA_SENTINEL = '__all_data__';
 
 export interface DurationRange {
@@ -29,19 +31,4 @@ export const GRID_SETTINGS: GridSettings = {
   rowHeight: 20,
   columnCount: 48,
   keyboardDragTopLimit: 0,
-};
-
-const HALF_WIDTH = 24;
-const THREE_QUARTER_WIDTH = 36;
-const QUARTER_WIDTH = 12;
-const DEFAULT_HEIGHT = 15;
-const METRIC_HEIGHT = 10;
-
-export const DEFAULT_SIZES: Record<string, { w: number; h: number }> = {
-  bar: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  line: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  area: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  pie: { w: HALF_WIDTH, h: DEFAULT_HEIGHT },
-  metric: { w: QUARTER_WIDTH, h: METRIC_HEIGHT },
-  heatmap: { w: THREE_QUARTER_WIDTH, h: DEFAULT_HEIGHT },
 };

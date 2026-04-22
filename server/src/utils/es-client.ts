@@ -9,6 +9,10 @@ import { DEFAULT_ES_NODE } from './config.js';
 
 let client: Client | null = null;
 
+/**
+ * Singleton ES client authenticated via env vars (ES_API_KEY or ES_USERNAME/ES_PASSWORD).
+ * Uses the same env-var auth strategy as getKibanaAuthHeader() in kibana-client.ts.
+ */
 export function getESClient(): Client {
   if (!client) {
     const cloudId = process.env.ES_CLOUD_ID;

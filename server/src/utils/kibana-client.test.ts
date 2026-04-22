@@ -4,8 +4,15 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import { describe, it, expect } from 'vitest';
-import { parseDashboardId } from './kibana-client.js';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import {
+  parseDashboardId,
+  parseKibanaStatus,
+  meetsMinVersion,
+  getKibanaCapabilities,
+  resetKibanaCapabilities,
+} from './kibana-client.js';
+import type { KibanaCapabilities } from './kibana-client.js';
 
 describe('parseDashboardId', () => {
   it('extracts UUID from full Kibana URL', () => {
@@ -26,5 +33,118 @@ describe('parseDashboardId', () => {
 
   it('returns clean UUID as-is', () => {
     expect(parseDashboardId('abc-123-def-456')).toBe('abc-123-def-456');
+  });
+});
+
+describe('meetsMinVersion', () => {
+  it('returns true for 9.4.0', () => expect(meetsMinVersion('9.4.0')).toBe(true));
+  it('returns true for 9.5.0', () => expect(meetsMinVersion('9.5.0')).toBe(true));
+  it('returns true for 10.0.0', () => expect(meetsMinVersion('10.0.0')).toBe(true));
+  it('returns false for 9.3.0', () => expect(meetsMinVersion('9.3.0')).toBe(false));
+  it('returns false for 8.17.0', () => expect(meetsMinVersion('8.17.0')).toBe(false));
+  it('returns false for 0.0.0', () => expect(meetsMinVersion('0.0.0')).toBe(false));
+  it('handles SNAPSHOT versions', () => expect(meetsMinVersion('9.4.0-SNAPSHOT')).toBe(true));
+});
+
+describe('parseKibanaStatus', () => {
+  it('parses 9.4.0 as hasDashboardApi', () => {
+    expect(parseKibanaStatus({ version: { number: '9.4.0' } })).toEqual<KibanaCapabilities>({
+      version: '9.4.0',
+      serverless: false,
+      hasDashboardApi: true,
+    });
+  });
+
+  it('parses 8.17.0 as legacy', () => {
+    expect(parseKibanaStatus({ version: { number: '8.17.0' } })).toEqual<KibanaCapabilities>({
+      version: '8.17.0',
+      serverless: false,
+      hasDashboardApi: false,
+    });
+  });
+
+  it('detects serverless as hasDashboardApi regardless of version', () => {
+    expect(
+      parseKibanaStatus({ version: { number: '9.0.0', build_flavor: 'serverless' } })
+    ).toEqual<KibanaCapabilities>({
+      version: '9.0.0',
+      serverless: true,
+      hasDashboardApi: true,
+    });
+  });
+
+  it('handles missing version field', () => {
+    expect(parseKibanaStatus({})).toEqual<KibanaCapabilities>({
+      version: '0.0.0',
+      serverless: false,
+      hasDashboardApi: false,
+    });
+  });
+
+  it('handles empty version object', () => {
+    expect(parseKibanaStatus({ version: {} })).toEqual<KibanaCapabilities>({
+      version: '0.0.0',
+      serverless: false,
+      hasDashboardApi: false,
+    });
+  });
+});
+
+describe('getKibanaCapabilities', () => {
+  const originalApiKey = process.env.ES_API_KEY;
+  const originalUrl = process.env.KIBANA_URL;
+
+  afterAll(() => {
+    if (originalApiKey !== undefined) {
+      process.env.ES_API_KEY = originalApiKey;
+    } else {
+      delete process.env.ES_API_KEY;
+    }
+    if (originalUrl !== undefined) {
+      process.env.KIBANA_URL = originalUrl;
+    } else {
+      delete process.env.KIBANA_URL;
+    }
+  });
+
+  beforeEach(() => {
+    resetKibanaCapabilities();
+    process.env.ES_API_KEY = 'test-key';
+  });
+
+  it('returns fallback when Kibana is unreachable', async () => {
+    process.env.KIBANA_URL = 'http://127.0.0.1:1';
+
+    const result = await getKibanaCapabilities();
+    expect(result).toEqual<KibanaCapabilities>({
+      version: '0.0.0',
+      serverless: false,
+      hasDashboardApi: false,
+    });
+  });
+
+  it('clears cache on failure so next call retries', async () => {
+    process.env.KIBANA_URL = 'http://127.0.0.1:1';
+
+    const first = await getKibanaCapabilities();
+    expect(first.version).toBe('0.0.0');
+
+    // If the catch block didn't clear the cache, this second call
+    // would return the cached promise instead of retrying.
+    const second = await getKibanaCapabilities();
+    expect(second.version).toBe('0.0.0');
+  });
+
+  it('returns fallback when auth is missing', async () => {
+    delete process.env.ES_API_KEY;
+    delete process.env.ES_USERNAME;
+    delete process.env.ES_PASSWORD;
+
+    const result = await getKibanaCapabilities();
+    expect(result).toEqual<KibanaCapabilities>({
+      version: '0.0.0',
+      serverless: false,
+      hasDashboardApi: false,
+    });
   });
 });

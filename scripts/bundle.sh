@@ -11,6 +11,9 @@ set -euo pipefail
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUNDLE_DIR="$DIR/dist/bundle"
 
+echo "Building shared..."
+npm run build --workspace=shared
+
 echo "Building server..."
 npm run build --workspace=server
 
