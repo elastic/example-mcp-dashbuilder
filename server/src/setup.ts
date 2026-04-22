@@ -23,8 +23,14 @@ interface ConnectionConfig {
   unsafeSsl?: boolean;
 }
 
-function ask(question: string, defaultValue?: string): Promise<string> {
-  const prompt = defaultValue ? `${question} [${defaultValue}]: ` : `${question}: `;
+function maskValue(value: string): string {
+  if (value.length <= 4) return '****';
+  return '****' + value.slice(-4);
+}
+
+function ask(question: string, defaultValue?: string, sensitive?: boolean): Promise<string> {
+  const displayDefault = defaultValue && sensitive ? maskValue(defaultValue) : defaultValue;
+  const prompt = displayDefault ? `${question} [${displayDefault}]: ` : `${question}: `;
   return new Promise((resolve) => {
     rl.question(prompt, (answer) => {
       resolve(answer.trim() || defaultValue || '');
@@ -86,7 +92,7 @@ async function main() {
   let cloudId = '';
   let esNode = '';
   if (isCloudHosted) {
-    cloudId = await ask('Cloud ID', existing.ES_CLOUD_ID || '');
+    cloudId = await ask('Cloud ID', existing.ES_CLOUD_ID || '', true);
   } else if (isServerless) {
     esNode = await ask('Elasticsearch URL', existing.ES_NODE || '');
   } else {
@@ -98,7 +104,7 @@ async function main() {
   let esUsername = '';
   let esPassword = '';
   if (isServerless) {
-    apiKey = await ask('API Key', existing.ES_API_KEY || '');
+    apiKey = await ask('API Key', existing.ES_API_KEY || '', true);
   } else {
     const authType = await ask(
       'Auth type (password / apikey)',
@@ -106,10 +112,10 @@ async function main() {
     );
     const useApiKey = authType.toLowerCase() === 'apikey';
     if (useApiKey) {
-      apiKey = await ask('API Key', existing.ES_API_KEY || '');
+      apiKey = await ask('API Key', existing.ES_API_KEY || '', true);
     } else {
       esUsername = await ask('Username', existing.ES_USERNAME || 'elastic');
-      esPassword = await ask('Password', existing.ES_PASSWORD || 'changeme');
+      esPassword = await ask('Password', existing.ES_PASSWORD || 'changeme', true);
     }
   }
 
