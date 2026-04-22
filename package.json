@@ -4,11 +4,12 @@
   "license": "Elastic-2.0",
   "workspaces": [
     "server",
-    "preview"
+    "preview",
+    "setup"
   ],
   "type": "module",
   "scripts": {
-    "setup": "npx tsx server/src/setup.ts",
+    "setup": "npm run build --workspace=setup && node setup/dist/cli.js",
     "dev:server": "npm run dev --workspace=server",
     "build": "npm run build --workspace=server && npm run build --workspace=preview",
     "lint": "eslint .",
