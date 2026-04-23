@@ -121,11 +121,15 @@ export async function seedTestData(esUrl: string): Promise<void> {
     },
   };
 
-  await fetch(`${esUrl}/${TEST_INDEX}`, {
+  const createRes = await fetch(`${esUrl}/${TEST_INDEX}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(mappings),
   });
+
+  if (!createRes.ok) {
+    throw new Error(`Index creation failed: ${createRes.status} ${await createRes.text()}`);
+  }
 
   // Bulk index documents
   const docs = generateDocs(20);
