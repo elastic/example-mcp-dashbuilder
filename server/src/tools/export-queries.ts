@@ -151,7 +151,7 @@ export function buildJupyterNotebook(charts: PanelConfig[], title: string): stri
     metadata: {},
   });
 
-  // Setup cell — load .env (stdlib only; no python-dotenv) then read credentials like the MCP server
+  // Setup cell — load .env (stdlib only; no python-dotenv) then read credentials from the environment
   cells.push({
     cell_type: 'code',
     source: [
@@ -164,7 +164,7 @@ export function buildJupyterNotebook(charts: PanelConfig[], title: string): stri
       '\n',
       '\n',
       'def _load_dotenv(path: Path) -> None:\n',
-      '    """Parse KEY=VALUE lines (same idea as the MCP server); skip # comments and empty lines."""\n',
+      '    """Parse KEY=VALUE lines; skip # comments and empty lines."""\n',
       '    try:\n',
       '        text = path.read_text(encoding="utf-8")\n',
       '    except OSError:\n',
