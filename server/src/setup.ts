@@ -9,6 +9,7 @@ import { writeFileSync, existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client } from '@elastic/elasticsearch';
 import { DEFAULT_ES_NODE, DEFAULT_KIBANA_URL, PROJECT_ROOT } from './utils/config.js';
+import { buildPrompt } from './utils/setup-helpers.js';
 
 const ENV_PATH = resolve(PROJECT_ROOT, '.env');
 
@@ -23,8 +24,8 @@ interface ConnectionConfig {
   unsafeSsl?: boolean;
 }
 
-function ask(question: string, defaultValue?: string): Promise<string> {
-  const prompt = defaultValue ? `${question} [${defaultValue}]: ` : `${question}: `;
+function ask(question: string, defaultValue?: string, sensitive?: boolean): Promise<string> {
+  const prompt = buildPrompt(question, defaultValue, sensitive);
   return new Promise((resolve) => {
     rl.question(prompt, (answer) => {
       resolve(answer.trim() || defaultValue || '');
@@ -86,7 +87,7 @@ async function main() {
   let cloudId = '';
   let esNode = '';
   if (isCloudHosted) {
-    cloudId = await ask('Cloud ID', existing.ES_CLOUD_ID || '');
+    cloudId = await ask('Cloud ID', existing.ES_CLOUD_ID || '', true);
   } else if (isServerless) {
     esNode = await ask('Elasticsearch URL', existing.ES_NODE || '');
   } else {
@@ -98,7 +99,7 @@ async function main() {
   let esUsername = '';
   let esPassword = '';
   if (isServerless) {
-    apiKey = await ask('API Key', existing.ES_API_KEY || '');
+    apiKey = await ask('API Key', existing.ES_API_KEY || '', true);
   } else {
     const authType = await ask(
       'Auth type (password / apikey)',
@@ -106,10 +107,11 @@ async function main() {
     );
     const useApiKey = authType.toLowerCase() === 'apikey';
     if (useApiKey) {
-      apiKey = await ask('API Key', existing.ES_API_KEY || '');
+      apiKey = await ask('API Key', existing.ES_API_KEY || '', true);
     } else {
       esUsername = await ask('Username', existing.ES_USERNAME || 'elastic');
-      esPassword = await ask('Password', existing.ES_PASSWORD || 'changeme');
+      const savedPassword = existing.ES_PASSWORD;
+      esPassword = await ask('Password', savedPassword || 'changeme', !!savedPassword);
     }
   }
 
