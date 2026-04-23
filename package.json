@@ -3,6 +3,7 @@
   "private": true,
   "license": "Elastic-2.0",
   "workspaces": [
+    "shared",
     "server",
     "preview",
     "setup"
@@ -11,15 +12,15 @@
   "scripts": {
     "setup": "npm run build --workspace=setup && node setup/dist/cli.js",
     "dev:server": "npm run dev --workspace=server",
-    "build": "npm run build --workspace=setup && npm run build --workspace=server && npm run build --workspace=preview",
+    "build": "npm run build --workspace=shared && npm run build --workspace=setup && npm run build --workspace=server && npm run build --workspace=preview",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit --project setup/tsconfig.json && tsc --noEmit --project server/tsconfig.json && tsc --noEmit --project preview/tsconfig.json",
+    "typecheck": "tsc --noEmit --project shared/tsconfig.json && tsc --noEmit --project setup/tsconfig.json && tsc --noEmit --project server/tsconfig.json && tsc --noEmit --project preview/tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "npm run test --workspace=server && npm run test --workspace=preview && npm run test --workspace=setup",
+    "test": "npm run test --workspace=shared && npm run test --workspace=server && npm run test --workspace=preview && npm run test --workspace=setup",
     "check": "npm run format:check && npm run lint && npm run typecheck",
     "bundle": "bash scripts/bundle.sh",
-    "postinstall": "npm run build --workspace=preview",
+    "postinstall": "npm run build --workspace=shared && npm run build --workspace=preview",
     "prepare": "husky"
   },
   "devDependencies": {

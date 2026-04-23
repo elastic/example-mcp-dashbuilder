@@ -9,6 +9,27 @@ import prompts from 'prompts';
 import { DEFAULT_ES_NODE, DEFAULT_KIBANA_URL } from './config.js';
 import type { ConnectionType, SetupConfig } from './types.js';
 
+const MASK = '****';
+
+/**
+ * Prompt for a sensitive value (API key, Cloud ID, password).
+ * Shows a masked placeholder when a saved value exists.
+ * If the user presses Enter without typing, the real saved value is returned.
+ */
+async function askSensitive(message: string, savedValue: string | undefined): Promise<string> {
+  const hasSaved = !!savedValue;
+  const { value } = await prompts(
+    {
+      type: 'password',
+      name: 'value',
+      message: hasSaved ? `${message} [${MASK}]` : message,
+    },
+    { onCancel }
+  );
+  const trimmed = (value || '').trim();
+  return trimmed || savedValue || '';
+}
+
 const onCancel = () => {
   console.log('');
   process.exit(1);
@@ -39,15 +60,7 @@ async function promptEndpoint(
   existing: Record<string, string>
 ): Promise<{ cloudId?: string; esNode?: string }> {
   if (connectionType === 'cloud-hosted') {
-    const { cloudId } = await prompts(
-      {
-        type: 'text',
-        name: 'cloudId',
-        message: 'Cloud ID',
-        initial: existing.ES_CLOUD_ID || '',
-      },
-      { onCancel }
-    );
+    const cloudId = await askSensitive('Cloud ID', existing.ES_CLOUD_ID);
     return { cloudId };
   }
 
@@ -70,15 +83,7 @@ async function promptAuth(
   existing: Record<string, string>
 ): Promise<{ apiKey?: string; username?: string; password?: string }> {
   if (connectionType === 'cloud-serverless') {
-    const { apiKey } = await prompts(
-      {
-        type: 'password',
-        name: 'apiKey',
-        message: 'API Key',
-        initial: existing.ES_API_KEY || '',
-      },
-      { onCancel }
-    );
+    const apiKey = await askSensitive('API Key', existing.ES_API_KEY);
     return { apiKey };
   }
 
@@ -97,15 +102,7 @@ async function promptAuth(
   );
 
   if (authType === 'apikey') {
-    const { apiKey } = await prompts(
-      {
-        type: 'password',
-        name: 'apiKey',
-        message: 'API Key',
-        initial: existing.ES_API_KEY || '',
-      },
-      { onCancel }
-    );
+    const apiKey = await askSensitive('API Key', existing.ES_API_KEY);
     return { apiKey };
   }
 
@@ -118,15 +115,15 @@ async function promptAuth(
     },
     { onCancel }
   );
-  const { password } = await prompts(
-    {
-      type: 'password',
-      name: 'password',
-      message: 'Password',
-      initial: existing.ES_PASSWORD || 'changeme',
-    },
-    { onCancel }
-  );
+  const savedPassword = existing.ES_PASSWORD;
+  const password = savedPassword
+    ? await askSensitive('Password', savedPassword)
+    : (
+        await prompts(
+          { type: 'password', name: 'pw', message: 'Password', initial: 'changeme' },
+          { onCancel }
+        )
+      ).pw || 'changeme';
   return { username, password };
 }
 
