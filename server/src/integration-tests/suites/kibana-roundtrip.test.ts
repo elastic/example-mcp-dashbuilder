@@ -317,26 +317,24 @@ describe('Kibana roundtrip', () => {
     expect(metric!.title).toBe('Total Revenue');
 
     // Verify sections survived with correct panel assignments
-    if (afterConfig.sections.length >= 2) {
-      const kpiSection = afterConfig.sections.find((s) => s.title === 'KPIs');
-      const chartsSection = afterConfig.sections.find((s) => s.title === 'Charts');
+    expect(afterConfig.sections).toHaveLength(2);
 
-      expect(kpiSection).toBeDefined();
-      expect(chartsSection).toBeDefined();
+    const kpiSection = afterConfig.sections.find((s) => s.title === 'KPIs');
+    const chartsSection = afterConfig.sections.find((s) => s.title === 'Charts');
 
-      if (kpiSection && chartsSection) {
-        // Section order: KPIs before Charts
-        const kpiIdx = afterConfig.sections.indexOf(kpiSection);
-        const chartsIdx = afterConfig.sections.indexOf(chartsSection);
-        expect(kpiIdx).toBeLessThan(chartsIdx);
+    expect(kpiSection).toBeDefined();
+    expect(chartsSection).toBeDefined();
 
-        // KPI section should contain the metric
-        expect(kpiSection.panelIds.length).toBeGreaterThanOrEqual(1);
+    // Section order: KPIs before Charts
+    const kpiIdx = afterConfig.sections.indexOf(kpiSection!);
+    const chartsIdx = afterConfig.sections.indexOf(chartsSection!);
+    expect(kpiIdx).toBeLessThan(chartsIdx);
 
-        // Charts section should contain the bar and line
-        expect(chartsSection.panelIds.length).toBeGreaterThanOrEqual(2);
-      }
-    }
+    // KPI section should contain the metric
+    expect(kpiSection!.panelIds.length).toBeGreaterThanOrEqual(1);
+
+    // Charts section should contain the bar and line
+    expect(chartsSection!.panelIds.length).toBeGreaterThanOrEqual(2);
   });
 
   it('bar chart with splitField survives roundtrip', async () => {
