@@ -56,7 +56,6 @@ export function parseJsonContent<T = unknown>(result: CallToolResult): T {
   try {
     return JSON.parse(text) as T;
   } catch {
-    // Not JSON — return text as-is (many tools return plain text)
-    return text as unknown as T;
+    throw new Error(`Expected JSON content but got: ${text.slice(0, 200)}`);
   }
 }
