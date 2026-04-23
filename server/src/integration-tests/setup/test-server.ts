@@ -70,11 +70,15 @@ export class MCPTestServer {
     });
 
     const connectPromise = this.client.connect(this.transport);
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('MCP client connection timeout')), this.timeout)
-    );
-
-    await Promise.race([connectPromise, timeoutPromise]);
+    let timer: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('MCP client connection timeout')), this.timeout);
+    });
+    try {
+      await Promise.race([connectPromise, timeoutPromise]);
+    } finally {
+      clearTimeout(timer!);
+    }
   }
 
   async stop(): Promise<void> {
