@@ -18,6 +18,8 @@
     "format:check": "prettier --check .",
     "test": "npm run test --workspace=shared && npm run test --workspace=server && npm run test --workspace=preview",
     "check": "npm run format:check && npm run lint && npm run typecheck",
+    "knip": "knip",
+    "knip:fix": "knip --fix",
     "bundle": "bash scripts/bundle.sh",
     "postinstall": "npm run build --workspace=shared && npm run build --workspace=preview",
     "prepare": "husky"
@@ -32,6 +34,7 @@
     "@semantic-release/release-notes-generator": "14.1.0",
     "eslint": "^9.0.0",
     "husky": "^9.0.0",
+    "knip": "^6.6.2",
     "lint-staged": "^15.0.0",
     "prettier": "^3.0.0",
     "semantic-release": "25.0.3",

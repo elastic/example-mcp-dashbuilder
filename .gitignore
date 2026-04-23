@@ -1,5 +1,6 @@
 node_modules/
 dist/
+.venv/
 dist-mcp-app/
 *.tsbuildinfo
 preview/public/dashboards/
