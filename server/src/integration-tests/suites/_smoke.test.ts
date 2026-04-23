@@ -4,9 +4,10 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 
 import { TEST_INDEX } from '../setup/seed-data.js';
+import { MCPTestServer } from '../setup/test-server.js';
 
 describe('Smoke test: containers and seed data', () => {
   it('should have ES_NODE set by global setup', () => {
@@ -38,5 +39,35 @@ describe('Smoke test: containers and seed data', () => {
   it('Kibana should be reachable', async () => {
     const res = await fetch(`${process.env.KIBANA_URL}/api/status`);
     expect(res.status).toBe(200);
+  });
+});
+
+describe('Smoke test: MCPTestServer harness', () => {
+  let server: MCPTestServer;
+
+  beforeEach(async () => {
+    server = new MCPTestServer();
+    await server.start();
+  });
+
+  afterEach(async () => {
+    await server.stop();
+  });
+
+  it('should connect and list tools', async () => {
+    const result = await server.listTools();
+    expect(result.tools.length).toBeGreaterThan(0);
+    const toolNames = result.tools.map((t) => t.name);
+    expect(toolNames).toContain('run_esql');
+    expect(toolNames).toContain('list_indices');
+    expect(toolNames).toContain('create_chart');
+  });
+
+  it('should list resources', async () => {
+    const result = await server.listResources();
+    expect(result.resources.length).toBeGreaterThan(0);
+    const uris = result.resources.map((r) => r.uri);
+    expect(uris).toContain('dataviz://guidelines');
+    expect(uris).toContain('esql://reference');
   });
 });
