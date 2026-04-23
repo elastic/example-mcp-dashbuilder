@@ -11,7 +11,9 @@
  * providing an isolated in-memory dashboard store per instance.
  */
 
+import { mkdtempSync } from 'fs';
 import { resolve, dirname } from 'path';
+import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -30,9 +32,12 @@ export class MCPTestServer {
   private client: Client | null = null;
   private transport: StdioClientTransport | null = null;
   private timeout: number;
+  private dashboardsDir: string;
 
   constructor(opts: { timeout?: number } = {}) {
     this.timeout = opts.timeout ?? 30_000;
+    // Each instance gets its own temp dir — tests never touch user dashboards
+    this.dashboardsDir = mkdtempSync(resolve(tmpdir(), 'mcp-test-dashboards-'));
   }
 
   async start(): Promise<void> {
@@ -49,6 +54,8 @@ export class MCPTestServer {
         // Forward container URLs set by global setup
         ES_NODE: process.env.ES_NODE!,
         KIBANA_URL: process.env.KIBANA_URL!,
+        // Isolate dashboard storage to a temp dir (never touches user dashboards)
+        DASHBOARDS_DIR: this.dashboardsDir,
         // Prevent the server from reading a local .env that could override test URLs
         NODE_ENV: 'test',
       },
