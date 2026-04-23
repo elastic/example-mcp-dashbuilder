@@ -104,6 +104,8 @@ describe('pandasVisualization', () => {
     const { code, usesMatplotlib } = pandasVisualization(metric);
     expect(usesMatplotlib).toBe(false);
     expect(code).toContain('from IPython.display import HTML, display');
+    expect(code).toContain('from html import escape');
+    expect(code).toContain('{escape(str(value))}');
     expect(code).toContain('Total orders');
     expect(code).not.toContain('import seaborn');
   });
@@ -138,12 +140,14 @@ describe('buildJupyterNotebook', () => {
     expect(nb.cells[0].source.join('')).toContain('My Dashboard');
   });
 
-  it('setup cell reads credentials from env at runtime, never baking literals', () => {
+  it('setup cell loads .env and reads credentials from env at runtime, never baking literals', () => {
     const prevKey = process.env.ES_API_KEY;
     process.env.ES_API_KEY = 'secret-key-should-not-leak';
     try {
       const nb = JSON.parse(buildJupyterNotebook([barChart], 'D'));
       const setup = nb.cells[1].source.join('');
+      expect(setup).toContain('_load_dotenv');
+      expect(setup).toContain('read_text');
       expect(setup).toContain('os.environ.get("ES_API_KEY")');
       expect(setup).not.toContain('secret-key-should-not-leak');
     } finally {
@@ -165,6 +169,22 @@ describe('buildJupyterNotebook', () => {
     const trendSource = nb.cells[4].source.join('');
     expect(trendSource).toContain('trend sparkline');
     expect(trendSource).toContain(metricWithTrend.trendEsqlQuery!);
+    expect(trendSource).toContain('trend_df.plot(x=');
+    expect(trendSource).toContain('y=');
+    expect(trendSource).toContain(JSON.stringify(metricWithTrend.trendXField));
+    expect(trendSource).toContain(JSON.stringify(metricWithTrend.trendYField));
+  });
+
+  it('trend cell falls back to title-only plot when trend x/y are missing', () => {
+    const noAxes: MetricConfig = {
+      ...metricWithTrend,
+      trendXField: undefined,
+      trendYField: undefined,
+    };
+    const nb = JSON.parse(buildJupyterNotebook([noAxes], 'D'));
+    const trendSource = nb.cells[4].source.join('');
+    expect(trendSource).toContain('trend_df.plot(title=');
+    expect(trendSource).not.toContain('trend_df.plot(x=');
   });
 
   it('strips newlines from chart titles so they cannot escape Python comments', () => {

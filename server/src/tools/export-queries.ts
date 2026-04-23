@@ -77,11 +77,12 @@ export function pandasVisualization(chart: PanelConfig): { code: string; usesMat
       return {
         code:
           `from IPython.display import HTML, display\n` +
+          `from html import escape\n` +
           `value = df.iloc[0][${pyStr(chart.valueField)}]\n` +
           `display(HTML(f'''\n` +
           `<div style="padding: 20px 24px; border: 1px solid #e0e0e0; border-radius: 8px; background: #fafafa; display: inline-block; min-width: 220px;">\n` +
           `  <div style="font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">${htmlEscape(chart.title)}</div>\n` +
-          `  <div style="font-size: 42px; font-weight: 600; color: #1a1a1a; line-height: 1;">{value}</div>\n` +
+          `  <div style="font-size: 42px; font-weight: 600; color: #1a1a1a; line-height: 1;">{escape(str(value))}</div>\n` +
           `</div>\n` +
           `'''))`,
         usesMatplotlib: false,
@@ -145,19 +146,51 @@ export function buildJupyterNotebook(charts: PanelConfig[], title: string): stri
       '\n',
       'Dashboard exported from example-mcp-dashbuilder\n',
       '\n',
-      'Set `ES_NODE` and one of `ES_API_KEY` or `ES_USERNAME`/`ES_PASSWORD` in your environment before running.\n',
+      'Credentials are read from a `.env` file (see setup cell) or from your environment: `ES_NODE`, and `ES_API_KEY` or `ES_USERNAME`/`ES_PASSWORD`.\n',
     ],
     metadata: {},
   });
 
-  // Setup cell — read credentials from env at runtime so the notebook is safe to share
+  // Setup cell — load .env (stdlib only; no python-dotenv) then read credentials like the MCP server
   cells.push({
     cell_type: 'code',
     source: [
       'import os\n',
+      'import re\n',
+      'from pathlib import Path\n',
       'from elasticsearch import Elasticsearch\n',
       'import pandas as pd\n',
       'import matplotlib.pyplot as plt\n',
+      '\n',
+      '\n',
+      'def _load_dotenv(path: Path) -> None:\n',
+      '    """Parse KEY=VALUE lines (same idea as the MCP server); skip # comments and empty lines."""\n',
+      '    try:\n',
+      '        text = path.read_text(encoding="utf-8")\n',
+      '    except OSError:\n',
+      '        return\n',
+      '    for line in text.splitlines():\n',
+      '        line = line.strip()\n',
+      '        if not line or line.startswith("#"):\n',
+      '            continue\n',
+      '        m = re.match(r"^([A-Z_]+)=(.*)$", line)\n',
+      '        if not m:\n',
+      '            continue\n',
+      '        key, value = m.group(1), m.group(2)\n',
+      '        if key not in os.environ:\n',
+      '            os.environ[key] = value\n',
+      '\n',
+      '\n',
+      '# Find .env walking up from cwd (e.g. repo root when this file is under jupyter-exports/)\n',
+      '_p = Path.cwd()\n',
+      'for _ in range(8):\n',
+      '    _env = _p / ".env"\n',
+      '    if _env.is_file():\n',
+      '        _load_dotenv(_env)\n',
+      '        break\n',
+      '    if _p == _p.parent:\n',
+      '        break\n',
+      '    _p = _p.parent\n',
       '\n',
       'es_node = os.environ.get("ES_NODE", "http://localhost:9200")\n',
       'es_api_key = os.environ.get("ES_API_KEY")\n',
@@ -222,6 +255,12 @@ export function buildJupyterNotebook(charts: PanelConfig[], title: string): stri
         .split('\n')
         .map((line) => `    ${line}\n`);
 
+      const trendTitle = pyStr(`${chart.title} — Trend`);
+      const trendPlotLine =
+        chart.trendXField && chart.trendYField
+          ? `trend_df.plot(x=${pyStr(chart.trendXField)}, y=${pyStr(chart.trendYField)}, title=${trendTitle})\n`
+          : `trend_df.plot(title=${trendTitle})\n`;
+
       cells.push({
         cell_type: 'code',
         source: [
@@ -234,7 +273,7 @@ export function buildJupyterNotebook(charts: PanelConfig[], title: string): stri
           `)\n`,
           `\n`,
           `trend_df = pd.DataFrame(trend_result["values"], columns=[c["name"] for c in trend_result["columns"]])\n`,
-          `trend_df.plot(title=${pyStr(`${chart.title} — Trend`)})\n`,
+          trendPlotLine,
           `plt.tight_layout()\n`,
           `plt.show()\n`,
         ],
@@ -395,7 +434,7 @@ export function registerExportQueries(server: McpServer): void {
               `Jupyter notebook for "${dashboard.title}" (${dashboard.charts.length} charts).\n\n` +
               `**Saved to:** \`${relativePath}\`\n` +
               `**Open with:** \`jupyter notebook ${relativePath}\`\n` +
-              `**Requirements:** \`pip install elasticsearch pandas matplotlib\`\n\n` +
+              `**Requirements:** \`pip install elasticsearch jupyter pandas matplotlib\`\n\n` +
               `The raw notebook JSON is below — you can also paste it directly into Jupyter:`,
           },
           {
