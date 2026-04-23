@@ -149,6 +149,8 @@ describe('buildJupyterNotebook', () => {
       expect(setup).toContain('_load_dotenv');
       expect(setup).toContain('read_text');
       expect(setup).toContain('os.environ.get("ES_API_KEY")');
+      expect(setup).toContain('UNSAFE_SSL');
+      expect(setup).toContain('verify_certs');
       expect(setup).not.toContain('secret-key-should-not-leak');
     } finally {
       if (prevKey === undefined) delete process.env.ES_API_KEY;
