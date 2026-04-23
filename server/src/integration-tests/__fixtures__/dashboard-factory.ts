@@ -41,9 +41,3 @@ export const SAMPLE_HEATMAP_ARGS = {
   yField: 'customer_gender',
   valueField: 'count',
 };
-
-export const SAMPLE_SECTION_ARGS = {
-  title: 'Overview',
-};
-
-export const INVALID_ESQL_QUERY = 'FROM nonexistent_index_xyz | STATS count = COUNT(*)';

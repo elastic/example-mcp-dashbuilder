@@ -8,7 +8,7 @@ import { getESClient } from './es-client.js';
 import { columnarToRows, validateFields } from './esql-transform.js';
 import type { PanelConfig, ESQLResponse } from '../types.js';
 
-export interface ChartData {
+interface ChartData {
   data: Record<string, unknown>[];
   trendData?: Record<string, unknown>[];
 }

@@ -42,7 +42,7 @@ export interface DashboardApiSection {
   panels: DashboardApiPanel[];
 }
 
-export interface DashboardApiPayload {
+interface DashboardApiPayload {
   title: string;
   panels: (DashboardApiPanel | DashboardApiSection)[];
   time_range?: { from: string; to: string };

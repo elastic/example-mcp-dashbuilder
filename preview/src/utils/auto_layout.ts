@@ -9,8 +9,6 @@ import { GRID_SETTINGS } from '../constants';
 import type { PanelConfig, SectionConfig } from '../types';
 import { autoPlacePanels as autoPlacePanelsGeneric } from 'mcp-dashboards-shared';
 
-export { buildBalancedRowWidths } from 'mcp-dashboards-shared';
-
 /**
  * Auto-place panels and return a record keyed by panel id (legacy API shape).
  */

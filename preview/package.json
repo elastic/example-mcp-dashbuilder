@@ -12,7 +12,6 @@
     "mcp-dashboards-shared": "*",
     "@elastic/charts": "^71.4.1",
     "@modelcontextprotocol/ext-apps": "^1.3.1",
-    "@elastic/esql": "^1.6.0",
     "@elastic/eui": "^114.0.0",
     "@emotion/css": "^11.13.0",
     "@emotion/react": "^11.14.0",

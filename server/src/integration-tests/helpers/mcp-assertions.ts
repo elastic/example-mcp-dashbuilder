@@ -19,7 +19,7 @@ export function expectTextContent(result: CallToolResult): string {
 /**
  * Assert the tool call did not return an error.
  */
-export function expectNoError(result: CallToolResult): void {
+function expectNoError(result: CallToolResult): void {
   expect(result.isError, `Tool returned error: ${JSON.stringify(result.content)}`).toBeFalsy();
 }
 
@@ -34,7 +34,7 @@ export function expectSuccess(result: CallToolResult): string {
 /**
  * Assert a named tool exists in the tools list.
  */
-export function expectToolExists(tools: ListToolsResult, name: string): void {
+function expectToolExists(tools: ListToolsResult, name: string): void {
   const names = tools.tools.map((t) => t.name);
   expect(names, `Tool "${name}" should be registered`).toContain(name);
 }

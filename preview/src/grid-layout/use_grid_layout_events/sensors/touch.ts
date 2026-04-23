@@ -9,7 +9,7 @@
 
 import type { UserInteractionEvent } from '../types';
 
-export type UserTouchEvent = TouchEvent | React.TouchEvent<HTMLButtonElement>;
+type UserTouchEvent = TouchEvent | React.TouchEvent<HTMLButtonElement>;
 
 export const isTouchEvent = (e: Event | React.UIEvent<HTMLElement>): e is UserTouchEvent => {
   return 'touches' in e;

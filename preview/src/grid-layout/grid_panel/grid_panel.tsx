@@ -20,7 +20,7 @@ import { ResizeHandle } from './grid_panel_resize_handle';
 import { useGridPanelState } from './use_panel_grid_data';
 import { ResizeGauge } from './grid_panel_resize_gauge';
 
-export interface GridPanelProps {
+interface GridPanelProps {
   panelId: string;
 }
 

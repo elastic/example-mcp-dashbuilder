@@ -87,7 +87,7 @@ export interface KibanaCapabilities {
 
 const DASHBOARD_API_MIN_VERSION = [9, 4];
 
-export function parseVersion(version: string): [number, number] {
+function parseVersion(version: string): [number, number] {
   const parts = version.split('.');
   return [parseInt(parts[0], 10) || 0, parseInt(parts[1], 10) || 0];
 }

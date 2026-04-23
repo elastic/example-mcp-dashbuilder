@@ -34,7 +34,7 @@ import {
 import { getOrderedLayout } from './utils/conversions';
 import { isOrderedLayoutEqual } from './utils/equality_checks';
 
-export type GridLayoutProps = {
+type GridLayoutProps = {
   layout: GridLayoutData;
   gridSettings: GridSettings;
   onLayoutChange: (newLayout: GridLayoutData) => void;
