@@ -120,7 +120,8 @@ async function promptAuth(
     ? await askSensitive('Password', savedPassword)
     : (
         await prompts(
-          { type: 'password', name: 'pw', message: 'Password', initial: 'changeme' },
+          // just for the case where .env is not present yet, we'll show "changeme" as the default instead of masking it
+          { type: 'text', name: 'pw', message: 'Password', initial: 'changeme' },
           { onCancel }
         )
       ).pw || 'changeme';
