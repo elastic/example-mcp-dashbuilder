@@ -13,7 +13,7 @@ import { css } from '@emotion/react';
 
 import { useGridLayoutContext } from '../use_grid_layout_context';
 
-export interface GridSectionProps {
+interface GridSectionProps {
   sectionId: string;
 }
 

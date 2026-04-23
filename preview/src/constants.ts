@@ -6,8 +6,6 @@
 
 import type { GridSettings } from './grid-layout';
 
-export { DEFAULT_SIZES } from 'mcp-dashboards-shared';
-
 export const ALL_DATA_SENTINEL = '__all_data__';
 
 export interface DurationRange {

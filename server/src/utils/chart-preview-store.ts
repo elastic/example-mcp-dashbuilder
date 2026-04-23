@@ -6,7 +6,7 @@
 
 import type { PanelConfig } from '../types.js';
 
-export interface ChartPreviewData {
+interface ChartPreviewData {
   mode: 'chart-preview';
   chart: PanelConfig;
   data: Record<string, unknown>[];

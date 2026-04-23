@@ -32,7 +32,7 @@ const getColumnCountInPixels = ({
 }) =>
   columnCount * runtimeSettings.columnPixelWidth + (columnCount - 1) * runtimeSettings.gutterSize;
 
-export const getRowCountInPixels = ({
+const getRowCountInPixels = ({
   rowCount,
   runtimeSettings,
 }: {

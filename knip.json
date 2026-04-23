@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/bump-version.mjs"]
+    },
+    "shared": {},
+    "server": {
+      "ignoreDependencies": ["undici"]
+    },
+    "preview": {}
+  }
+}

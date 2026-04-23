@@ -23,7 +23,7 @@ import { GridSectionTitle } from './grid_section_title';
 import type { CollapsibleSection } from './types';
 import type { UserInteractionEvent } from '../use_grid_layout_events/types';
 
-export interface GridSectionHeaderProps {
+interface GridSectionHeaderProps {
   sectionId: string;
 }
 

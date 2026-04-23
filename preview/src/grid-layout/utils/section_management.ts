@@ -18,7 +18,7 @@ import { getSectionsInOrder, resolveGridSection } from './resolve_grid_section';
  * @param newSectionPanels The destination section for the panels
  * @returns Combined panel list
  */
-export const combinePanels = (
+const combinePanels = (
   startingSectionPanels: GridSectionData['panels'],
   newSectionPanels: GridSectionData['panels']
 ): GridSectionData['panels'] => {

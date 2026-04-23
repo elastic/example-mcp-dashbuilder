@@ -9,7 +9,7 @@ import { EuiProvider } from '@elastic/eui';
 import { ExportView } from './components/ExportView';
 import type { PanelConfig } from './types';
 
-export interface ExportBootstrap {
+interface ExportBootstrap {
   mode: 'chart-preview';
   chart: PanelConfig;
   data: Record<string, unknown>[];

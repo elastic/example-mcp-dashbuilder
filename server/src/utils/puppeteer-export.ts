@@ -15,7 +15,7 @@ const SET_CONTENT_TIMEOUT_MS = 120_000;
 const RENDER_TIMEOUT_MS = 30_000;
 const ANIMATION_SETTLE_MS = 800;
 
-export interface ExportData {
+interface ExportData {
   mode: 'chart-preview';
   chart: Record<string, unknown>;
   data: Record<string, unknown>[];
