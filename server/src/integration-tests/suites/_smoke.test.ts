@@ -9,6 +9,12 @@ import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import { TEST_INDEX } from '../setup/seed-data.js';
 import { MCPTestServer } from '../setup/test-server.js';
 
+function authHeader(): Record<string, string> {
+  return {
+    Authorization: `Basic ${Buffer.from(`${process.env.ES_USERNAME}:${process.env.ES_PASSWORD}`).toString('base64')}`,
+  };
+}
+
 describe('Smoke test: containers and seed data', () => {
   it('should have ES_NODE set by global setup', () => {
     expect(process.env.ES_NODE).toBeDefined();
@@ -21,13 +27,17 @@ describe('Smoke test: containers and seed data', () => {
   });
 
   it('should have seeded test data in Elasticsearch', async () => {
-    const res = await fetch(`${process.env.ES_NODE}/${TEST_INDEX}/_count`);
+    const res = await fetch(`${process.env.ES_NODE}/${TEST_INDEX}/_count`, {
+      headers: authHeader(),
+    });
     const body = await res.json();
     expect(body.count).toBe(20);
   });
 
   it('should have correct field mappings', async () => {
-    const res = await fetch(`${process.env.ES_NODE}/${TEST_INDEX}/_mapping`);
+    const res = await fetch(`${process.env.ES_NODE}/${TEST_INDEX}/_mapping`, {
+      headers: authHeader(),
+    });
     const body = await res.json();
     const props = body[TEST_INDEX].mappings.properties;
     expect(props.order_date.type).toBe('date');
@@ -37,7 +47,7 @@ describe('Smoke test: containers and seed data', () => {
   });
 
   it('Kibana should be reachable', async () => {
-    const res = await fetch(`${process.env.KIBANA_URL}/api/status`);
+    const res = await fetch(`${process.env.KIBANA_URL}/api/status`, { headers: authHeader() });
     expect(res.status).toBe(200);
   });
 });

@@ -56,9 +56,9 @@ export class MCPTestServer {
         KIBANA_URL: process.env.KIBANA_URL!,
         // Isolate dashboard storage to a temp dir (never touches user dashboards)
         DASHBOARDS_DIR: this.dashboardsDir,
-        // Credentials for Kibana (security is disabled in test containers, but tools require them)
-        ES_USERNAME: 'elastic',
-        ES_PASSWORD: 'changeme',
+        // Forward credentials set by global setup (security enabled in containers)
+        ES_USERNAME: process.env.ES_USERNAME!,
+        ES_PASSWORD: process.env.ES_PASSWORD!,
         // Prevent the server from reading a local .env that could override test URLs
         NODE_ENV: 'test',
       },

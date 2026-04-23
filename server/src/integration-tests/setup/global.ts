@@ -10,6 +10,8 @@ import type { StartedTestContainer, StartedNetwork } from 'testcontainers';
 
 import { seedTestData } from './seed-data.js';
 
+const ES_PASSWORD = 'changeme';
+
 // Disable Ryuk sidecar — our teardown() handles container cleanup.
 // This also avoids Docker Desktop "enhanced container isolation" blocks.
 process.env.TESTCONTAINERS_RYUK_DISABLED = 'true';
@@ -51,10 +53,10 @@ export async function setup(): Promise<void> {
   console.log(`🐳 Starting Elasticsearch: ${esImage}`);
 
   const esStarted = await new ElasticsearchContainer(esImage)
+    .withPassword(ES_PASSWORD)
     .withNetwork(net)
     .withNetworkAliases('elasticsearch')
     .withEnvironment({
-      'xpack.security.enabled': 'false',
       'xpack.license.self_generated.type': 'trial',
     })
     .withStartupTimeout(120_000)
@@ -64,10 +66,22 @@ export async function setup(): Promise<void> {
 
   const esUrl = `http://${esStarted.getHost()}:${esStarted.getMappedPort(9200)}`;
   process.env.ES_NODE = esUrl;
-  console.log(`✅ Elasticsearch ready at ${esUrl}`);
+  process.env.ES_USERNAME = 'elastic';
+  process.env.ES_PASSWORD = ES_PASSWORD;
+  console.log(`✅ Elasticsearch ready at ${esUrl} (security enabled)`);
+
+  // Set kibana_system password so Kibana can connect with security enabled
+  await fetch(`${esUrl}/_security/user/kibana_system/_password`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${Buffer.from(`elastic:${ES_PASSWORD}`).toString('base64')}`,
+    },
+    body: JSON.stringify({ password: ES_PASSWORD }),
+  });
 
   // Seed test data before starting Kibana so indices exist
-  await seedTestData(esUrl);
+  await seedTestData(esUrl, ES_PASSWORD);
 
   console.log(`🐳 Starting Kibana: ${kibanaImage}`);
 
@@ -75,12 +89,16 @@ export async function setup(): Promise<void> {
     .withNetwork(net)
     .withEnvironment({
       ELASTICSEARCH_HOSTS: 'http://elasticsearch:9200',
-      'xpack.security.enabled': 'false',
+      ELASTICSEARCH_USERNAME: 'kibana_system',
+      ELASTICSEARCH_PASSWORD: ES_PASSWORD,
       'server.host': '0.0.0.0',
     })
     .withExposedPorts(5601)
     .withWaitStrategy(
-      Wait.forHttp('/api/status', 5601).forStatusCode(200).withStartupTimeout(180_000)
+      Wait.forHttp('/api/status', 5601)
+        .forStatusCode(200)
+        .withBasicCredentials('elastic', ES_PASSWORD)
+        .withStartupTimeout(180_000)
     )
     .withStartupTimeout(180_000)
     .start();

@@ -89,7 +89,8 @@ function generateDocs(count: number): EcommerceDoc[] {
 
 export const TEST_INDEX = 'test_ecommerce';
 
-export async function seedTestData(esUrl: string): Promise<void> {
+export async function seedTestData(esUrl: string, password: string): Promise<void> {
+  const authHeader = `Basic ${Buffer.from(`elastic:${password}`).toString('base64')}`;
   console.log(`🌱 Seeding ${TEST_INDEX} index…`);
 
   // Create index with explicit mappings
@@ -123,7 +124,7 @@ export async function seedTestData(esUrl: string): Promise<void> {
 
   const createRes = await fetch(`${esUrl}/${TEST_INDEX}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: authHeader },
     body: JSON.stringify(mappings),
   });
 
@@ -143,7 +144,7 @@ export async function seedTestData(esUrl: string): Promise<void> {
 
   const bulkRes = await fetch(`${esUrl}/_bulk`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-ndjson' },
+    headers: { 'Content-Type': 'application/x-ndjson', Authorization: authHeader },
     body: bulkBody,
   });
 
@@ -152,7 +153,10 @@ export async function seedTestData(esUrl: string): Promise<void> {
   }
 
   // Refresh to make docs searchable
-  await fetch(`${esUrl}/${TEST_INDEX}/_refresh`, { method: 'POST' });
+  await fetch(`${esUrl}/${TEST_INDEX}/_refresh`, {
+    method: 'POST',
+    headers: { Authorization: authHeader },
+  });
 
   console.log(`✅ Seeded ${docs.length} documents into ${TEST_INDEX}`);
 }
