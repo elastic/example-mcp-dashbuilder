@@ -12,10 +12,12 @@ const mockInfo = vi.fn();
 const mockHasPrivileges = vi.fn();
 
 vi.mock('@elastic/elasticsearch', () => ({
-  Client: vi.fn().mockImplementation(() => ({
-    info: mockInfo,
-    security: { hasPrivileges: mockHasPrivileges },
-  })),
+  Client: vi.fn().mockImplementation(function () {
+    return {
+      info: mockInfo,
+      security: { hasPrivileges: mockHasPrivileges },
+    };
+  }),
 }));
 
 describe('testConnection', () => {
