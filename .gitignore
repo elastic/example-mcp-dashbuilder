@@ -7,3 +7,4 @@ preview/public/dashboard.json
 .claude/
 .env
 .DS_Store
+vendor/

@@ -4,175 +4,167 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import { readdirSync, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DOCS_DIR = resolve(__dirname, 'esql_docs');
+const require = createRequire(import.meta.url);
+const SKILL_DIR = resolve(
+  dirname(require.resolve('elastic-agent-skills/package.json')),
+  'skills/elasticsearch/elasticsearch-esql'
+);
+
+function readSkillFile(name: string): string {
+  return readFileSync(resolve(SKILL_DIR, name), 'utf-8').trim();
+}
 
 /**
- * Load all ES|QL doc files and organize them by category.
+ * Parse SKILL.md into sections keyed by ## heading name.
  */
-function loadEsqlDocs(): Map<string, string[]> {
-  const categories = new Map<string, string[]>();
+export function parseSkillSections(content: string): Map<string, string> {
+  const sections = new Map<string, string>();
+  const lines = content.split('\n');
+  let currentHeading = '';
+  let currentLines: string[] = [];
 
-  const order: Array<{ category: string; prefixes: string[] }> = [
-    {
-      category: 'Overview & Syntax',
-      prefixes: [
-        'esql-overview',
-        'esql-syntax',
-        'esql-operators',
-        'esql-binary operators',
-        'esql-logical operators',
-      ],
-    },
-    { category: 'Source Commands', prefixes: ['esql-from', 'esql-row', 'esql-show'] },
-    {
-      category: 'Processing Commands',
-      prefixes: [
-        'esql-where',
-        'esql-eval',
-        'esql-stats',
-        'esql-stats-by',
-        'esql-inlinestats-by',
-        'esql-sort',
-        'esql-limit',
-        'esql-keep',
-        'esql-drop',
-        'esql-rename',
-        'esql-dissect',
-        'esql-grok',
-        'esql-enrich',
-        'esql-fork',
-        'esql-mv_expand',
-      ],
-    },
-    {
-      category: 'Aggregation Functions',
-      prefixes: [
-        'esql-count',
-        'esql-sum',
-        'esql-avg',
-        'esql-min',
-        'esql-max',
-        'esql-median',
-        'esql-percentile',
-        'esql-count_distinct',
-        'esql-values',
-        'esql-top',
-        'esql-std_dev',
-        'esql-weighted_avg',
-      ],
-    },
-    {
-      category: 'Date & Time Functions',
-      prefixes: [
-        'esql-bucket',
-        'esql-date_format',
-        'esql-date_diff',
-        'esql-date_extract',
-        'esql-date_trunc',
-        'esql-now',
-      ],
-    },
-    {
-      category: 'String Functions',
-      prefixes: [
-        'esql-concat',
-        'esql-substring',
-        'esql-trim',
-        'esql-ltrim',
-        'esql-rtrim',
-        'esql-to_lower',
-        'esql-to_upper',
-        'esql-length',
-        'esql-split',
-        'esql-replace',
-        'esql-starts_with',
-        'esql-ends_with',
-      ],
-    },
-    {
-      category: 'Type Conversion',
-      prefixes: [
-        'esql-to_string',
-        'esql-to_integer',
-        'esql-to_long',
-        'esql-to_double',
-        'esql-to_datetime',
-        'esql-to_boolean',
-      ],
-    },
-    {
-      category: 'Conditional Functions',
-      prefixes: ['esql-case', 'esql-coalesce', 'esql-greatest', 'esql-least'],
-    },
-    {
-      category: 'Math Functions',
-      prefixes: [
-        'esql-round',
-        'esql-ceil',
-        'esql-floor',
-        'esql-abs',
-        'esql-pow',
-        'esql-sqrt',
-        'esql-log',
-        'esql-log10',
-        'esql-pi',
-      ],
-    },
-    {
-      category: 'Multi-Value Functions',
-      prefixes: [
-        'esql-mv_count',
-        'esql-mv_concat',
-        'esql-mv_contains',
-        'esql-mv_first',
-        'esql-mv_last',
-      ],
-    },
-    { category: 'Search Functions', prefixes: ['esql-kql', 'esql-match'] },
-    { category: 'Network Functions', prefixes: ['esql-cidr_match', 'esql-ip_prefix'] },
-  ];
-
-  const files = readdirSync(DOCS_DIR).filter((f) => f.endsWith('.txt'));
-  const fileMap = new Map(files.map((f) => [f.replace('.txt', ''), f]));
-
-  for (const { category, prefixes } of order) {
-    const docs: string[] = [];
-    for (const prefix of prefixes) {
-      const fileName = fileMap.get(prefix);
-      if (fileName) {
-        const content = readFileSync(resolve(DOCS_DIR, fileName), 'utf-8').trim();
-        docs.push(content);
+  for (const line of lines) {
+    const match = line.match(/^## (.+)/);
+    if (match) {
+      if (currentHeading) {
+        sections.set(currentHeading, currentLines.join('\n').trim());
       }
-    }
-    if (docs.length > 0) {
-      categories.set(category, docs);
+      currentHeading = match[1];
+      currentLines = [];
+    } else if (currentHeading) {
+      currentLines.push(line);
     }
   }
+  if (currentHeading) {
+    sections.set(currentHeading, currentLines.join('\n').trim());
+  }
 
-  return categories;
+  return sections;
+}
+
+/**
+ * Extract specific numbered guidelines from the Guidelines section.
+ * Parses markdown numbered list items (1. **Title**: ...) and returns
+ * only the requested ones by number.
+ */
+export function extractGuidelines(guidelinesContent: string, numbers: number[]): string {
+  const items: { num: number; text: string }[] = [];
+  let current: { num: number; lines: string[] } | null = null;
+
+  for (const line of guidelinesContent.split('\n')) {
+    const match = line.match(/^(\d+)\.\s/);
+    if (match) {
+      if (current) {
+        items.push({ num: current.num, text: current.lines.join('\n').trim() });
+      }
+      current = { num: parseInt(match[1], 10), lines: [line] };
+    } else if (current) {
+      current.lines.push(line);
+    }
+  }
+  if (current) {
+    items.push({ num: current.num, text: current.lines.join('\n').trim() });
+  }
+
+  return items
+    .filter((item) => numbers.includes(item.num))
+    .map((item) => item.text)
+    .join('\n\n');
+}
+
+/**
+ * Strip CLI-specific content from extracted skill sections:
+ * - bash code blocks
+ * - lines referencing `node scripts/esql.js` or `curl`
+ * - the ### Environment Configuration subsection
+ * - markdown link references to environment-setup.md
+ */
+export function stripCliInstructions(content: string): string {
+  const lines = content.split('\n');
+  const result: string[] = [];
+  let inBashBlock = false;
+  let inEnvSection = false;
+
+  for (const line of lines) {
+    // Skip bash code blocks
+    if (line.trim().startsWith('```bash')) {
+      inBashBlock = true;
+      continue;
+    }
+    if (inBashBlock) {
+      if (line.trim() === '```') {
+        inBashBlock = false;
+      }
+      continue;
+    }
+
+    // Skip ### Environment Configuration subsection
+    if (line.match(/^### Environment Configuration/)) {
+      inEnvSection = true;
+      continue;
+    }
+    if (inEnvSection) {
+      if (line.match(/^###? /) && !line.match(/^### Environment/)) {
+        inEnvSection = false;
+      } else {
+        continue;
+      }
+    }
+
+    // Skip lines with CLI tool references
+    if (line.match(/node scripts\/esql\.js/) || line.match(/^Run `node scripts/)) {
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  // Clean up multiple consecutive blank lines
+  return result.join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
 /**
  * Build the full ES|QL reference as a single markdown string.
+ * Sources the core reference from the @elastic/agent-skills ES|QL skill,
+ * then appends MCP-specific visualization patterns.
  */
 export function buildEsqlReference(): string {
-  const categories = loadEsqlDocs();
-  const parts: string[] = ['# ES|QL Reference for Dashboard Visualizations\n'];
+  const skillContent = readSkillFile('SKILL.md');
+  const sections = parseSkillSections(skillContent);
 
-  for (const [category, docs] of categories) {
-    parts.push(`\n## ${category}\n`);
-    for (const doc of docs) {
-      parts.push(doc);
-      parts.push('');
-    }
-  }
+  // Extract relevant sections from SKILL.md
+  const whatIsEsql = sections.get('What is ES|QL?') ?? '';
+  const guidelines = sections.get('Guidelines') ?? '';
+  const errorHandling = sections.get('Error Handling') ?? '';
 
-  parts.push(`
+  // Guidelines 2 (prefer simplicity paragraph), 3 (choose right feature), 5 (query generation principles)
+  const selectedGuidelines = stripCliInstructions(extractGuidelines(guidelines, [2, 3, 5]));
+
+  const parts: string[] = [
+    '# ES|QL Reference for Dashboard Visualizations\n',
+    '## About ES|QL\n',
+    stripCliInstructions(whatIsEsql),
+    '\n## Query Generation Guidelines\n',
+    selectedGuidelines,
+    '\n## Error Handling\n',
+    stripCliInstructions(errorHandling),
+    '\n---\n',
+    readSkillFile('references/esql-reference.md'),
+    '\n---\n',
+    readSkillFile('references/generation-tips.md'),
+    '\n---\n',
+    readSkillFile('references/query-patterns.md'),
+    '\n---\n',
+    readSkillFile('references/time-series-queries.md'),
+    '\n---\n',
+    readSkillFile('references/esql-search.md'),
+    `
+---
+
 ## Common Patterns for Visualizations
 
 ### Bar chart — top N categories
@@ -219,7 +211,8 @@ FROM index
 | SORT count DESC
 | LIMIT 6
 \`\`\`
-`);
+`,
+  ];
 
   return parts.join('\n');
 }
