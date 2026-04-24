@@ -38,6 +38,8 @@ One-click export to Kibana as Lens visualizations
 
 ## Architecture
 
+For a structured walkthrough with Mermaid diagrams (system context, data flows, monorepo build order), see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ```
 ┌─────────────────────────────────────────────────┐
 │  MCP Host (Cursor, Claude Desktop, etc.)        │
