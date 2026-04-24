@@ -8,8 +8,14 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    name: 'mcp-integration',
     globals: true,
     environment: 'node',
-    exclude: ['dist/**', 'node_modules/**', 'src/integration-tests/**'],
+    include: ['src/integration-tests/suites/**/*.test.ts'],
+    globalSetup: ['src/integration-tests/setup/global.ts'],
+    testTimeout: 30_000,
+    hookTimeout: 120_000, // ES + Kibana container startup
+    sequence: { concurrent: false },
+    reporters: ['verbose'],
   },
 });
