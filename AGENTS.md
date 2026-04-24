@@ -62,6 +62,18 @@ Build order matters: `shared` → `setup` → `server` → `preview`. `npm run b
 
 Direct factual statements. No filler words (just/simply/basically/very/really). Present tense verbs. Active voice. Under 20 words per sentence. If removing a word preserves meaning, remove it.
 
+## manifest.json
+
+The root `manifest.json` describes the MCP App for registries and installers. Keep it in sync with the server.
+
+- The `tools` array must list every tool registered via `registerTool()` and `registerAppOnlyTool()`/`registerAppTool()` in `server/src/tools/`.
+- Exclude internal tools prefixed with `app_only_` — those are implementation details for the preview UI.
+- When adding, removing, or renaming a tool, update `manifest.json` in the same commit.
+- Tool descriptions in the manifest should be concise (one sentence). They do not need to match the server description verbatim.
+- `tools_generated: true` signals that the server may register tools dynamically. The manifest list is still the canonical reference for documentation and registry display.
+
+To audit: compare `manifest.json` tool names against `grep -rh "registerTool\|registerAppOnlyTool\|registerAppTool" server/src/tools/*.ts`.
+
 ## Git rules
 
 - Conventional commit prefixes (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`)

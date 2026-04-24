@@ -31,16 +31,67 @@
     }
   },
   "tools": [
-    { "name": "create_dashboard", "description": "Create a new dashboard" },
-    { "name": "create_chart", "description": "Create bar, line, area, or pie charts" },
-    { "name": "create_metric", "description": "Create metric/KPI panels with sparklines" },
-    { "name": "create_heatmap", "description": "Create heatmap visualizations" },
-    { "name": "run_esql", "description": "Execute ES|QL queries" },
-    { "name": "list_indices", "description": "Discover available indices" },
+    {
+      "name": "create_dashboard",
+      "description": "Create a new empty dashboard and make it the active one"
+    },
+    {
+      "name": "create_chart",
+      "description": "Create a chart visualization (bar, line, area, pie) and add it to the dashboard"
+    },
+    {
+      "name": "create_metric",
+      "description": "Create a metric visualization with an optional sparkline trend"
+    },
+    {
+      "name": "create_heatmap",
+      "description": "Create a heatmap visualization and add it to the dashboard"
+    },
+    {
+      "name": "create_section",
+      "description": "Create a collapsible section (row group) on the dashboard"
+    },
+    {
+      "name": "run_esql",
+      "description": "Execute an ES|QL query against Elasticsearch and return the results"
+    },
+    {
+      "name": "list_indices",
+      "description": "List available Elasticsearch indices matching a pattern"
+    },
     { "name": "get_fields", "description": "Get field mappings for an index" },
-    { "name": "view_dashboard", "description": "Display the live dashboard preview inline" },
-    { "name": "export_to_kibana", "description": "Export to Kibana as Lens visualizations" },
-    { "name": "import_from_kibana", "description": "Import an existing Kibana dashboard" }
+    {
+      "name": "view_dashboard",
+      "description": "Display the live dashboard preview inline in the chat"
+    },
+    {
+      "name": "export_to_kibana",
+      "description": "Export the dashboard to Kibana as Lens visualizations"
+    },
+    {
+      "name": "import_from_kibana",
+      "description": "Import an existing Kibana dashboard into the MCP app"
+    },
+    {
+      "name": "list_dashboards",
+      "description": "List all saved dashboards with their titles, IDs, and which one is active"
+    },
+    { "name": "switch_dashboard", "description": "Switch to a different dashboard by its ID" },
+    { "name": "delete_dashboard", "description": "Delete a saved dashboard by its ID" },
+    { "name": "set_dashboard_title", "description": "Set or update the dashboard title" },
+    {
+      "name": "get_dashboard",
+      "description": "Get the dashboard configuration including all charts"
+    },
+    {
+      "name": "clear_dashboard",
+      "description": "Remove all charts and reset the dashboard to a blank state"
+    },
+    { "name": "move_panel_to_section", "description": "Move a panel into a collapsible section" },
+    { "name": "remove_section", "description": "Remove a section from the dashboard" },
+    { "name": "remove_chart", "description": "Remove a chart from the dashboard by its ID" },
+    { "name": "export_queries", "description": "Export the dashboard in a shareable format" },
+    { "name": "export_chart_image", "description": "Export a chart as a PNG image" }
   ],
   "tools_generated": true,
   "user_config": {
