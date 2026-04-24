@@ -7,7 +7,6 @@
 
 import chalk from 'chalk';
 import ora from 'ora';
-import prompts from 'prompts';
 
 import { loadExistingEnv } from './config.js';
 import { testConnection } from './connection.js';
@@ -18,7 +17,7 @@ import {
   displaySummary,
 } from './display.js';
 import { writeEnvFile } from './env.js';
-import { promptForOptions } from './prompts.js';
+import { promptForOptions, promptSaveAnyway } from './prompts.js';
 
 async function main(): Promise<void> {
   displayBanner();
@@ -37,14 +36,7 @@ async function main(): Promise<void> {
     spinner.fail('Connection failed');
     displayConnectionError(message);
 
-    const { proceed } = await prompts({
-      type: 'confirm',
-      name: 'proceed',
-      message: 'Save configuration anyway?',
-      initial: false,
-    });
-
-    if (!proceed) {
+    if (!(await promptSaveAnyway())) {
       process.exit(1);
     }
   }

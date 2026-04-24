@@ -160,6 +160,20 @@ async function promptUnsafeSsl(existing: Record<string, string>): Promise<boolea
   return unsafeSsl;
 }
 
+/** Prompt whether to save config despite connection failure. */
+export async function promptSaveAnyway(): Promise<boolean> {
+  const { proceed } = await prompts(
+    {
+      type: 'confirm',
+      name: 'proceed',
+      message: 'Save configuration anyway?',
+      initial: false,
+    },
+    { onCancel }
+  );
+  return !!proceed;
+}
+
 /**
  * Run all setup prompts and return the full configuration.
  */
