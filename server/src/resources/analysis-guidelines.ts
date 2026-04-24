@@ -7,9 +7,9 @@
 export const ANALYSIS_GUIDELINES = `
 # Deep Data Analysis
 
-## When to Use This Skill
+## When to Use This Guide
 
-This skill drives a structured exploration flow when the user asks for *insight* rather than a specific chart.
+This guide drives a structured exploration flow when the user asks for *insight* rather than a specific chart.
 
 Trigger on prompts like:
 - "analyze my <index> data"
@@ -107,7 +107,7 @@ Invoke ONLY when the user asks explicitly. Do not run these during the default f
 - Compare the resulting buckets: absolute values, differences, what grew or shrank.
 - Calculate percentage changes yourself in the reply.
 
-## What This Skill Is Not
+## What This Guide Is Not
 
 - Not a replacement for the normal chart-building workflow. If the user knows the chart they want, use the standard tools directly.
 - Not a substitute for the user's judgment. Surface findings; don't prescribe decisions.

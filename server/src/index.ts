@@ -92,13 +92,13 @@ server.resource(
   })
 );
 
-// Register deep-analysis skill as a resource
+// Register deep-analysis guide as a resource
 server.resource(
   'analysis-guidelines',
   'analysis://guidelines',
   {
     description:
-      'Deep-analysis skill — structured exploration flow for open-ended questions like ' +
+      'Deep-analysis guidelines — structured exploration flow for open-ended questions like ' +
       '"analyze my data" or "what\'s interesting in <index>". Defines trigger phrases, ' +
       'the four-section response structure, drill-down suggestions, and on-demand ' +
       'capabilities (field stats, correlations, time-over-time). Read this when the user ' +
