@@ -2,7 +2,7 @@
 
 ## Project overview
 
-MCP app that lets AI assistants build Kibana dashboards using ES|QL and Elastic Charts. Monorepo with three workspaces: `shared`, `server`, `preview`.
+MCP app that lets AI assistants build Kibana dashboards using ES|QL and Elastic Charts. Monorepo with four workspaces: `shared`, `setup`, `server`, `preview`.
 
 ## Setup
 
@@ -33,10 +33,11 @@ Do not use `npx vitest` directly — workspace configs set required environments
 | Workspace | Purpose                            |
 | --------- | ---------------------------------- |
 | `shared`  | Shared types and utilities         |
+| `setup`   | Interactive setup wizard (CLI)     |
 | `server`  | MCP server, tools, translators     |
 | `preview` | React preview app (Elastic Charts) |
 
-Build order matters: `shared` → `server` → `preview`. `npm run build` handles this.
+Build order matters: `shared` → `setup` → `server` → `preview`. `npm run build` handles this.
 
 ## Code style
 
