@@ -23,8 +23,10 @@ export function loadExistingEnv(): Record<string, string> {
   if (existsSync(ENV_PATH)) {
     const content = readFileSync(ENV_PATH, 'utf-8');
     for (const line of content.split('\n')) {
-      const match = line.match(/^([A-Z_]+)=(.*)$/);
-      if (match) existing[match[1]] = match[2];
+      // Match env keys with letters, digits, and underscores (e.g., ES_V2_NODE),
+      // then strip surrounding quotes from values to avoid double-quoting on write-back.
+      const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+      if (match) existing[match[1]] = match[2].replace(/^(["'])(.*?)\1$/, '$2');
     }
   }
   return existing;
