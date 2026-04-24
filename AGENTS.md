@@ -18,9 +18,13 @@ npm run build        # build all workspaces (shared → server → preview)
 npm run test         # run all tests (shared, server, preview)
 npm run lint         # eslint across all workspaces
 npm run build        # build all workspaces in dependency order
+npm run typecheck    # TypeScript check across all workspaces
+npm run format       # format all files with Prettier
+npm run format:check # check formatting without writing
+npm run check        # run format:check + lint + typecheck
 ```
 
-Run `npm run test` and `npm run lint` before committing. Both must pass.
+A pre-commit hook runs `lint-staged` (format + lint on staged files) and `typecheck` automatically. CI runs `format:check + lint + typecheck + build + tests`.
 
 Do not use `npx vitest` directly — workspace configs set required environments (e.g. `jsdom` for preview).
 
