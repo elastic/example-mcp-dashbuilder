@@ -37,6 +37,8 @@ set \`timeField: "order_date"\`). For \`@timestamp\` you can omit it (auto-detec
 but for any other date field, always set it explicitly.
 - Metric panels benefit from a subtitle for context (e.g. "Last 7 days", "All documents").
 - When importing from Kibana, panels using index-pattern queries (not ES|QL) will be skipped.
+- When the user asks for open-ended analysis ("analyze my X", "find patterns in Y", "what's interesting"), read \`analysis://guidelines\` and follow the deep-analysis flow.
+- After building a chart for an open-ended question ("show me my orders data", "how are my logs doing"), you may offer to run a deeper analysis: *"Want me to dig into this further? I can surface patterns and suggest drill-downs."* If the user accepts, follow \`analysis://guidelines\`. Skip this offer when the user asked for a specific chart ("bar chart of revenue by month").
 
 ## Capabilities
 

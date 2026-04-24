@@ -19,6 +19,7 @@ One-click export to Kibana as Lens visualizations
 ## Features
 
 - **Natural language dashboard creation** — describe what you want, the AI builds it
+- **Deep data analysis** — open-ended exploration flow that runs aggregations, surfaces patterns, builds charts for key findings, and suggests drill-down queries (triggered by prompts like "analyze my X")
 - **ES|QL powered** — all queries use ES|QL for data retrieval
 - **Inline dashboard preview** — full interactive dashboard rendered directly in the chat via MCP Apps
 - **Kibana grid layout** — same 48-column drag-and-drop grid as Kibana dashboards
@@ -194,6 +195,12 @@ Open the `example-mcp-dashbuilder` folder in your MCP client. The MCP server wil
 
 > "Explore the kibana_sample_data_logs index and build me the most insightful dashboard you can"
 
+**Analysis:**
+
+> "Analyze my logs data"
+
+> "What's interesting in the ecommerce orders index?"
+
 **Export / Import:**
 
 > "Export the current dashboard to Kibana"
@@ -231,10 +238,11 @@ Open the `example-mcp-dashbuilder` folder in your MCP client. The MCP server wil
 
 ### Available MCP resources
 
-| Resource               | Description                                                  |
-| ---------------------- | ------------------------------------------------------------ |
-| `dataviz://guidelines` | Chart selection, dashboard composition, and anti-patterns    |
-| `esql://reference`     | ES\|QL commands, functions, and visualization query patterns |
+| Resource                | Description                                                                                   |
+| ----------------------- | --------------------------------------------------------------------------------------------- |
+| `dataviz://guidelines`  | Chart selection, dashboard composition, and anti-patterns                                     |
+| `esql://reference`      | ES\|QL commands, functions, and visualization query patterns                                  |
+| `analysis://guidelines` | Structured flow for open-ended analysis — trigger phrases, four-section response, drill-downs |
 
 ## Supported chart types
 
