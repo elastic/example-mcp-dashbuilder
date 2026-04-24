@@ -8,20 +8,28 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:watch": "vitest --config vitest.integration.config.ts",
+    "test:integration:9.3": "STACK_VERSION=9.3.0 vitest run --config vitest.integration.config.ts",
+    "test:integration:9.4": "STACK_VERSION=9.4.0-SNAPSHOT vitest run --config vitest.integration.config.ts",
+    "test:integration:all": "npm run test:integration:9.3 && npm run test:integration:9.4"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^9.0.0",
     "@elastic/esql": "^1.7.0",
     "@modelcontextprotocol/ext-apps": "^1.5.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "mcp-dashboards-shared": "*",
     "zod": "^3.24.0"
   },
   "optionalDependencies": {
     "puppeteer": "^24.0.0"
   },
   "devDependencies": {
+    "@testcontainers/elasticsearch": "^11.14.0",
     "@types/node": "^22.0.0",
+    "testcontainers": "^11.14.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^4.1.2"

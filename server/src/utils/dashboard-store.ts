@@ -17,7 +17,8 @@ import { resolve, basename } from 'path';
 import type { DashboardConfig, PanelConfig, SectionConfig } from '../types.js';
 import { PROJECT_ROOT } from './config.js';
 
-const DASHBOARDS_DIR = resolve(PROJECT_ROOT, 'preview', 'public', 'dashboards');
+const DASHBOARDS_DIR =
+  process.env.DASHBOARDS_DIR || resolve(PROJECT_ROOT, 'preview', 'public', 'dashboards');
 // Track which dashboard is active
 const ACTIVE_ID_PATH = resolve(DASHBOARDS_DIR, '.active');
 
@@ -230,6 +231,16 @@ export function saveDashboardLayout(
 ): DashboardConfig {
   const dashboard = readDashboard(dashboardId);
   dashboard.gridLayout = gridLayout;
+  writeDashboard(dashboard, dashboardId);
+  return dashboard;
+}
+
+export function saveDashboardTimeRange(
+  timeRange: DashboardConfig['timeRange'],
+  dashboardId?: string
+): DashboardConfig {
+  const dashboard = readDashboard(dashboardId);
+  dashboard.timeRange = timeRange;
   writeDashboard(dashboard, dashboardId);
   return dashboard;
 }

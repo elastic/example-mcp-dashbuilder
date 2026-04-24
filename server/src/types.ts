@@ -92,5 +92,7 @@ export interface DashboardConfig {
   sections: SectionConfig[];
   /** Grid layout positions set by user drag/resize in the preview app */
   gridLayout?: Record<string, GridWidget>;
+  /** Optional time range for the dashboard (e.g. { from: 'now-15m', to: 'now' }) */
+  timeRange?: { from: string; to: string };
   updatedAt: string;
 }

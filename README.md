@@ -297,7 +297,8 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 │       │   ├── view-dashboard.ts  # MCP Apps inline preview + resources
 │       │   └── app-only-tools.ts  # App-only tools (visibility: ["app"])
 │       ├── utils/             # ES client, dashboard store, translators
-│       └── resources/         # Instructions, dataviz guidelines, ES|QL ref
+│       ├── resources/         # Instructions, dataviz guidelines, ES|QL ref
+│       └── integration-tests/ # MCP integration tests (testcontainers)
 ├── preview/                   # MCP App (React, built to single HTML file)
 │   ├── vite.mcp-app.config.ts # Single-file build config
 │   └── src/
@@ -335,6 +336,13 @@ npm run format                        # Format all files with Prettier
 npm run format:check                  # Check formatting without writing
 npm run check                         # Run all checks (format + lint + typecheck)
 npm run build --workspace=preview     # Build single-file MCP App
+
+# Integration tests (require Docker)
+cd server
+npm run test:integration              # Run against default stack version
+npm run test:integration:9.3          # Run against ES/Kibana 9.3.0
+npm run test:integration:9.4          # Run against ES/Kibana 9.4.0-SNAPSHOT
+npm run test:integration:all          # Run against both versions sequentially
 ```
 
 ### Testing
@@ -342,14 +350,30 @@ npm run build --workspace=preview     # Build single-file MCP App
 Tests use [Vitest](https://vitest.dev/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/).
 
 ```bash
-npm test                              # Run all tests
-npm run test --workspace=server       # Server tests only
-npm run test --workspace=preview      # Preview tests only
+npm test                              # Run all unit tests
+npm run test --workspace=server       # Server unit tests only
+npm run test --workspace=preview      # Preview unit tests only
 ```
 
-**Server tests** cover pure utility functions (ES|QL transforms, index pattern parsing, time field detection, slugify), the Lens forward/reverse translators, round-trip export-then-import fidelity, and dashboard translation.
+**Server unit tests** cover pure utility functions (ES|QL transforms, index pattern parsing, time field detection, slugify), the Lens forward/reverse translators, round-trip export-then-import fidelity, and dashboard translation.
 
 **Preview tests** cover chart component rendering (correct chart type for each config), the `useEsqlQuery` hook (fetch, loading, error, abort, time range), and empty data states.
+
+#### Integration tests
+
+Integration tests exercise the full MCP client → server → Elasticsearch/Kibana roundtrip using [testcontainers](https://testcontainers.com/). They spin up real ES + Kibana containers with security enabled, seed test data, and interact with the server via `StdioClientTransport`.
+
+```bash
+cd server
+npm run test:integration              # Default stack version
+npm run test:integration:9.3          # ES/Kibana 9.3.0 (saved objects API)
+npm run test:integration:9.4          # ES/Kibana 9.4.0-SNAPSHOT (Dashboard API)
+npm run test:integration:all          # Both versions sequentially
+```
+
+**Requirements:** Docker must be running. First run pulls the ES/Kibana images (~1GB each).
+
+The same test suite runs against both **9.3** (saved objects API path) and **9.4** (new Dashboard API path) to verify both code paths in `export_to_kibana` and `import_from_kibana`. The stack version is configurable via the `STACK_VERSION` env var (or `ES_IMAGE`/`KIBANA_IMAGE` for full control).
 
 ### Releasing
 
@@ -377,7 +401,8 @@ npx semantic-release --dry-run --no-ci
 - `no-explicit-any` enforced via ESLint
 - Prettier formatting enforced
 - Pre-commit hook runs lint-staged (format + lint on staged files)
-- CI pipeline on GitHub Actions (format check + lint + typecheck + build)
+- CI pipeline on GitHub Actions (format check + lint + typecheck + build + tests)
+- Integration tests run against ES/Kibana 9.3 and 9.4 in parallel on CI
 - Emotion theme types properly declared for EUI integration
 
 ## Credits

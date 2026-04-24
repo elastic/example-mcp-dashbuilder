@@ -106,6 +106,16 @@ function reversePie(
   const primaryGroups = (layer.primaryGroups as string[]) || [];
   const metrics = (layer.metrics as string[]) || [];
 
+  // Extract custom palette from visualization-level palette (legacy positional palette)
+  let palette: string[] | undefined;
+  const vizPalette = visualization.palette as
+    | { name?: string; params?: { colors?: string[] } }
+    | undefined;
+  // Also check top-level state for the palette (Lens stores it outside the layer for legacy palettes)
+  if (vizPalette?.name === 'custom' && vizPalette.params?.colors) {
+    palette = vizPalette.params.colors;
+  }
+
   return {
     id: panelId,
     title,
@@ -113,6 +123,7 @@ function reversePie(
     esqlQuery,
     xField: resolve(columnMap, primaryGroups[0]),
     yFields: metrics.map((m) => resolve(columnMap, m)),
+    ...(palette ? { palette } : {}),
   };
 }
 
@@ -203,16 +214,40 @@ export function translateLensToPanel(
   const { columnMap, layers } = buildColumnMap(datasourceStates);
   const visualization = (state.visualization as Record<string, unknown>) || {};
 
+  // Extract timeField from the first datasource layer or adHocDataViews
+  const firstLayer = Object.values(layers)[0];
+  let timeField: string | undefined = firstLayer?.timeField;
+  if (!timeField) {
+    const adHocDataViews = embeddableAttributes.adHocDataViews as
+      | Record<string, { timeFieldName?: string }>
+      | undefined;
+    if (adHocDataViews) {
+      const firstView = Object.values(adHocDataViews)[0];
+      timeField = firstView?.timeFieldName;
+    }
+  }
+
+  let config: PanelConfig;
   switch (visType) {
     case 'lnsXY':
-      return { config: reverseXY(visualization, columnMap, esqlQuery, panelId, title) };
+      config = reverseXY(visualization, columnMap, esqlQuery, panelId, title);
+      break;
     case 'lnsPie':
-      return { config: reversePie(visualization, columnMap, esqlQuery, panelId, title) };
+      config = reversePie(visualization, columnMap, esqlQuery, panelId, title);
+      break;
     case 'lnsMetric':
-      return { config: reverseMetric(visualization, columnMap, layers, esqlQuery, panelId, title) };
+      config = reverseMetric(visualization, columnMap, layers, esqlQuery, panelId, title);
+      break;
     case 'lnsHeatmap':
-      return { config: reverseHeatmap(visualization, columnMap, esqlQuery, panelId, title) };
+      config = reverseHeatmap(visualization, columnMap, esqlQuery, panelId, title);
+      break;
     default:
       return { skip: `unsupported visualization type: ${visType}` };
   }
+
+  if (timeField) {
+    config.timeField = timeField;
+  }
+
+  return { config };
 }
