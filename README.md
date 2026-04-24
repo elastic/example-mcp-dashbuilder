@@ -41,13 +41,13 @@ One-click export to Kibana as Lens visualizations
 ```
 ┌─────────────────────────────────────────────────┐
 │  MCP Host (Cursor, Claude Desktop, etc.)        │
-│  ↕ MCP Protocol (stdio)                        │
+│  ↕ MCP Protocol (stdio)                         │
 ├─────────────────────────────────────────────────┤
 │  MCP Server (TypeScript)                        │
 │  ├── Tools: query, chart, metric, heatmap, ...  │
 │  ├── App-only tools: data fetch, layout, etc.   │
 │  ├── Resources: dataviz guidelines, ES|QL ref   │
-│  ├── Instructions: workflow, tips, capabilities  │
+│  ├── Instructions: workflow, tips, capabilities │
 │  └── Export: Kibana saved objects API           │
 ├─────────────────────────────────────────────────┤
 │  MCP App (single-file HTML, in host iframe)     │
@@ -307,6 +307,15 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 │       ├── grid-layout/       # kbn-grid-layout (from Kibana)
 │       ├── hooks/             # ES|QL query hook
 │       └── theme.ts           # Borealis palette
+├── setup/                     # Setup wizard (interactive CLI)
+│   └── src/
+│       ├── cli.ts             # CLI entry point
+│       ├── prompts.ts         # Interactive prompts (local/cloud)
+│       ├── config.ts          # Config resolution
+│       ├── connection.ts      # ES connection testing
+│       ├── display.ts         # Display helpers
+│       ├── env.ts             # .env file read/write
+│       └── types.ts           # Shared types
 ├── .cursor/mcp.json           # Cursor MCP configuration
 ├── .cursorrules               # Cursor-specific AI instructions
 ├── .github/workflows/         # CI, Release (semantic-release), PR-title check
@@ -353,7 +362,10 @@ Tests use [Vitest](https://vitest.dev/) and [React Testing Library](https://test
 npm test                              # Run all unit tests
 npm run test --workspace=server       # Server unit tests only
 npm run test --workspace=preview      # Preview unit tests only
+npm run test --workspace=setup        # Setup unit tests only
 ```
+
+**Setup tests** cover `.env` parsing and writing (quote stripping, file permissions), config resolution, connection testing, and display helpers.
 
 **Server unit tests** cover pure utility functions (ES|QL transforms, index pattern parsing, time field detection, slugify), the Lens forward/reverse translators, round-trip export-then-import fidelity, and dashboard translation.
 
