@@ -47,6 +47,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error(chalk.red('Setup failed:'), err.message);
+  console.error(chalk.red('Setup failed:'), err instanceof Error ? err.message : String(err));
   process.exit(1);
 });
