@@ -25,6 +25,7 @@ export function writeEnvFile(config: SetupConfig): string {
   if (config.unsafeSsl) lines.push('UNSAFE_SSL=true');
   lines.push('');
 
-  writeFileSync(ENV_PATH, lines.join('\n'));
+  // Restrict file permissions to owner-only (read/write) since .env contains secrets
+  writeFileSync(ENV_PATH, lines.join('\n'), { mode: 0o600 });
   return ENV_PATH;
 }
