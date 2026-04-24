@@ -33,6 +33,7 @@ export class MCPHttpTestServer {
   private timeout: number;
   private dashboardsDir: string;
   private previousDashboardsDir: string | undefined;
+  private baseUrl: string | null = null;
 
   constructor(opts: { timeout?: number } = {}) {
     this.timeout = opts.timeout ?? 30_000;
@@ -55,7 +56,8 @@ export class MCPHttpTestServer {
 
     const address = this.httpServer.address();
     const port = typeof address === 'object' && address !== null ? address.port : 0;
-    const url = new URL(`http://localhost:${port}/mcp`);
+    this.baseUrl = `http://localhost:${port}`;
+    const url = new URL(`${this.baseUrl}/mcp`);
 
     const transport = new StreamableHTTPClientTransport(url);
     this.client = new Client({
@@ -121,6 +123,13 @@ export class MCPHttpTestServer {
 
   async readResource(uri: string): Promise<ReadResourceResult> {
     return this.getClient().readResource({ uri });
+  }
+
+  getBaseUrl(): string {
+    if (!this.baseUrl) {
+      throw new Error('Test server not started. Call start() first.');
+    }
+    return this.baseUrl;
   }
 
   // ── Internal ──────────────────────────────────────────────────
