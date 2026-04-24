@@ -6,7 +6,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import type { Server } from 'http';
-import { createApp } from './app.js';
+import { createApp } from '../../app.js';
 
 describe('HTTP transport', () => {
   let httpServer: Server | undefined;

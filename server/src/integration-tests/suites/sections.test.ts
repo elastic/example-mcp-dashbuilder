@@ -8,13 +8,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { SAMPLE_BAR_CHART_ARGS } from '../__fixtures__/dashboard-factory.js';
 import { expectSuccess } from '../helpers/mcp-assertions.js';
-import { MCPTestServer } from '../setup/test-server.js';
+import { createTestServer } from '../setup/create-test-server.js';
 
 describe('Section tools', () => {
-  let server: MCPTestServer;
+  let server: ReturnType<typeof createTestServer>;
 
   beforeEach(async () => {
-    server = new MCPTestServer();
+    server = createTestServer();
     await server.start();
     await server.callTool('create_dashboard', { title: 'Section Test' });
   });

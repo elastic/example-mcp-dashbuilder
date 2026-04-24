@@ -5,19 +5,19 @@
  */
 
 /**
- * MCP Test Server Harness
+ * MCP HTTP Test Server Harness
  *
- * Spawns the MCP server as a child process via StdioClientTransport,
+ * Starts the MCP server in-process via StreamableHTTP transport,
  * providing an isolated in-memory dashboard store per instance.
  */
 
 import { mkdtempSync } from 'fs';
-import { resolve, dirname } from 'path';
+import { resolve } from 'path';
 import { tmpdir } from 'os';
-import { fileURLToPath } from 'url';
+import type { Server } from 'http';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type {
   CallToolResult,
   ListToolsResult,
@@ -25,18 +25,17 @@ import type {
   ReadResourceResult,
 } from '@modelcontextprotocol/sdk/types.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SERVER_CWD = resolve(__dirname, '..', '..', '..');
+import { createApp } from '../../app.js';
 
-export class MCPTestServer {
+export class MCPHttpTestServer {
   private client: Client | null = null;
-  private transport: StdioClientTransport | null = null;
+  private httpServer: Server | null = null;
   private timeout: number;
   private dashboardsDir: string;
+  private previousDashboardsDir: string | undefined;
 
   constructor(opts: { timeout?: number } = {}) {
     this.timeout = opts.timeout ?? 30_000;
-    // Each instance gets its own temp dir — tests never touch user dashboards
     this.dashboardsDir = mkdtempSync(resolve(tmpdir(), 'mcp-test-dashboards-'));
   }
 
@@ -45,34 +44,32 @@ export class MCPTestServer {
       throw new Error('Test server already started. Call stop() first.');
     }
 
-    this.transport = new StdioClientTransport({
-      command: 'node',
-      args: ['--import', 'tsx', 'src/index.ts', '--stdio'],
-      cwd: SERVER_CWD,
-      env: {
-        ...process.env,
-        // Forward container URLs set by global setup
-        ES_NODE: process.env.ES_NODE!,
-        KIBANA_URL: process.env.KIBANA_URL!,
-        // Isolate dashboard storage to a temp dir (never touches user dashboards)
-        DASHBOARDS_DIR: this.dashboardsDir,
-        // Forward credentials set by global setup (security enabled in containers)
-        ES_USERNAME: process.env.ES_USERNAME!,
-        ES_PASSWORD: process.env.ES_PASSWORD!,
-        // Prevent the server from reading a local .env that could override test URLs
-        NODE_ENV: 'test',
-      },
+    // Set DASHBOARDS_DIR for in-process server, preserving previous value for restore
+    this.previousDashboardsDir = process.env.DASHBOARDS_DIR;
+    process.env.DASHBOARDS_DIR = this.dashboardsDir;
+
+    const app = createApp();
+    this.httpServer = await new Promise<Server>((resolve) => {
+      const s = app.listen(0, () => resolve(s));
     });
 
+    const address = this.httpServer.address();
+    const port = typeof address === 'object' && address !== null ? address.port : 0;
+    const url = new URL(`http://localhost:${port}/mcp`);
+
+    const transport = new StreamableHTTPClientTransport(url);
     this.client = new Client({
       name: 'integration-test-client',
       version: '1.0.0',
     });
 
-    const connectPromise = this.client.connect(this.transport);
+    const connectPromise = this.client.connect(transport);
     let timer: ReturnType<typeof setTimeout>;
     const timeoutPromise = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error('MCP client connection timeout')), this.timeout);
+      timer = setTimeout(
+        () => reject(new Error('MCP HTTP client connection timeout')),
+        this.timeout
+      );
     });
     try {
       await Promise.race([connectPromise, timeoutPromise]);
@@ -86,11 +83,24 @@ export class MCPTestServer {
       try {
         await this.client.close();
       } catch {
-        // Ignore close errors — process may have already exited
+        // Ignore close errors
       }
       this.client = null;
     }
-    this.transport = null;
+
+    if (this.httpServer) {
+      await new Promise<void>((resolve, reject) => {
+        this.httpServer!.close((err) => (err ? reject(err) : resolve()));
+      });
+      this.httpServer = null;
+    }
+
+    // Restore previous DASHBOARDS_DIR
+    if (this.previousDashboardsDir !== undefined) {
+      process.env.DASHBOARDS_DIR = this.previousDashboardsDir;
+    } else {
+      delete process.env.DASHBOARDS_DIR;
+    }
   }
 
   // ── Tool helpers ──────────────────────────────────────────────
