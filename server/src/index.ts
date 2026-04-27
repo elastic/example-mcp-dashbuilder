@@ -20,9 +20,30 @@ if (existsSync(envPath)) {
   }
 }
 
+import { createServer as createNetServer } from 'net';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createApp } from './app.js';
 import { createServer } from './server.js';
+
+const DEFAULT_PORT = 3001;
+const PORT_RANGE_SIZE = 99;
+
+function isPortAvailable(port: number, host: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const srv = createNetServer();
+    srv.once('error', () => resolve(false));
+    srv.listen(port, host, () => srv.close(() => resolve(true)));
+  });
+}
+
+async function findAvailablePort(start: number, host: string): Promise<number> {
+  for (let port = start; port <= start + PORT_RANGE_SIZE; port++) {
+    if (await isPortAvailable(port, host)) return port;
+  }
+  throw new Error(
+    `No available port found in range ${start}–${start + PORT_RANGE_SIZE}. Set PORT to specify one explicitly.`
+  );
+}
 
 const isHttp = process.argv.includes('--http');
 
@@ -38,8 +59,10 @@ if (!isHttp) {
   // HTTP mode: streamable HTTP transport with session management
   const app = createApp();
 
-  const port = parseInt(process.env.PORT || '3001', 10);
-  const host = process.env.HOST || '0.0.0.0';
+  const host = process.env.HOST || '127.0.0.1';
+  const explicitPort = process.env.PORT ? parseInt(process.env.PORT, 10) : undefined;
+  const port = explicitPort ?? (await findAvailablePort(DEFAULT_PORT, host));
+
   const httpServer = app.listen(port, host, () => {
     const address = httpServer.address();
     const boundPort = typeof address === 'object' && address !== null ? address.port : port;

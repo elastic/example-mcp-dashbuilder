@@ -263,7 +263,7 @@ Start the server in HTTP mode:
 npm run start -- --http
 ```
 
-The server listens on `http://0.0.0.0:3001/mcp` by default. Override with environment variables:
+The server listens on `http://127.0.0.1:3001/mcp` by default. Override with environment variables:
 
 ```bash
 HOST=127.0.0.1 PORT=3002 npm run start -- --http
