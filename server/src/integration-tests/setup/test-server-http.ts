@@ -7,14 +7,17 @@
 /**
  * MCP HTTP Test Server Harness
  *
- * Starts the MCP server in-process via StreamableHTTP transport,
- * providing an isolated in-memory dashboard store per instance.
+ * Spawns the MCP server as a child process in HTTP mode, then connects
+ * via StreamableHTTPClientTransport. Each instance gets its own temp
+ * dashboard directory for isolation — same as MCPTestServer (stdio).
  */
 
 import { mkdtempSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
 import { tmpdir } from 'os';
-import type { Server } from 'http';
+import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
+import type { ChildProcess } from 'child_process';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -25,14 +28,14 @@ import type {
   ReadResourceResult,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import { createApp } from '../../app.js';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const SERVER_CWD = resolve(__dirname, '..', '..', '..');
 
 export class MCPHttpTestServer {
   private client: Client | null = null;
-  private httpServer: Server | null = null;
+  private childProcess: ChildProcess | null = null;
   private timeout: number;
   private dashboardsDir: string;
-  private previousDashboardsDir: string | undefined;
   private baseUrl: string | null = null;
 
   constructor(opts: { timeout?: number } = {}) {
@@ -45,21 +48,59 @@ export class MCPHttpTestServer {
       throw new Error('Test server already started. Call stop() first.');
     }
 
-    // Set DASHBOARDS_DIR for in-process server, preserving previous value for restore
-    this.previousDashboardsDir = process.env.DASHBOARDS_DIR;
-    process.env.DASHBOARDS_DIR = this.dashboardsDir;
-
-    const app = createApp();
-    this.httpServer = await new Promise<Server>((resolve) => {
-      const s = app.listen(0, () => resolve(s));
+    // Spawn server as child process in HTTP mode (no --stdio flag).
+    // Use port 0 via PORT env var — the server prints the actual port to stdout.
+    const child = spawn('node', ['--import', 'tsx', 'src/index.ts'], {
+      cwd: SERVER_CWD,
+      env: {
+        ...process.env,
+        ES_NODE: process.env.ES_NODE!,
+        KIBANA_URL: process.env.KIBANA_URL!,
+        ES_USERNAME: process.env.ES_USERNAME!,
+        ES_PASSWORD: process.env.ES_PASSWORD!,
+        DASHBOARDS_DIR: this.dashboardsDir,
+        NODE_ENV: 'test',
+        PORT: '0',
+      },
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
-    const address = this.httpServer.address();
-    const port = typeof address === 'object' && address !== null ? address.port : 0;
-    this.baseUrl = `http://localhost:${port}`;
-    const url = new URL(`${this.baseUrl}/mcp`);
+    this.childProcess = child;
 
-    const transport = new StreamableHTTPClientTransport(url);
+    // Wait for the server to print its URL with the actual port
+    const url = await new Promise<string>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error('HTTP server startup timeout'));
+      }, this.timeout);
+
+      let stderr = '';
+      child.stderr?.on('data', (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+
+      child.stdout?.on('data', (chunk: Buffer) => {
+        const output = chunk.toString();
+        const match = output.match(/running on (http:\/\/[^\s]+)/);
+        if (match) {
+          clearTimeout(timer);
+          resolve(match[1]);
+        }
+      });
+
+      child.on('error', (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+
+      child.on('exit', (code) => {
+        clearTimeout(timer);
+        reject(new Error(`Server exited with code ${code}. stderr: ${stderr}`));
+      });
+    });
+
+    this.baseUrl = url.replace(/\/mcp$/, '');
+
+    const transport = new StreamableHTTPClientTransport(new URL(url));
     this.client = new Client({
       name: 'integration-test-client',
       version: '1.0.0',
@@ -90,18 +131,19 @@ export class MCPHttpTestServer {
       this.client = null;
     }
 
-    if (this.httpServer) {
-      await new Promise<void>((resolve, reject) => {
-        this.httpServer!.close((err) => (err ? reject(err) : resolve()));
+    if (this.childProcess) {
+      this.childProcess.kill('SIGTERM');
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(() => {
+          this.childProcess?.kill('SIGKILL');
+          resolve();
+        }, 5000);
+        this.childProcess!.on('exit', () => {
+          clearTimeout(timer);
+          resolve();
+        });
       });
-      this.httpServer = null;
-    }
-
-    // Restore previous DASHBOARDS_DIR
-    if (this.previousDashboardsDir !== undefined) {
-      process.env.DASHBOARDS_DIR = this.previousDashboardsDir;
-    } else {
-      delete process.env.DASHBOARDS_DIR;
+      this.childProcess = null;
     }
   }
 

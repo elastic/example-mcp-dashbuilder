@@ -22,8 +22,8 @@ if (existsSync(envPath)) {
 }
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createServer } from './server.js';
 import { createApp } from './app.js';
+import { createServer } from './server.js';
 
 const isStdio = process.argv.includes('--stdio');
 
@@ -40,7 +40,9 @@ if (isStdio) {
 
   const port = parseInt(process.env.PORT || '3001', 10);
   const httpServer = app.listen(port, () => {
-    console.log(`Elastic Dashbuilder MCP App server running on http://localhost:${port}/mcp`);
+    const address = httpServer.address();
+    const boundPort = typeof address === 'object' && address !== null ? address.port : port;
+    console.log(`Elastic Dashbuilder MCP App server running on http://localhost:${boundPort}/mcp`);
   });
   httpServer.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {

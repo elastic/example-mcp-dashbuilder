@@ -4,34 +4,82 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
+import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import express from 'express';
-import cors from 'cors';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
+import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { createServer } from './server.js';
 
-export function createApp(): express.Express {
-  const app = express();
-  app.use(cors());
-  app.use(express.json());
+export function createApp(): ReturnType<typeof createMcpExpressApp> {
+  const app = createMcpExpressApp();
+
+  // Each session gets its own server + transport pair so in-memory
+  // state (dashboards) persists across requests within a session.
+  const transports = new Map<string, StreamableHTTPServerTransport>();
 
   app.post('/mcp', async (req, res) => {
-    const server = createServer();
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-    });
-    res.on('close', () => transport.close());
-    await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+    try {
+      if (sessionId && transports.has(sessionId)) {
+        const transport = transports.get(sessionId)!;
+        await transport.handleRequest(req, res, req.body);
+        return;
+      }
+
+      if (!sessionId && isInitializeRequest(req.body)) {
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+          onsessioninitialized: (id) => {
+            transports.set(id, transport);
+          },
+        });
+
+        transport.onclose = () => {
+          const id = transport.sessionId;
+          if (id) transports.delete(id);
+        };
+
+        const server = createServer();
+        await server.connect(transport);
+        await transport.handleRequest(req, res, req.body);
+        return;
+      }
+
+      res.status(400).json({
+        jsonrpc: '2.0',
+        error: { code: -32000, message: 'Bad Request: No valid session ID provided' },
+        id: null,
+      });
+    } catch {
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: '2.0',
+          error: { code: -32603, message: 'Internal server error' },
+          id: null,
+        });
+      }
+    }
   });
 
-  app.get('/mcp', async (_req, res) => {
+  app.get('/mcp', async (req, res) => {
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    if (sessionId && transports.has(sessionId)) {
+      const transport = transports.get(sessionId)!;
+      await transport.handleRequest(req, res);
+      return;
+    }
     res.writeHead(405).end(JSON.stringify({ error: 'Use POST for MCP requests' }));
   });
 
-  app.delete('/mcp', async (_req, res) => {
-    res
-      .writeHead(405)
-      .end(JSON.stringify({ error: 'Session management not supported in stateless mode' }));
+  app.delete('/mcp', async (req, res) => {
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    if (sessionId && transports.has(sessionId)) {
+      const transport = transports.get(sessionId)!;
+      await transport.handleRequest(req, res);
+      return;
+    }
+    res.status(404).end(JSON.stringify({ error: 'Session not found' }));
   });
 
   return app;
