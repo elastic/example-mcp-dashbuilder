@@ -5,13 +5,7 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  EuiSuperDatePicker,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiButtonEmpty,
-  useEuiTheme,
-} from '@elastic/eui';
+import { EuiSuperDatePicker, EuiFlexGroup, EuiFlexItem, EuiButtonEmpty } from '@elastic/eui';
 import { GridLayout } from './grid-layout';
 import type { GridLayoutData } from './grid-layout';
 import type { GridPanelData } from './grid-layout';
@@ -22,6 +16,52 @@ import { ALL_DATA_SENTINEL, COMMONLY_USED_RANGES, GRID_SETTINGS } from './consta
 import { TimeRangeProvider, useTimeRange } from './context/TimeRangeContext';
 import { useMcpApp } from './context/McpAppContext';
 import { buildAutoGridLayout } from './utils/auto_layout';
+
+// Scoped overrides: strip EUI's Borealis surface colors from the date picker
+// and its popover so they use Cursor-native tokens instead.
+(function injectDatePickerOverrides() {
+  const id = 'dash-eui-overrides';
+  if (document.getElementById(id)) return;
+  const style = document.createElement('style');
+  style.id = id;
+  style.textContent = `
+    .euiSuperDatePicker,
+    .euiDatePopoverButton,
+    .euiDatePickerRange {
+      background: var(--dash-control-bg) !important;
+      border-color: var(--dash-control-border) !important;
+      color: var(--dash-control-fg) !important;
+    }
+    .euiPopover__panel,
+    .euiPopoverPanel {
+      background: var(--dash-surface-subtle) !important;
+      border-color: var(--dash-border) !important;
+      color: var(--dash-fg) !important;
+    }
+    .euiPopover__panel *,
+    .euiPopoverPanel * {
+      color: inherit;
+    }
+    .euiButtonEmpty {
+      color: var(--dash-fg) !important;
+    }
+    .euiButtonEmpty:hover,
+    .euiButtonEmpty:focus {
+      background: var(--dash-control-hover-bg) !important;
+    }
+    .euiFormControlLayout,
+    .euiFormControlLayout__childrenWrapper {
+      background: var(--dash-control-bg) !important;
+    }
+    .euiFormControlLayout input,
+    .euiFormControlLayout select {
+      background: var(--dash-control-bg) !important;
+      color: var(--dash-control-fg) !important;
+      border-color: var(--dash-control-border) !important;
+    }
+  `;
+  document.head.appendChild(style);
+})();
 
 interface OnTimeChangeProps extends DurationRange {
   isInvalid: boolean;
@@ -97,7 +137,6 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
   const hasCharts = dashboard.charts.length > 0;
   const { setTimeRange } = useTimeRange();
   const mcpApp = useMcpApp();
-  const { euiTheme } = useEuiTheme();
 
   const [isAllData, setIsAllData] = useState(true);
   const [start, setStart] = useState('now-15m');
@@ -158,21 +197,21 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
   );
 
   const appStyle: React.CSSProperties = {
-    padding: `${euiTheme.size.l} ${euiTheme.size.xl}`,
+    padding: '16px 24px',
     fontFamily: 'Inter, system-ui, sans-serif',
-    background: euiTheme.colors.body,
-    color: euiTheme.colors.text,
+    background: 'var(--dash-bg)',
+    color: 'var(--dash-fg)',
     minHeight: '100vh',
   };
   const subduedTextStyle: React.CSSProperties = {
-    marginTop: euiTheme.size.xs,
+    marginTop: 4,
     fontSize: 14,
-    opacity: 0.72,
+    color: 'var(--dash-muted)',
   };
   const emptyStateStyle: React.CSSProperties = {
     textAlign: 'center',
-    padding: `${euiTheme.size.xxl} ${euiTheme.size.l}`,
-    opacity: 0.8,
+    padding: '48px 16px',
+    color: 'var(--dash-muted)',
   };
   return (
     <div style={appStyle}>

@@ -21,7 +21,7 @@ import {
   ScaleType,
 } from '@elastic/charts';
 import type { MetricDatum, HeatmapBandsColorScale } from '@elastic/charts';
-import { euiPaletteForTemperature, useEuiTheme } from '@elastic/eui';
+import { useEuiTheme } from '@elastic/eui';
 import { getElasticChartsTheme, KIBANA_PALETTE } from '../theme';
 import type { ChartsTheme } from '../theme';
 import type {
@@ -31,7 +31,23 @@ import type {
   HeatmapPanelConfig,
 } from '../types';
 
-const TEMPERATURE_PALETTE = euiPaletteForTemperature(8);
+// Neutral-to-accent ramp used as the default heatmap color scale.
+// Replaces euiPaletteForTemperature so we have no EUI palette dependency here.
+const TEMPERATURE_PALETTE_FALLBACK = [
+  '#252526',
+  '#1e3a4a',
+  '#1a5276',
+  '#1a6e8a',
+  '#1a8fa0',
+  '#2196b0',
+  '#2eafc8',
+  '#3794ff',
+];
+
+function getCSSVar(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -49,10 +65,17 @@ function formatDateTime(d: Date): string {
 // ── Router ──
 
 export function ChartPanel({ config }: { config: RenderablePanelConfig }) {
-  const { euiTheme, colorMode } = useEuiTheme();
+  const { colorMode } = useEuiTheme();
   const chartTheme = useMemo(
-    () => getElasticChartsTheme(euiTheme.border.color, colorMode === 'DARK'),
-    [euiTheme.border.color, colorMode]
+    () =>
+      getElasticChartsTheme({
+        seriesColor: getCSSVar('--dash-chart-series-1', '#3794ff'),
+        gridlineColor: getCSSVar('--dash-gridline', '#454545'),
+        axisColor: getCSSVar('--dash-muted', '#8a8a8a'),
+        labelColor: getCSSVar('--dash-fg', '#cccccc'),
+        isDarkMode: colorMode === 'DARK',
+      }),
+    [colorMode]
   );
 
   if (config.chartType === 'metric') {
@@ -112,7 +135,7 @@ function buildColorScale(
   steps = 8,
   customRamp?: string[]
 ): HeatmapBandsColorScale {
-  const ramp = customRamp || TEMPERATURE_PALETTE;
+  const ramp = customRamp || TEMPERATURE_PALETTE_FALLBACK;
 
   if (values.length === 0) {
     return { type: 'bands', bands: [{ start: 0, end: 1, color: ramp[0] }] };

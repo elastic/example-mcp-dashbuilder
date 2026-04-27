@@ -8,11 +8,28 @@ import type { PartialTheme, Theme } from '@elastic/charts';
 import { getChartsTheme } from '@elastic/charts';
 import { euiPaletteColorBlind } from '@elastic/eui';
 
+/**
+ * The Kibana color-blind palette. Retained as a named export so callers that
+ * accept explicit user-supplied palette arrays (e.g. `create_chart`) can still
+ * reference it as a fallback. It is no longer the default series color.
+ */
 export const KIBANA_PALETTE: string[] = euiPaletteColorBlind();
 
 export interface ChartsTheme {
   baseTheme: Theme;
   theme: PartialTheme;
+}
+
+export interface ChartsThemeOptions {
+  /** Resolved value of --dash-chart-series-1 */
+  seriesColor: string;
+  /** Resolved value of --dash-gridline */
+  gridlineColor: string;
+  /** Resolved value of --dash-muted */
+  axisColor: string;
+  /** Resolved value of --dash-fg */
+  labelColor: string;
+  isDarkMode: boolean;
 }
 
 /**
@@ -46,46 +63,54 @@ function applyNumericFontFamily(value: unknown): void {
 }
 
 /**
- * Builds the Elastic Charts theme matching Kibana's rendering.
+ * Builds the Elastic Charts theme using Cursor-native `--dash-*` token values.
  *
- * Uses `getChartsTheme()` from `@elastic/charts` with the Borealis theme name
- * (matching Kibana's default), then applies the same numeric font family and
- * axis title overrides that Kibana's charts plugin applies.
- *
- * @see https://github.com/elastic/kibana/blob/main/src/platform/plugins/shared/charts/public/services/theme/theme.ts
- * @see https://github.com/elastic/kibana/blob/main/src/platform/packages/shared/kbn-charts-theme/index.ts
+ * The Borealis base theme is retained for its animation, font mechanics, and
+ * legend layout defaults, but every color property is overridden via the
+ * `theme` partial so Borealis has no visual authority over the rendered output.
  */
-export function getElasticChartsTheme(
-  heatmapBorderColor: string,
-  isDarkMode: boolean
-): ChartsTheme {
+export function getElasticChartsTheme({
+  seriesColor,
+  gridlineColor,
+  axisColor,
+  isDarkMode,
+}: ChartsThemeOptions): ChartsTheme {
   const colorMode = isDarkMode ? 'DARK' : 'LIGHT';
   const baseTheme = getChartsTheme('borealis', colorMode);
 
-  // Recursively apply numeric font to all fontFamily properties (matches Kibana)
   applyNumericFontFamily(baseTheme);
-
-  // Match Kibana's axis title overrides
-  const { fill } = baseTheme.axes.tickLabel;
-  baseTheme.axes.axisTitle.fill = fill;
-  baseTheme.axes.axisTitle.fontWeight = 500;
-  baseTheme.axes.axisPanelTitle.fill = fill;
-  baseTheme.axes.axisPanelTitle.fontWeight = 500;
 
   return {
     baseTheme,
     theme: {
       background: { color: 'transparent' },
       colors: {
-        vizColors: KIBANA_PALETTE,
-        defaultVizColor: KIBANA_PALETTE[0],
+        vizColors: [seriesColor],
+        defaultVizColor: seriesColor,
+      },
+      axes: {
+        gridLine: {
+          horizontal: { stroke: gridlineColor, strokeWidth: 1, opacity: 1 },
+          vertical: { stroke: gridlineColor, strokeWidth: 1, opacity: 1 },
+        },
+        tickLabel: {
+          fill: axisColor,
+        },
+        axisTitle: {
+          fill: axisColor,
+          fontWeight: 500,
+        },
+        axisPanelTitle: {
+          fill: axisColor,
+          fontWeight: 500,
+        },
       },
       heatmap: {
         cell: {
-          border: { stroke: heatmapBorderColor, strokeWidth: 1 },
+          border: { stroke: gridlineColor, strokeWidth: 1 },
         },
         grid: {
-          stroke: { width: 1, color: heatmapBorderColor },
+          stroke: { width: 1, color: gridlineColor },
         },
       },
     },

@@ -17,6 +17,35 @@ import type { DashboardConfig, PanelConfig } from './types';
 import '@elastic/charts/dist/theme_light.css';
 import '@elastic/charts/dist/theme_only_dark.css';
 
+// Inject Cursor-native design tokens. These reference VS Code CSS variables so
+// the dashboard surfaces adapt automatically to the active Cursor theme.
+// Fallback values target a neutral dark environment matching Cursor's default.
+(function injectDashTokens() {
+  const style = document.createElement('style');
+  style.textContent = `
+    :root {
+      --dash-bg: var(--vscode-editor-background, #1e1e1e);
+      --dash-surface: var(--vscode-editor-background, #1e1e1e);
+      --dash-surface-subtle: var(--vscode-sideBar-background, #252526);
+
+      --dash-fg: var(--vscode-editor-foreground, #cccccc);
+      --dash-muted: var(--vscode-descriptionForeground, #8a8a8a);
+
+      --dash-border: var(--vscode-panel-border, #3c3c3c);
+      --dash-gridline: var(--vscode-editorWidget-border, #454545);
+
+      --dash-control-bg: var(--vscode-input-background, var(--dash-bg));
+      --dash-control-fg: var(--vscode-input-foreground, var(--dash-fg));
+      --dash-control-border: var(--vscode-input-border, var(--dash-border));
+      --dash-control-hover-bg: var(--vscode-list-hoverBackground, var(--dash-surface-subtle));
+      --dash-control-focus: var(--vscode-focusBorder, #007fd4);
+
+      --dash-chart-series-1: var(--vscode-charts-blue, var(--vscode-textLink-foreground, #3794ff));
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
 // Import font files as data URIs (Vite inlines them as base64)
 import elasticUiNumericUrl from './fonts/elastic_ui_numeric/ElasticUINumeric-Variable.woff2?url';
 import interRegularUrl from './fonts/inter/Inter-Regular.woff2?url';
