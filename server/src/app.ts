@@ -28,7 +28,9 @@ export function createApp(): ReturnType<typeof createMcpExpressApp> {
       if (now - timestamp > SESSION_TTL_MS) {
         const transport = transports.get(id);
         if (transport) {
-          transport.close().catch(() => {});
+          transport.close().catch((err) => {
+            console.warn(`Failed to close idle session ${id}:`, err);
+          });
         }
         transports.delete(id);
         lastActivity.delete(id);
