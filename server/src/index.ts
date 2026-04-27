@@ -39,10 +39,11 @@ if (!isHttp) {
   const app = createApp();
 
   const port = parseInt(process.env.PORT || '3001', 10);
-  const httpServer = app.listen(port, () => {
+  const host = process.env.HOST || '0.0.0.0';
+  const httpServer = app.listen(port, host, () => {
     const address = httpServer.address();
     const boundPort = typeof address === 'object' && address !== null ? address.port : port;
-    console.log(`Elastic Dashbuilder MCP App server running on http://localhost:${boundPort}/mcp`);
+    console.log(`Elastic Dashbuilder MCP App server running on http://${host}:${boundPort}/mcp`);
   });
   httpServer.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
