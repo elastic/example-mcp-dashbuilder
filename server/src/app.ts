@@ -57,6 +57,7 @@ export function createApp(): ReturnType<typeof createMcpExpressApp> {
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (id) => {
             transports.set(id, transport);
+            touchSession(id);
           },
         });
 
