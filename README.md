@@ -255,6 +255,35 @@ Open the `example-mcp-dashbuilder` folder in your MCP client. The MCP server wil
 | Metric  | Single KPI with optional trend | Total revenue with daily sparkline |
 | Heatmap | Patterns across 2 dimensions   | Orders by day of week × hour       |
 
+## HTTP transport
+
+Start the server in HTTP mode:
+
+```bash
+npm run start -- --http
+```
+
+The server listens on `http://0.0.0.0:3001/mcp` by default. Override with environment variables:
+
+```bash
+HOST=127.0.0.1 PORT=3002 npm run start -- --http
+```
+
+## Docker
+
+Build and run with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Or build and run directly:
+
+```bash
+docker build -t elastic-mcp-dashbuilder .
+docker run -p 3001:3001 --env-file .env elastic-mcp-dashbuilder
+```
+
 ## Inline dashboard preview (MCP Apps)
 
 The `view_dashboard` tool renders the full interactive dashboard directly inside the chat using [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview). The preview app is bundled into a single HTML file and served as an MCP App resource.
