@@ -10,6 +10,7 @@ import { EuiProvider } from '@elastic/eui';
 import { App as McpApp } from '@modelcontextprotocol/ext-apps';
 import { App } from './App';
 import { ChartPreview } from './components/ChartPreview';
+import { PreviewShell } from './components/PreviewShell';
 import { McpAppProvider } from './context/McpAppContext';
 import { tryExportMode } from './export-bootstrap';
 import type { DashboardConfig, PanelConfig } from './types';
@@ -41,6 +42,16 @@ import '@elastic/charts/dist/theme_only_dark.css';
       --dash-control-focus: var(--vscode-focusBorder, #007fd4);
 
       --dash-chart-series-1: var(--vscode-charts-blue, var(--vscode-textLink-foreground, #3794ff));
+
+      --dash-radius: 4px;
+    }
+
+    /* Reset EUI's Borealis navy body/page background so the iframe is
+       transparent and Cursor's chat surface shows through unchanged. */
+    html, body {
+      background: transparent !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
   `;
   document.head.appendChild(style);
@@ -275,9 +286,11 @@ function RootContent({
 
   if (viewMode === 'dashboard' && dashboard) {
     return (
-      <McpAppProvider app={mcpApp}>
-        <App initialDashboard={dashboard} />
-      </McpAppProvider>
+      <PreviewShell title="Kibana dashboard preview">
+        <McpAppProvider app={mcpApp}>
+          <App initialDashboard={dashboard} />
+        </McpAppProvider>
+      </PreviewShell>
     );
   }
 

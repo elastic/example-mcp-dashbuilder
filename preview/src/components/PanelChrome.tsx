@@ -22,7 +22,7 @@ export function PanelChrome({ title, isLoading, children }: PanelChromeProps) {
       overflow: 'hidden',
       background: 'var(--dash-surface)',
       border: '1px solid var(--dash-border)',
-      borderRadius: 4,
+      borderRadius: 'var(--dash-radius)',
     }),
     []
   );

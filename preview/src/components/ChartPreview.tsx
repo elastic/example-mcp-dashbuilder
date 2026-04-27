@@ -20,6 +20,7 @@ interface ChartPreviewData {
 /**
  * Renders a single chart with pre-loaded data.
  * Used for inline chart previews after create_chart/create_metric/create_heatmap.
+ * No outer shell — the PanelChrome title is sufficient for single-chart previews.
  */
 export function ChartPreview({ preview }: { preview: ChartPreviewData }) {
   const { chart, data, trendData } = preview;

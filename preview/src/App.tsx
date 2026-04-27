@@ -197,11 +197,9 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
   );
 
   const appStyle: React.CSSProperties = {
-    padding: '16px 24px',
+    padding: '4px 0',
     fontFamily: 'Inter, system-ui, sans-serif',
-    background: 'var(--dash-bg)',
     color: 'var(--dash-fg)',
-    minHeight: '100vh',
   };
   const subduedTextStyle: React.CSSProperties = {
     marginTop: 4,
@@ -218,7 +216,18 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
       <header style={{ marginBottom: 16 }}>
         <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false}>
           <EuiFlexItem grow={false}>
-            <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{dashboard.title}</h1>
+            <h1
+              style={{
+                fontSize: 16,
+                fontWeight: 600,
+                lineHeight: 1.3,
+                letterSpacing: '-0.01em',
+                margin: 0,
+                color: 'var(--dash-fg)',
+              }}
+            >
+              {dashboard.title}
+            </h1>{' '}
             {hasCharts && (
               <p style={subduedTextStyle}>
                 {dashboard.charts.length} chart(s)
