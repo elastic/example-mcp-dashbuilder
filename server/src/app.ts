@@ -103,7 +103,7 @@ export function createApp(): ReturnType<typeof createMcpExpressApp> {
         await transport.handleRequest(req, res);
         return;
       }
-      res.writeHead(405).end(JSON.stringify({ error: 'Use POST for MCP requests' }));
+      res.status(405).end(JSON.stringify({ error: 'Use POST for MCP requests' }));
     } catch (err) {
       console.error('MCP GET /mcp error:', err);
       if (!res.headersSent) {
