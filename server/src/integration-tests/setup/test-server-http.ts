@@ -9,7 +9,7 @@
  *
  * Spawns the MCP server as a child process in HTTP mode, then connects
  * via StreamableHTTPClientTransport. Each instance gets its own temp
- * dashboard directory for isolation — same as MCPTestServer (stdio).
+ * dashboard directory for isolation — same as MCPTestServerStdio.
  */
 
 import { mkdtempSync } from 'fs';
@@ -28,10 +28,12 @@ import type {
   ReadResourceResult,
 } from '@modelcontextprotocol/sdk/types.js';
 
+import type { TestServer } from './test-server-interface.js';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_CWD = resolve(__dirname, '..', '..', '..');
 
-export class MCPHttpTestServer {
+export class MCPTestServerHttp implements TestServer {
   private client: Client | null = null;
   private childProcess: ChildProcess | null = null;
   private timeout: number;
