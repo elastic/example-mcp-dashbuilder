@@ -51,7 +51,8 @@ export function createApp(): ReturnType<typeof createMcpExpressApp> {
         error: { code: -32000, message: 'Bad Request: No valid session ID provided' },
         id: null,
       });
-    } catch {
+    } catch (err) {
+      console.error('MCP POST /mcp error:', err);
       if (!res.headersSent) {
         res.status(500).json({
           jsonrpc: '2.0',
@@ -63,23 +64,45 @@ export function createApp(): ReturnType<typeof createMcpExpressApp> {
   });
 
   app.get('/mcp', async (req, res) => {
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
-    if (sessionId && transports.has(sessionId)) {
-      const transport = transports.get(sessionId)!;
-      await transport.handleRequest(req, res);
-      return;
+    try {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+      if (sessionId && transports.has(sessionId)) {
+        const transport = transports.get(sessionId)!;
+        await transport.handleRequest(req, res);
+        return;
+      }
+      res.writeHead(405).end(JSON.stringify({ error: 'Use POST for MCP requests' }));
+    } catch (err) {
+      console.error('MCP GET /mcp error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: '2.0',
+          error: { code: -32603, message: 'Internal server error' },
+          id: null,
+        });
+      }
     }
-    res.writeHead(405).end(JSON.stringify({ error: 'Use POST for MCP requests' }));
   });
 
   app.delete('/mcp', async (req, res) => {
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
-    if (sessionId && transports.has(sessionId)) {
-      const transport = transports.get(sessionId)!;
-      await transport.handleRequest(req, res);
-      return;
+    try {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+      if (sessionId && transports.has(sessionId)) {
+        const transport = transports.get(sessionId)!;
+        await transport.handleRequest(req, res);
+        return;
+      }
+      res.status(404).end(JSON.stringify({ error: 'Session not found' }));
+    } catch (err) {
+      console.error('MCP DELETE /mcp error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: '2.0',
+          error: { code: -32603, message: 'Internal server error' },
+          id: null,
+        });
+      }
     }
-    res.status(404).end(JSON.stringify({ error: 'Session not found' }));
   });
 
   return app;
