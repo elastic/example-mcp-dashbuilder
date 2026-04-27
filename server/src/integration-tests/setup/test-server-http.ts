@@ -125,8 +125,8 @@ export class MCPHttpTestServer {
     if (this.client) {
       try {
         await this.client.close();
-      } catch {
-        // Ignore close errors
+      } catch (err) {
+        console.warn('client.close() error during teardown:', err);
       }
       this.client = null;
     }
