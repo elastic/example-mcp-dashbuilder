@@ -41,7 +41,7 @@ One-click export to Kibana as Lens visualizations
 ```
 ┌─────────────────────────────────────────────────┐
 │  MCP Host (Cursor, Claude Desktop, etc.)        │
-│  ↕ MCP Protocol (stdio)                         │
+│  ↕ MCP Protocol (stdio or HTTP)                 │
 ├─────────────────────────────────────────────────┤
 │  MCP Server (TypeScript)                        │
 │  ├── Tools: query, chart, metric, heatmap, ...  │
@@ -61,7 +61,7 @@ One-click export to Kibana as Lens visualizations
 └─────────────────────────────────────────────────┘
 ```
 
-The MCP App communicates with the server entirely via the MCP Apps protocol (postMessage) — no localhost server dependency. App-only tools (`visibility: ["app"]`) handle all UI↔server interaction including data fetching, layout persistence, and time field detection.
+The server supports two transports: **stdio** (default) for standard MCP clients, and **HTTP** (`--http` flag) with streamable HTTP and session management. The MCP App communicates with the server entirely via the MCP Apps protocol (postMessage) — no localhost server dependency. App-only tools (`visibility: ["app"]`) handle all UI↔server interaction including data fetching, layout persistence, and time field detection.
 
 ## Prerequisites
 
@@ -291,7 +291,9 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 ```
 ├── server/                    # MCP Server
 │   └── src/
-│       ├── index.ts           # Server entry point
+│       ├── index.ts           # Entry point (stdio default, --http flag)
+│       ├── server.ts          # MCP server factory (tools, resources)
+│       ├── app.ts             # HTTP transport (Express, session mgmt)
 │       ├── types.ts           # Shared types
 │       ├── tools/             # MCP tool implementations
 │       │   ├── view-dashboard.ts  # MCP Apps inline preview + resources
@@ -373,7 +375,7 @@ npm run test --workspace=setup        # Setup unit tests only
 
 #### Integration tests
 
-Integration tests exercise the full MCP client → server → Elasticsearch/Kibana roundtrip using [testcontainers](https://testcontainers.com/). They spin up real ES + Kibana containers with security enabled, seed test data, and interact with the server via `StdioClientTransport`.
+Integration tests exercise the full MCP client → server → Elasticsearch/Kibana roundtrip using [testcontainers](https://testcontainers.com/). They spin up real ES + Kibana containers with security enabled, seed test data, and interact with the server via both stdio and HTTP transports.
 
 ```bash
 cd server
