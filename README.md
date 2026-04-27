@@ -65,7 +65,7 @@ The server supports two transports: **stdio** (default) for standard MCP clients
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - Elasticsearch (local or Elastic Cloud)
 - Kibana (for export/import)
 - An MCP client: [Cursor](https://cursor.com) (v2.6+ for MCP Apps inline preview), [Claude Desktop](https://claude.ai/download), [Claude Code](https://claude.ai/claude-code), or [VS Code Copilot](https://code.visualstudio.com/)
@@ -177,7 +177,7 @@ Open the `example-mcp-dashbuilder` folder in your MCP client. The MCP server wil
 
 - **`npx: command not found`** — Cursor/Claude Desktop may not inherit your shell PATH when launched from the dock. Either open your client from the terminal (e.g. `cursor .`) or use the `start-server.sh` script which loads nvm automatically.
 - **`EPERM: operation not permitted`** — Claude Desktop's macOS sandbox blocks access to `~/Documents`. Move the repo to a non-protected location like `~/example-mcp-dashbuilder` or `/tmp`.
-- **Wrong Node version** — The project requires Node 18+. If you use nvm, `start-server.sh` handles this. For manual config, use the full path to your Node binary: `/Users/you/.nvm/versions/node/v22.x.x/bin/node`.
+- **Wrong Node version** — The project requires Node 22+. If you use nvm, `start-server.sh` handles this. For manual config, use the full path to your Node binary: `/Users/you/.nvm/versions/node/v22.x.x/bin/node`.
 
 ## Usage
 

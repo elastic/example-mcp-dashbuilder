@@ -1,6 +1,9 @@
 {
   "name": "mcp-app-dashboards",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "license": "Elastic-2.0",
   "workspaces": [
     "shared",
