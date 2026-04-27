@@ -49,7 +49,7 @@ export class MCPTestServerStdio implements TestServer {
 
     this.transport = new StdioClientTransport({
       command: 'node',
-      args: ['--import', 'tsx', 'src/index.ts', '--stdio'],
+      args: ['--import', 'tsx', 'src/index.ts'],
       cwd: SERVER_CWD,
       env: {
         ...process.env,

@@ -24,17 +24,18 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createApp } from './app.js';
 import { createServer } from './server.js';
 
-const isStdio = process.argv.includes('--stdio');
+const isHttp = process.argv.includes('--http');
 
 // Clean up on shutdown
 process.on('SIGINT', () => process.exit(0));
 process.on('SIGTERM', () => process.exit(0));
 
-if (isStdio) {
+if (!isHttp) {
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
 } else {
+  // HTTP mode: streamable HTTP transport with session management
   const app = createApp();
 
   const port = parseInt(process.env.PORT || '3001', 10);

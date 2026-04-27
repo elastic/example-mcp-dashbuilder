@@ -50,9 +50,9 @@ export class MCPTestServerHttp implements TestServer {
       throw new Error('Test server already started. Call stop() first.');
     }
 
-    // Spawn server as child process in HTTP mode (no --stdio flag).
+    // Spawn server as child process in HTTP mode (--http flag).
     // Use port 0 via PORT env var — the server prints the actual port to stdout.
-    const child = spawn('node', ['--import', 'tsx', 'src/index.ts'], {
+    const child = spawn('node', ['--import', 'tsx', 'src/index.ts', '--http'], {
       cwd: SERVER_CWD,
       env: {
         ...process.env,
