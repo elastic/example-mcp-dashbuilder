@@ -22,7 +22,7 @@ if (existsSync(envPath)) {
 
 import { createServer as createNetServer } from 'net';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createApp } from './app.js';
+import { createApp, DEFAULT_HOST } from './app.js';
 import { createServer } from './server.js';
 
 const DEFAULT_PORT = 3001;
@@ -57,9 +57,8 @@ if (!isHttp) {
   await server.connect(transport);
 } else {
   // HTTP mode: streamable HTTP transport with session management
-  const app = createApp();
-
-  const host = process.env.HOST || '127.0.0.1';
+  const host = process.env.HOST || DEFAULT_HOST;
+  const app = createApp(host);
   const explicitPort = process.env.PORT ? parseInt(process.env.PORT, 10) : undefined;
   const port = explicitPort ?? (await findAvailablePort(DEFAULT_PORT, host));
 

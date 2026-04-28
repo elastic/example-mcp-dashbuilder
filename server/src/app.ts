@@ -10,8 +10,10 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { createServer } from './server.js';
 
-export function createApp(): ReturnType<typeof createMcpExpressApp> {
-  const app = createMcpExpressApp();
+export const DEFAULT_HOST = '127.0.0.1';
+
+export function createApp(host = DEFAULT_HOST): ReturnType<typeof createMcpExpressApp> {
+  const app = createMcpExpressApp({ host });
 
   // Each session gets its own server + transport pair so in-memory
   // state (dashboards) persists across requests within a session.
