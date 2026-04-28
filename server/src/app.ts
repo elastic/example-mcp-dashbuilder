@@ -81,6 +81,7 @@ export function createApp(host = DEFAULT_HOST): ReturnType<typeof createMcpExpre
 
       res.status(400).json({
         jsonrpc: '2.0',
+        // JSON-RPC -32000: Server error (implementation-defined)
         error: { code: -32000, message: 'Bad Request: No valid session ID provided' },
         id: null,
       });
@@ -89,6 +90,7 @@ export function createApp(host = DEFAULT_HOST): ReturnType<typeof createMcpExpre
       if (!res.headersSent) {
         res.status(500).json({
           jsonrpc: '2.0',
+          // JSON-RPC -32603: Internal error
           error: { code: -32603, message: 'Internal server error' },
           id: null,
         });
@@ -111,6 +113,7 @@ export function createApp(host = DEFAULT_HOST): ReturnType<typeof createMcpExpre
       if (!res.headersSent) {
         res.status(500).json({
           jsonrpc: '2.0',
+          // JSON-RPC -32603: Internal error
           error: { code: -32603, message: 'Internal server error' },
           id: null,
         });
@@ -133,6 +136,7 @@ export function createApp(host = DEFAULT_HOST): ReturnType<typeof createMcpExpre
       if (!res.headersSent) {
         res.status(500).json({
           jsonrpc: '2.0',
+          // JSON-RPC -32603: Internal error
           error: { code: -32603, message: 'Internal server error' },
           id: null,
         });
