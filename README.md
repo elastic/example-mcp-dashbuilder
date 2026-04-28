@@ -399,8 +399,7 @@ Releases are cut by [semantic-release](https://github.com/semantic-release/seman
 2. A PR title must follow [Conventional Commits](https://www.conventionalcommits.org/) — enforced by the `PR title` workflow. Allowed types: `feat`, `fix`, `refactor`, `perf`, `build`, `chore`, `docs`, `revert`.
 3. Trigger the `Release` workflow manually from `main` (Actions → Release → Run workflow). semantic-release:
    - Analyses commits since the last tag and decides the bump level (`feat` → minor, everything else → patch, `BREAKING CHANGE:` footer → major)
-   - Generates/updates `CHANGELOG.md`
-   - Creates a GitHub release with the `.mcpb` + `.tgz` artifacts attached
+   - Creates a GitHub release (notes + tag) with the `.mcpb` + `.tgz` artifacts attached
 
 **Local dry run** (no GitHub credentials needed):
 

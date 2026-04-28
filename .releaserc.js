@@ -24,7 +24,6 @@ export default {
       },
     ],
     '@semantic-release/release-notes-generator',
-    '@semantic-release/changelog',
     ...(isDryRun
       ? []
       : [
