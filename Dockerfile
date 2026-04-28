@@ -10,7 +10,7 @@ COPY shared/package.json shared/
 COPY setup/package.json setup/
 COPY server/package.json server/
 COPY preview/package.json preview/
-RUN npm install
+RUN npm install --ignore-scripts
 COPY . .
 RUN npm run build
 
@@ -27,6 +27,7 @@ COPY --from=build /app/shared/dist ./shared/dist
 COPY --from=build /app/setup/dist ./setup/dist
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/preview/dist ./preview/dist
+COPY --from=build /app/preview/dist-mcp-app ./preview/dist-mcp-app
 
 EXPOSE 3001
 CMD ["node", "server/dist/index.js", "--http"]
