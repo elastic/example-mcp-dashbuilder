@@ -19,8 +19,19 @@ export function tryListen(
   options: { explicitPort: boolean }
 ): Promise<Server> {
   return new Promise((resolve, reject) => {
-    const httpServer = app.listen(port, host, () => resolve(httpServer));
+    let settled = false;
+    const httpServer = app.listen(port, host);
+    httpServer.on('listening', () => {
+      // Defer to let any queued error events fire first
+      setImmediate(() => {
+        if (!settled) {
+          settled = true;
+          resolve(httpServer);
+        }
+      });
+    });
     httpServer.on('error', (err: NodeJS.ErrnoException) => {
+      settled = true;
       if (err.code === 'EADDRINUSE' && port !== 0 && !options.explicitPort) {
         // No explicit PORT set and default port is busy — let the OS pick one
         resolve(tryListen(app, 0, host, options));

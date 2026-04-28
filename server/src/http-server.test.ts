@@ -4,47 +4,11 @@
  * you may not use this file except in compliance with the Elastic License 2.0.
  */
 
-import { EventEmitter } from 'events';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Express } from 'express';
+import type { AddressInfo } from 'net';
 import type { Server } from 'http';
+import express from 'express';
+import { describe, it, expect, afterEach } from 'vitest';
 import { tryListen, parseHttpFlag } from './http-server.js';
-
-function createMockApp(behavior: 'success' | 'eaddrinuse' | 'eaddrinuse-once' | 'other-error') {
-  let callCount = 0;
-  const app = {
-    listen: vi.fn((_port: number, _host: string, callback: () => void) => {
-      callCount++;
-      const server = new EventEmitter() as EventEmitter & Server;
-      // Attach a fake address method
-      (server as unknown as { address: () => { port: number } }).address = () => ({
-        port: _port === 0 ? 49152 : _port,
-      });
-
-      process.nextTick(() => {
-        if (behavior === 'success') {
-          callback();
-        } else if (behavior === 'eaddrinuse') {
-          const err = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' });
-          server.emit('error', err);
-        } else if (behavior === 'eaddrinuse-once') {
-          if (callCount === 1) {
-            const err = Object.assign(new Error('listen EADDRINUSE'), { code: 'EADDRINUSE' });
-            server.emit('error', err);
-          } else {
-            callback();
-          }
-        } else {
-          const err = Object.assign(new Error('EACCES'), { code: 'EACCES' });
-          server.emit('error', err);
-        }
-      });
-
-      return server;
-    }),
-  } as unknown as Express;
-  return app;
-}
 
 describe('parseHttpFlag', () => {
   it('returns true when --http is present', () => {
@@ -61,36 +25,46 @@ describe('parseHttpFlag', () => {
 });
 
 describe('tryListen', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
+  const servers: Server[] = [];
+
+  function track(server: Server): Server {
+    servers.push(server);
+    return server;
+  }
+
+  afterEach(async () => {
+    await Promise.all(servers.map((s) => new Promise<void>((resolve) => s.close(() => resolve()))));
+    servers.length = 0;
   });
 
   it('resolves with the server on success', async () => {
-    const app = createMockApp('success');
-    const server = await tryListen(app, 3001, '127.0.0.1', { explicitPort: false });
+    const server = track(await tryListen(express(), 0, '127.0.0.1', { explicitPort: false }));
     expect(server).toBeDefined();
-    expect(app.listen).toHaveBeenCalledWith(3001, '127.0.0.1', expect.any(Function));
+    expect((server.address() as AddressInfo).port).toBeGreaterThan(0);
   });
 
-  it('falls back to port 0 on EADDRINUSE when no explicit port', async () => {
-    const app = createMockApp('eaddrinuse-once');
-    const server = await tryListen(app, 3001, '127.0.0.1', { explicitPort: false });
-    expect(server).toBeDefined();
-    expect(app.listen).toHaveBeenCalledTimes(2);
-    expect(app.listen).toHaveBeenLastCalledWith(0, '127.0.0.1', expect.any(Function));
+  it('falls back to an OS-assigned port on EADDRINUSE when no explicit port', async () => {
+    const blocker = track(await tryListen(express(), 0, '127.0.0.1', { explicitPort: false }));
+    const occupiedPort = (blocker.address() as AddressInfo).port;
+
+    const server = track(
+      await tryListen(express(), occupiedPort, '127.0.0.1', { explicitPort: false })
+    );
+    const assignedPort = (server.address() as AddressInfo).port;
+    expect(assignedPort).not.toBe(occupiedPort);
   });
 
   it('rejects with a descriptive error on EADDRINUSE when explicit port is set', async () => {
-    const app = createMockApp('eaddrinuse');
-    await expect(tryListen(app, 4000, '127.0.0.1', { explicitPort: true })).rejects.toThrow(
-      'Port 4000 is already in use'
-    );
+    const blocker = track(await tryListen(express(), 0, '127.0.0.1', { explicitPort: false }));
+    const occupiedPort = (blocker.address() as AddressInfo).port;
+
+    await expect(
+      tryListen(express(), occupiedPort, '127.0.0.1', { explicitPort: true })
+    ).rejects.toThrow(`Port ${occupiedPort} is already in use`);
   });
 
   it('rejects on non-EADDRINUSE errors', async () => {
-    const app = createMockApp('other-error');
-    await expect(tryListen(app, 3001, '127.0.0.1', { explicitPort: false })).rejects.toThrow(
-      'EACCES'
-    );
+    // Listening on an invalid host triggers an EADDRNOTAVAIL error
+    await expect(tryListen(express(), 0, '240.0.0.1', { explicitPort: false })).rejects.toThrow();
   });
 });
