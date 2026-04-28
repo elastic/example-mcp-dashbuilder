@@ -14,7 +14,7 @@ import type {
 /**
  * Shared contract for MCP test server harnesses (stdio and HTTP).
  */
-export interface TestServer {
+export interface MCPTestServer {
   start(): Promise<void>;
   stop(): Promise<void>;
   callTool(name: string, args?: Record<string, unknown>): Promise<CallToolResult>;

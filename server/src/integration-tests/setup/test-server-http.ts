@@ -28,12 +28,12 @@ import type {
   ReadResourceResult,
 } from '@modelcontextprotocol/sdk/types.js';
 
-import type { TestServer } from './test-server-interface.js';
+import type { MCPTestServer } from './test-server-interface.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_CWD = resolve(__dirname, '..', '..', '..');
 
-export class MCPTestServerHttp implements TestServer {
+export class MCPTestServerHttp implements MCPTestServer {
   private client: Client | null = null;
   private childProcess: ChildProcess | null = null;
   private timeout: number;

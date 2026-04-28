@@ -9,10 +9,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { SAMPLE_METRIC_ARGS, SAMPLE_HEATMAP_ARGS } from '../__fixtures__/dashboard-factory.js';
 import { expectSuccess, expectTextContent } from '../helpers/mcp-assertions.js';
 import { createTestServer } from '../setup/create-test-server.js';
-import type { TestServer } from '../setup/test-server-interface.js';
+import type { MCPTestServer } from '../setup/test-server-interface.js';
 
 describe('Metric and heatmap tools', () => {
-  let server: TestServer;
+  let server: MCPTestServer;
 
   beforeEach(async () => {
     server = createTestServer();

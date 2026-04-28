@@ -6,11 +6,11 @@
 
 import { MCPTestServerStdio } from './test-server-stdio.js';
 import { MCPTestServerHttp } from './test-server-http.js';
-import type { TestServer } from './test-server-interface.js';
+import type { MCPTestServer } from './test-server-interface.js';
 
 export type TransportType = 'stdio' | 'http';
 
-export function createTestServer(transport?: TransportType): TestServer {
+export function createTestServer(transport?: TransportType): MCPTestServer {
   const resolved = transport ?? (process.env.TRANSPORT as TransportType) ?? 'stdio';
   if (resolved === 'http') return new MCPTestServerHttp();
   return new MCPTestServerStdio();

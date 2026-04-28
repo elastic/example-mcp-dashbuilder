@@ -8,10 +8,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { expectToolsExist } from '../helpers/mcp-assertions.js';
 import { createTestServer } from '../setup/create-test-server.js';
-import type { TestServer } from '../setup/test-server-interface.js';
+import type { MCPTestServer } from '../setup/test-server-interface.js';
 
 describe('Server startup', () => {
-  let server: TestServer;
+  let server: MCPTestServer;
 
   beforeEach(async () => {
     server = createTestServer();

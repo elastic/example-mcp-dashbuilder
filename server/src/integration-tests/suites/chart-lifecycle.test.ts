@@ -12,10 +12,10 @@ import {
 } from '../__fixtures__/dashboard-factory.js';
 import { expectSuccess, expectTextContent } from '../helpers/mcp-assertions.js';
 import { createTestServer } from '../setup/create-test-server.js';
-import type { TestServer } from '../setup/test-server-interface.js';
+import type { MCPTestServer } from '../setup/test-server-interface.js';
 
 describe('Chart lifecycle', () => {
-  let server: TestServer;
+  let server: MCPTestServer;
 
   beforeEach(async () => {
     server = createTestServer();
