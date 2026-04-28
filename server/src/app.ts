@@ -8,9 +8,22 @@ import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
+import type { Response } from 'express';
 import { createServer } from './server.js';
 
 export const DEFAULT_HOST = '127.0.0.1';
+
+function handleInternalError(method: string, err: unknown, res: Response): void {
+  console.error(`MCP ${method} /mcp error:`, err);
+  if (!res.headersSent) {
+    res.status(500).json({
+      jsonrpc: '2.0',
+      // JSON-RPC -32603: Internal error
+      error: { code: -32603, message: 'Internal server error' },
+      id: null,
+    });
+  }
+}
 
 export function createApp(host = DEFAULT_HOST): ReturnType<typeof createMcpExpressApp> {
   const app = createMcpExpressApp({ host });
@@ -86,15 +99,7 @@ export function createApp(host = DEFAULT_HOST): ReturnType<typeof createMcpExpre
         id: null,
       });
     } catch (err) {
-      console.error('MCP POST /mcp error:', err);
-      if (!res.headersSent) {
-        res.status(500).json({
-          jsonrpc: '2.0',
-          // JSON-RPC -32603: Internal error
-          error: { code: -32603, message: 'Internal server error' },
-          id: null,
-        });
-      }
+      handleInternalError('POST', err, res);
     }
   });
 
@@ -109,15 +114,7 @@ export function createApp(host = DEFAULT_HOST): ReturnType<typeof createMcpExpre
       }
       res.status(405).end(JSON.stringify({ error: 'Use POST for MCP requests' }));
     } catch (err) {
-      console.error('MCP GET /mcp error:', err);
-      if (!res.headersSent) {
-        res.status(500).json({
-          jsonrpc: '2.0',
-          // JSON-RPC -32603: Internal error
-          error: { code: -32603, message: 'Internal server error' },
-          id: null,
-        });
-      }
+      handleInternalError('GET', err, res);
     }
   });
 
@@ -132,15 +129,7 @@ export function createApp(host = DEFAULT_HOST): ReturnType<typeof createMcpExpre
       }
       res.status(404).end(JSON.stringify({ error: 'Session not found' }));
     } catch (err) {
-      console.error('MCP DELETE /mcp error:', err);
-      if (!res.headersSent) {
-        res.status(500).json({
-          jsonrpc: '2.0',
-          // JSON-RPC -32603: Internal error
-          error: { code: -32603, message: 'Internal server error' },
-          id: null,
-        });
-      }
+      handleInternalError('DELETE', err, res);
     }
   });
 
