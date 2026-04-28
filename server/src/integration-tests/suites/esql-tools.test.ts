@@ -9,9 +9,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TEST_INDEX } from '../setup/seed-data.js';
 import { expectSuccess, expectTextContent } from '../helpers/mcp-assertions.js';
 import { createTestServer } from '../setup/create-test-server.js';
+import type { TestServer } from '../setup/test-server-interface.js';
 
 describe('ES|QL tools', () => {
-  let server: ReturnType<typeof createTestServer>;
+  let server: TestServer;
 
   beforeEach(async () => {
     server = createTestServer();

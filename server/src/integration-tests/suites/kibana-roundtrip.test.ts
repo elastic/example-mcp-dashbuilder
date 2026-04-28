@@ -23,6 +23,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TEST_INDEX } from '../setup/seed-data.js';
 import { expectSuccess, expectTextContent, parseJsonContent } from '../helpers/mcp-assertions.js';
 import { createTestServer } from '../setup/create-test-server.js';
+import type { TestServer } from '../setup/test-server-interface.js';
 
 /** Extract the Kibana dashboard ID from an export response URL */
 function extractDashboardId(exportText: string): string | null {
@@ -31,10 +32,7 @@ function extractDashboardId(exportText: string): string | null {
 }
 
 /** Get the full dashboard config via get_dashboard */
-async function getDashboardConfig(
-  server: ReturnType<typeof createTestServer>,
-  dashboardId?: string
-) {
+async function getDashboardConfig(server: TestServer, dashboardId?: string) {
   const result = await server.callTool('get_dashboard', dashboardId ? { dashboardId } : {});
   return parseJsonContent(result) as {
     title: string;
@@ -63,7 +61,7 @@ async function getDashboardConfig(
 }
 
 describe('Kibana roundtrip', () => {
-  let server: ReturnType<typeof createTestServer>;
+  let server: TestServer;
 
   beforeEach(async () => {
     server = createTestServer();
