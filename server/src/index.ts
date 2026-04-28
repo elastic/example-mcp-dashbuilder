@@ -20,30 +20,11 @@ if (existsSync(envPath)) {
   }
 }
 
-import { createServer as createNetServer } from 'net';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createApp, DEFAULT_HOST } from './app.js';
 import { createServer } from './server.js';
 
 const DEFAULT_PORT = 3001;
-const PORT_RANGE_SIZE = 99;
-
-function isPortAvailable(port: number, host: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const srv = createNetServer();
-    srv.once('error', () => resolve(false));
-    srv.listen(port, host, () => srv.close(() => resolve(true)));
-  });
-}
-
-async function findAvailablePort(start: number, host: string): Promise<number> {
-  for (let port = start; port <= start + PORT_RANGE_SIZE; port++) {
-    if (await isPortAvailable(port, host)) return port;
-  }
-  throw new Error(
-    `No available port found in range ${start}–${start + PORT_RANGE_SIZE}. Set PORT to specify one explicitly.`
-  );
-}
 
 const isHttp = process.argv.includes('--http');
 
@@ -59,22 +40,30 @@ if (!isHttp) {
   // HTTP mode: streamable HTTP transport with session management
   const host = process.env.HOST || DEFAULT_HOST;
   const app = createApp(host);
-  const explicitPort = process.env.PORT ? parseInt(process.env.PORT, 10) : undefined;
-  const port = explicitPort ?? (await findAvailablePort(DEFAULT_PORT, host));
+  const requestedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : DEFAULT_PORT;
 
-  const httpServer = app.listen(port, host, () => {
-    const address = httpServer.address();
-    const boundPort = typeof address === 'object' && address !== null ? address.port : port;
-    console.log(`Elastic Dashbuilder MCP App server running on http://${host}:${boundPort}/mcp`);
-  });
-  httpServer.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(
-        `Error: Port ${port} is already in use. Set a different port with the PORT environment variable.`
-      );
-    } else {
-      console.error(`Server error: ${err.message}`);
-    }
-    process.exit(1);
-  });
+  // Use port 0 as fallback to let the OS assign an available port atomically,
+  // avoiding the TOCTOU race of probe-then-bind.
+  const tryListen = (port: number): Promise<ReturnType<typeof import('http').createServer>> =>
+    new Promise((resolve, reject) => {
+      const httpServer = app.listen(port, host, () => resolve(httpServer));
+      httpServer.on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE' && port !== 0 && !process.env.PORT) {
+          // No explicit PORT set and default port is busy — let the OS pick one
+          resolve(tryListen(0));
+        } else if (err.code === 'EADDRINUSE') {
+          console.error(
+            `Error: Port ${port} is already in use. Set a different port with the PORT environment variable.`
+          );
+          process.exit(1);
+        } else {
+          reject(err);
+        }
+      });
+    });
+
+  const httpServer = await tryListen(requestedPort);
+  const address = httpServer.address();
+  const boundPort = typeof address === 'object' && address !== null ? address.port : requestedPort;
+  console.log(`Elastic Dashbuilder MCP App server running on http://${host}:${boundPort}/mcp`);
 }
