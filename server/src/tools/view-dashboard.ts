@@ -7,11 +7,8 @@
 import { readFileSync } from 'fs';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import {
-  registerAppTool,
-  registerAppResource,
-  RESOURCE_MIME_TYPE,
-} from '@modelcontextprotocol/ext-apps/server';
+import { registerAppResource, RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/server';
+import { registerAppOnlyTool } from '../utils/register-tool.js';
 import { getDashboard } from '../utils/dashboard-store.js';
 import { MCP_APP_HTML_PATH } from '../utils/config.js';
 
@@ -70,7 +67,7 @@ export function registerViewDashboard(server: McpServer): void {
     })
   );
 
-  registerAppTool(
+  registerAppOnlyTool(
     server,
     'view_dashboard',
     {
