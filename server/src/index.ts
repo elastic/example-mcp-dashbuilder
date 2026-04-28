@@ -44,7 +44,13 @@ if (!isHttp) {
   const explicitPort = !!process.env.PORT;
   const requestedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : DEFAULT_PORT;
 
-  const httpServer = await tryListen(app, requestedPort, host, { explicitPort });
+  let httpServer;
+  try {
+    httpServer = await tryListen(app, requestedPort, host, { explicitPort });
+  } catch (err) {
+    console.error(`Error: ${(err as Error).message}`);
+    process.exit(1);
+  }
   const address = httpServer.address();
   const boundPort = typeof address === 'object' && address !== null ? address.port : requestedPort;
   console.log(`Elastic Dashbuilder MCP App server running on http://${host}:${boundPort}/mcp`);

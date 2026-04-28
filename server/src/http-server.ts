@@ -25,10 +25,11 @@ export function tryListen(
         // No explicit PORT set and default port is busy — let the OS pick one
         resolve(tryListen(app, 0, host, options));
       } else if (err.code === 'EADDRINUSE') {
-        console.error(
-          `Error: Port ${port} is already in use. Set a different port with the PORT environment variable.`
+        reject(
+          new Error(
+            `Port ${port} is already in use. Set a different port with the PORT environment variable.`
+          )
         );
-        process.exit(1);
       } else {
         reject(err);
       }

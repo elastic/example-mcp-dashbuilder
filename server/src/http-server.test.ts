@@ -80,23 +80,11 @@ describe('tryListen', () => {
     expect(app.listen).toHaveBeenLastCalledWith(0, '127.0.0.1', expect.any(Function));
   });
 
-  it('exits with code 1 on EADDRINUSE when explicit port is set', async () => {
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
+  it('rejects with a descriptive error on EADDRINUSE when explicit port is set', async () => {
     const app = createMockApp('eaddrinuse');
-    // The promise never truly resolves because process.exit is mocked,
-    // but we need to await to let the nextTick fire.
-    const promise = tryListen(app, 4000, '127.0.0.1', { explicitPort: true });
-
-    // Let microtasks/nextTick run
-    await new Promise((r) => setTimeout(r, 50));
-
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Port 4000 is already in use'));
-
-    // Clean up: the promise is dangling since exit was mocked
-    promise.catch(() => {});
+    await expect(tryListen(app, 4000, '127.0.0.1', { explicitPort: true })).rejects.toThrow(
+      'Port 4000 is already in use'
+    );
   });
 
   it('rejects on non-EADDRINUSE errors', async () => {
