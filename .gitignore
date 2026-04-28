@@ -9,4 +9,3 @@ kibana-exports/
 .claude/
 .env
 .DS_Store
-vendor/
