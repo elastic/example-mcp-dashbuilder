@@ -12,42 +12,25 @@
  * dashboard directory for isolation — same as MCPTestServerStdio.
  */
 
-import { mkdtempSync } from 'fs';
 import { resolve, dirname } from 'path';
-import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 import type { ChildProcess } from 'child_process';
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import type {
-  CallToolResult,
-  ListToolsResult,
-  ListResourcesResult,
-  ReadResourceResult,
-} from '@modelcontextprotocol/sdk/types.js';
 
-import type { MCPTestServer } from './test-server-interface.js';
+import { MCPTestServerBase } from './test-server-base.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_CWD = resolve(__dirname, '..', '..', '..');
 
-export class MCPTestServerHttp implements MCPTestServer {
-  private client: Client | null = null;
+export class MCPTestServerHttp extends MCPTestServerBase {
   private childProcess: ChildProcess | null = null;
-  private timeout: number;
-  private dashboardsDir: string;
   private baseUrl: string | null = null;
-
-  constructor(opts: { timeout?: number } = {}) {
-    this.timeout = opts.timeout ?? 30_000;
-    this.dashboardsDir = mkdtempSync(resolve(tmpdir(), 'mcp-test-dashboards-'));
-  }
 
   async start(): Promise<void> {
     if (this.client) {
-      throw new Error('Test server already started. Call stop() first.');
+      throw new Error('Test server already started. Call start() first.');
     }
 
     // Spawn server as child process in HTTP mode (--http flag).
@@ -103,35 +86,11 @@ export class MCPTestServerHttp implements MCPTestServer {
     this.baseUrl = url.replace(/\/mcp$/, '');
 
     const transport = new StreamableHTTPClientTransport(new URL(url));
-    this.client = new Client({
-      name: 'integration-test-client',
-      version: '1.0.0',
-    });
-
-    const connectPromise = this.client.connect(transport);
-    let timer: ReturnType<typeof setTimeout>;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () => reject(new Error('MCP HTTP client connection timeout')),
-        this.timeout
-      );
-    });
-    try {
-      await Promise.race([connectPromise, timeoutPromise]);
-    } finally {
-      clearTimeout(timer!);
-    }
+    await this.connectClient(transport);
   }
 
   async stop(): Promise<void> {
-    if (this.client) {
-      try {
-        await this.client.close();
-      } catch (err) {
-        console.warn('client.close() error during teardown:', err);
-      }
-      this.client = null;
-    }
+    await this.closeClient();
 
     if (this.childProcess) {
       this.childProcess.kill('SIGTERM');
@@ -149,39 +108,10 @@ export class MCPTestServerHttp implements MCPTestServer {
     }
   }
 
-  // ── Tool helpers ──────────────────────────────────────────────
-
-  async callTool(name: string, args: Record<string, unknown> = {}): Promise<CallToolResult> {
-    return this.getClient().callTool({ name, arguments: args }) as Promise<CallToolResult>;
-  }
-
-  async listTools(): Promise<ListToolsResult> {
-    return this.getClient().listTools();
-  }
-
-  // ── Resource helpers ──────────────────────────────────────────
-
-  async listResources(): Promise<ListResourcesResult> {
-    return this.getClient().listResources();
-  }
-
-  async readResource(uri: string): Promise<ReadResourceResult> {
-    return this.getClient().readResource({ uri });
-  }
-
   getBaseUrl(): string {
     if (!this.baseUrl) {
       throw new Error('Test server not started. Call start() first.');
     }
     return this.baseUrl;
-  }
-
-  // ── Internal ──────────────────────────────────────────────────
-
-  private getClient(): Client {
-    if (!this.client) {
-      throw new Error('Test server not started. Call start() first.');
-    }
-    return this.client;
   }
 }

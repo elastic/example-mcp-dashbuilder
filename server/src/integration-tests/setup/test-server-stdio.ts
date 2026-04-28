@@ -11,36 +11,18 @@
  * providing an isolated in-memory dashboard store per instance.
  */
 
-import { mkdtempSync } from 'fs';
 import { resolve, dirname } from 'path';
-import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import type {
-  CallToolResult,
-  ListToolsResult,
-  ListResourcesResult,
-  ReadResourceResult,
-} from '@modelcontextprotocol/sdk/types.js';
 
-import type { MCPTestServer } from './test-server-interface.js';
+import { MCPTestServerBase } from './test-server-base.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_CWD = resolve(__dirname, '..', '..', '..');
 
-export class MCPTestServerStdio implements MCPTestServer {
-  private client: Client | null = null;
+export class MCPTestServerStdio extends MCPTestServerBase {
   private transport: StdioClientTransport | null = null;
-  private timeout: number;
-  private dashboardsDir: string;
-
-  constructor(opts: { timeout?: number } = {}) {
-    this.timeout = opts.timeout ?? 30_000;
-    // Each instance gets its own temp dir — tests never touch user dashboards
-    this.dashboardsDir = mkdtempSync(resolve(tmpdir(), 'mcp-test-dashboards-'));
-  }
 
   async start(): Promise<void> {
     if (this.client) {
@@ -66,61 +48,11 @@ export class MCPTestServerStdio implements MCPTestServer {
       },
     });
 
-    this.client = new Client({
-      name: 'integration-test-client',
-      version: '1.0.0',
-    });
-
-    const connectPromise = this.client.connect(this.transport);
-    let timer: ReturnType<typeof setTimeout>;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error('MCP client connection timeout')), this.timeout);
-    });
-    try {
-      await Promise.race([connectPromise, timeoutPromise]);
-    } finally {
-      clearTimeout(timer!);
-    }
+    await this.connectClient(this.transport);
   }
 
   async stop(): Promise<void> {
-    if (this.client) {
-      try {
-        await this.client.close();
-      } catch {
-        // Ignore close errors — process may have already exited
-      }
-      this.client = null;
-    }
+    await this.closeClient();
     this.transport = null;
-  }
-
-  // ── Tool helpers ──────────────────────────────────────────────
-
-  async callTool(name: string, args: Record<string, unknown> = {}): Promise<CallToolResult> {
-    return this.getClient().callTool({ name, arguments: args }) as Promise<CallToolResult>;
-  }
-
-  async listTools(): Promise<ListToolsResult> {
-    return this.getClient().listTools();
-  }
-
-  // ── Resource helpers ──────────────────────────────────────────
-
-  async listResources(): Promise<ListResourcesResult> {
-    return this.getClient().listResources();
-  }
-
-  async readResource(uri: string): Promise<ReadResourceResult> {
-    return this.getClient().readResource({ uri });
-  }
-
-  // ── Internal ──────────────────────────────────────────────────
-
-  private getClient(): Client {
-    if (!this.client) {
-      throw new Error('Test server not started. Call start() first.');
-    }
-    return this.client;
   }
 }
