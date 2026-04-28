@@ -26,6 +26,7 @@ export abstract class MCPTestServerBase implements MCPTestServer {
 
   constructor(opts: { timeout?: number } = {}) {
     this.timeout = opts.timeout ?? 30_000;
+    // Each instance gets its own temp dir — tests never touch user dashboards
     this.dashboardsDir = mkdtempSync(resolve(tmpdir(), 'mcp-test-dashboards-'));
   }
 
