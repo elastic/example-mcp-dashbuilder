@@ -11,13 +11,14 @@ import {
   SAMPLE_LINE_CHART_ARGS,
 } from '../__fixtures__/dashboard-factory.js';
 import { expectSuccess, expectTextContent } from '../helpers/mcp-assertions.js';
-import { MCPTestServer } from '../setup/test-server.js';
+import { createTestServer } from '../setup/create-test-server.js';
+import type { MCPTestServer } from '../setup/test-server-interface.js';
 
 describe('Chart lifecycle', () => {
   let server: MCPTestServer;
 
   beforeEach(async () => {
-    server = new MCPTestServer();
+    server = createTestServer();
     await server.start();
   });
 

@@ -1,6 +1,9 @@
 {
   "name": "mcp-app-dashboards",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "license": "Elastic-2.0",
   "workspaces": [
     "shared",
@@ -11,6 +14,8 @@
   "type": "module",
   "scripts": {
     "setup": "npm run build --workspace=setup && node setup/dist/cli.js",
+    "start": "npm run start --workspace=server",
+    "start:http": "npm run start:http --workspace=server",
     "dev:server": "npm run dev --workspace=server",
     "build": "npm run build --workspace=shared && npm run build --workspace=setup && npm run build --workspace=server && npm run build --workspace=preview",
     "lint": "eslint .",

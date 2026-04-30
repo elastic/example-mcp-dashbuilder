@@ -43,7 +43,7 @@ For a structured walkthrough with Mermaid diagrams (system context, data flows, 
 ```
 ┌─────────────────────────────────────────────────┐
 │  MCP Host (Cursor, Claude Desktop, etc.)        │
-│  ↕ MCP Protocol (stdio)                         │
+│  ↕ MCP Protocol (stdio or HTTP)                 │
 ├─────────────────────────────────────────────────┤
 │  MCP Server (TypeScript)                        │
 │  ├── Tools: query, chart, metric, heatmap, ...  │
@@ -63,11 +63,11 @@ For a structured walkthrough with Mermaid diagrams (system context, data flows, 
 └─────────────────────────────────────────────────┘
 ```
 
-The MCP App communicates with the server entirely via the MCP Apps protocol (postMessage) — no localhost server dependency. App-only tools (`visibility: ["app"]`) handle all UI↔server interaction including data fetching, layout persistence, and time field detection.
+The server supports two transports: **stdio** (default) for standard MCP clients, and **HTTP** (`--http` flag) with streamable HTTP and session management. The MCP App communicates with the server entirely via the MCP Apps protocol (postMessage) — no localhost server dependency. App-only tools (`visibility: ["app"]`) handle all UI↔server interaction including data fetching, layout persistence, and time field detection.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - Elasticsearch (local or Elastic Cloud)
 - Kibana (for export/import)
 - An MCP client: [Cursor](https://cursor.com) (v2.6+ for MCP Apps inline preview), [Claude Desktop](https://claude.ai/download), [Claude Code](https://claude.ai/claude-code), or [VS Code Copilot](https://code.visualstudio.com/)
@@ -179,7 +179,7 @@ Open the `example-mcp-dashbuilder` folder in your MCP client. The MCP server wil
 
 - **`npx: command not found`** — Cursor/Claude Desktop may not inherit your shell PATH when launched from the dock. Either open your client from the terminal (e.g. `cursor .`) or use the `start-server.sh` script which loads nvm automatically.
 - **`EPERM: operation not permitted`** — Claude Desktop's macOS sandbox blocks access to `~/Documents`. Move the repo to a non-protected location like `~/example-mcp-dashbuilder` or `/tmp`.
-- **Wrong Node version** — The project requires Node 18+. If you use nvm, `start-server.sh` handles this. For manual config, use the full path to your Node binary: `/Users/you/.nvm/versions/node/v22.x.x/bin/node`.
+- **Wrong Node version** — The project requires Node 22+. If you use nvm, `start-server.sh` handles this. For manual config, use the full path to your Node binary: `/Users/you/.nvm/versions/node/v22.x.x/bin/node`.
 
 ## Usage
 
@@ -257,6 +257,20 @@ Open the `example-mcp-dashbuilder` folder in your MCP client. The MCP server wil
 | Metric  | Single KPI with optional trend | Total revenue with daily sparkline |
 | Heatmap | Patterns across 2 dimensions   | Orders by day of week × hour       |
 
+## HTTP transport
+
+Start the server in HTTP mode:
+
+```bash
+npm run start -- --http
+```
+
+The server listens on `http://127.0.0.1:3001/mcp` by default. Override with environment variables:
+
+```bash
+HOST=127.0.0.1 PORT=3002 npm run start -- --http
+```
+
 ## Inline dashboard preview (MCP Apps)
 
 The `view_dashboard` tool renders the full interactive dashboard directly inside the chat using [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview). The preview app is bundled into a single HTML file and served as an MCP App resource.
@@ -293,7 +307,9 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 ```
 ├── server/                    # MCP Server
 │   └── src/
-│       ├── index.ts           # Server entry point
+│       ├── index.ts           # Entry point (stdio default, --http flag)
+│       ├── server.ts          # MCP server factory (tools, resources)
+│       ├── app.ts             # HTTP transport (Express, session mgmt)
 │       ├── types.ts           # Shared types
 │       ├── tools/             # MCP tool implementations
 │       │   ├── view-dashboard.ts  # MCP Apps inline preview + resources
@@ -375,7 +391,7 @@ npm run test --workspace=setup        # Setup unit tests only
 
 #### Integration tests
 
-Integration tests exercise the full MCP client → server → Elasticsearch/Kibana roundtrip using [testcontainers](https://testcontainers.com/). They spin up real ES + Kibana containers with security enabled, seed test data, and interact with the server via `StdioClientTransport`.
+Integration tests exercise the full MCP client → server → Elasticsearch/Kibana roundtrip using [testcontainers](https://testcontainers.com/). They spin up real ES + Kibana containers with security enabled, seed test data, and interact with the server via both stdio and HTTP transports.
 
 ```bash
 cd server

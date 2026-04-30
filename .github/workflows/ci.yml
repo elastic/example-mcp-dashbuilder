@@ -42,13 +42,14 @@ jobs:
         run: npm run build
 
   integration-tests:
-    name: Integration Tests (ES/Kibana ${{ matrix.stack-version }})
+    name: Integration Tests (${{ matrix.transport }}, ES/Kibana ${{ matrix.stack-version }})
     runs-on: ubuntu-latest
     needs: check
     strategy:
       fail-fast: false
       matrix:
         stack-version: ['9.3.0', '9.4.0-SNAPSHOT']
+        transport: ['stdio', 'http']
 
     steps:
       - uses: actions/checkout@v4
@@ -71,4 +72,5 @@ jobs:
         env:
           CI: true
           STACK_VERSION: ${{ matrix.stack-version }}
+          TRANSPORT: ${{ matrix.transport }}
         run: npx vitest run --config vitest.integration.config.ts
