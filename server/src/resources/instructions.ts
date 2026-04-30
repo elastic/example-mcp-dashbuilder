@@ -18,7 +18,7 @@ Elasticsearch visualizations using ES|QL and Elastic Charts.
 2. Create a new dashboard with \`create_dashboard\` — note the returned \`dashboardId\`.
 3. **Pass \`dashboardId\` on every subsequent tool call** in this conversation to ensure \
 session isolation. This prevents different chat sessions from interfering with each other.
-4. Use \`list_indices\` and \`get_fields\` to explore available data.
+4. Use \`list_indices\` and \`get_schema\` to explore available data.
 5. Use \`run_esql\` to test queries before creating charts.
 6. Create visualizations with \`create_chart\`, \`create_metric\`, \`create_heatmap\`.
 7. Organize with \`create_section\` and \`move_panel_to_section\`.
