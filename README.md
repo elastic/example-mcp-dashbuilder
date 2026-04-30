@@ -38,6 +38,8 @@ One-click export to Kibana as Lens visualizations
 
 ## Architecture
 
+For a structured walkthrough with Mermaid diagrams (system context, data flows, monorepo build order), see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ```
 ┌─────────────────────────────────────────────────┐
 │  MCP Host (Cursor, Claude Desktop, etc.)        │
@@ -336,7 +338,7 @@ Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer
 ├── .cursorrules               # Cursor-specific AI instructions
 ├── .github/workflows/         # CI, Release (semantic-release), PR-title check
 ├── .releaserc.js              # semantic-release config
-├── scripts/                   # bundle.sh (release bundler), bump-version.mjs
+├── scripts/                   # bundle.sh (release bundler)
 └── eslint.config.js           # Linting (no-explicit-any enforced)
 ```
 
@@ -413,9 +415,7 @@ Releases are cut by [semantic-release](https://github.com/semantic-release/seman
 2. A PR title must follow [Conventional Commits](https://www.conventionalcommits.org/) — enforced by the `PR title` workflow. Allowed types: `feat`, `fix`, `refactor`, `perf`, `build`, `chore`, `docs`, `revert`.
 3. Trigger the `Release` workflow manually from `main` (Actions → Release → Run workflow). semantic-release:
    - Analyses commits since the last tag and decides the bump level (`feat` → minor, everything else → patch, `BREAKING CHANGE:` footer → major)
-   - Bumps `manifest.json` + `server/package.json` and commits back to `main` with `[skip ci]`
-   - Generates/updates `CHANGELOG.md`
-   - Creates a GitHub release with the `.mcpb` + `.tgz` artifacts attached
+   - Creates a GitHub release (notes + tag) with the `.mcpb` + `.tgz` artifacts attached
 
 **Local dry run** (no GitHub credentials needed):
 
