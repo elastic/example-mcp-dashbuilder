@@ -2,6 +2,10 @@
 
 An MCP (Model Context Protocol) app that lets AI assistants build Kibana dashboards using ES|QL and Elastic Charts. Create visualizations through natural language, preview them live with Kibana's grid layout, and export directly to Kibana as real Lens dashboards.
 
+![Claude Desktop showing the inline dashboard preview](claude-desktop-preview.png)
+
+_Screenshot from Claude Desktop: the MCP app renders the interactive dashboard inside the chat._
+
 ## What it does
 
 ```
