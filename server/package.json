@@ -22,7 +22,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "^9.0.0",
     "@elastic/esql": "^1.7.0",
-    "@modelcontextprotocol/ext-apps": "^1.5.0",
+    "@modelcontextprotocol/ext-apps": "^1.7.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^5.2.1",
     "mcp-dashboards-shared": "*",
