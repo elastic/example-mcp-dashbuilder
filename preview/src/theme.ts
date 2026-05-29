@@ -76,7 +76,9 @@ export function getElasticChartsTheme({
   isDarkMode,
 }: ChartsThemeOptions): ChartsTheme {
   const colorMode = isDarkMode ? 'DARK' : 'LIGHT';
-  const baseTheme = getChartsTheme('borealis', colorMode);
+  // Deep-clone before mutating: the Borealis light theme returns frozen objects
+  // that throw TypeError on direct property assignment.
+  const baseTheme = JSON.parse(JSON.stringify(getChartsTheme('borealis', colorMode)));
 
   applyNumericFontFamily(baseTheme);
 

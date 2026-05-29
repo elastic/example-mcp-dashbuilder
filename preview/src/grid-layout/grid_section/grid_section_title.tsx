@@ -63,16 +63,15 @@ export const GridSectionTitle = React.memo(
           aria-label={'Toggle collapse'}
           iconType={currentSection?.isCollapsed ? 'chevronSingleRight' : 'chevronSingleDown'}
           onClick={toggleIsCollapsed}
-          size="m"
+          size="xs"
           id={`kbnGridSectionTitle-${sectionId}`}
           aria-controls={`kbnGridSection-${sectionId}`}
           aria-expanded={!currentSection?.isCollapsed}
           data-test-subj={`kbnGridSectionTitle-${sectionId}`}
           textProps={false}
           className={'kbnGridSectionTitle--button'}
-          flush="both"
         >
-          <EuiTitle size="xs" css={styles.mediumFontWeight}>
+          <EuiTitle size="xxs" css={styles.mediumFontWeight}>
             <h2>{sectionTitle}</h2>
           </EuiTitle>
         </EuiButtonEmpty>

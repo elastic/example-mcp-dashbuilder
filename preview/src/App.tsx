@@ -237,7 +237,7 @@ function AppInner({ initialDashboard }: { initialDashboard: DashboardConfig }) {
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
             {isAllData ? (
-              <EuiButtonEmpty iconType="calendar" onClick={() => setIsAllData(false)}>
+              <EuiButtonEmpty size="s" iconType="calendar" onClick={() => setIsAllData(false)}>
                 All data
               </EuiButtonEmpty>
             ) : (
