@@ -26,7 +26,8 @@
         "ES_API_KEY": "${user_config.es_api_key}",
         "ES_USERNAME": "${user_config.es_username}",
         "ES_PASSWORD": "${user_config.es_password}",
-        "KIBANA_URL": "${user_config.kibana_url}"
+        "KIBANA_URL": "${user_config.kibana_url}",
+        "UNSAFE_SSL": "${user_config.unsafe_ssl}"
       }
     }
   },
@@ -127,6 +128,13 @@
       "type": "string",
       "title": "Kibana URL",
       "description": "Kibana URL for export/import (e.g. http://localhost:5601)",
+      "required": false,
+      "sensitive": false
+    },
+    "unsafe_ssl": {
+      "type": "boolean",
+      "title": "Accept self-signed certificates",
+      "description": "Disable SSL certificate verification. Enable this if your Elasticsearch or Kibana uses a self-signed certificate.",
       "required": false,
       "sensitive": false
     }
