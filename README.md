@@ -44,31 +44,6 @@ One-click export to Kibana as Lens visualizations
 
 For a structured walkthrough with Mermaid diagrams (system context, data flows, monorepo build order), see [ARCHITECTURE.md](ARCHITECTURE.md).
 
-```
-┌─────────────────────────────────────────────────┐
-│  MCP Host (Cursor, Claude Desktop, etc.)        │
-│  ↕ MCP Protocol (stdio or HTTP)                 │
-├─────────────────────────────────────────────────┤
-│  MCP Server (TypeScript)                        │
-│  ├── Tools: query, chart, metric, heatmap, ...  │
-│  ├── App-only tools: data fetch, layout, etc.   │
-│  ├── Resources: dataviz guidelines, ES|QL ref   │
-│  ├── Instructions: workflow, tips, capabilities │
-│  └── Export: Kibana saved objects API           │
-├─────────────────────────────────────────────────┤
-│  MCP App (single-file HTML, in host iframe)     │
-│  ├── ext-apps client SDK (postMessage ↔ server) │
-│  ├── Elastic Charts (bar, line, pie, etc.)      │
-│  ├── kbn-grid-layout (drag, resize, sections)   │
-│  ├── Borealis theme                             │
-│  └── Data via callServerTool("run_esql_query")  │
-├─────────────────────────────────────────────────┤
-│  Elasticsearch  ←→  Kibana                      │
-└─────────────────────────────────────────────────┘
-```
-
-The server supports two transports: **stdio** (default) for standard MCP clients, and **HTTP** (`--http` flag) with streamable HTTP and session management. The MCP App communicates with the server entirely via the MCP Apps protocol (postMessage) — no localhost server dependency. App-only tools (`visibility: ["app"]`) handle all UI↔server interaction including data fetching, layout persistence, and time field detection.
-
 ## Prerequisites
 
 - Node.js 22+
@@ -277,19 +252,9 @@ HOST=127.0.0.1 PORT=3002 npm run start -- --http
 
 ## Inline dashboard preview (MCP Apps)
 
-The `view_dashboard` tool renders the full interactive dashboard directly inside the chat using [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview). The preview app is bundled into a single HTML file and served as an MCP App resource.
+The `view_dashboard` tool renders the full interactive dashboard directly inside the chat using [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview).
 
-**How it works:**
-
-1. `npm run build --workspace=preview` builds the preview app into a single self-contained HTML file (~2.5MB, ~577KB gzipped) using `vite-plugin-singlefile`
-2. The MCP server reads this file and serves it as an MCP App resource with `mimeType: 'text/html;profile=mcp-app'`
-3. The host renders the HTML in a sandboxed iframe
-4. The app communicates with the MCP server via the ext-apps client SDK (`callServerTool()` over postMessage)
-5. Charts render with Elastic Charts + Borealis theme
-
-**Requirements:**
-
-- Cursor v2.6+ (MCP Apps support) — also supported by Claude Desktop, Claude.ai, VS Code Copilot
+**Client requirements:** Cursor v2.6+, Claude Desktop, Claude.ai, or VS Code Copilot.
 
 ## Export to Kibana
 
@@ -303,139 +268,6 @@ The export tool translates each panel to a Lens visualization:
 | heatmap           | Heatmap          |
 
 Grid positions are preserved 1:1 (same 48-column system). ES|QL queries transfer directly. Time fields are auto-detected via field_caps so Kibana's time picker works immediately. Custom colors (series palettes, metric backgrounds, heatmap ramps) are preserved on export.
-
-## Development
-
-### Project structure
-
-```
-├── server/                    # MCP Server
-│   └── src/
-│       ├── index.ts           # Entry point (stdio default, --http flag)
-│       ├── server.ts          # MCP server factory (tools, resources)
-│       ├── app.ts             # HTTP transport (Express, session mgmt)
-│       ├── types.ts           # Shared types
-│       ├── tools/             # MCP tool implementations
-│       │   ├── view-dashboard.ts  # MCP Apps inline preview + resources
-│       │   └── app-only-tools.ts  # App-only tools (visibility: ["app"])
-│       ├── utils/             # ES client, dashboard store, translators
-│       ├── resources/         # Instructions, dataviz guidelines, ES|QL ref
-│       └── integration-tests/ # MCP integration tests (testcontainers)
-├── preview/                   # MCP App (React, built to single HTML file)
-│   ├── vite.mcp-app.config.ts # Single-file build config
-│   └── src/
-│       ├── App.tsx            # Main app with grid layout
-│       ├── components/        # ChartPanel, PanelChrome
-│       ├── grid-layout/       # kbn-grid-layout (from Kibana)
-│       ├── hooks/             # ES|QL query hook
-│       └── theme.ts           # Borealis palette
-├── setup/                     # Setup wizard (interactive CLI)
-│   └── src/
-│       ├── cli.ts             # CLI entry point
-│       ├── prompts.ts         # Interactive prompts (local/cloud)
-│       ├── config.ts          # Config resolution
-│       ├── connection.ts      # ES connection testing
-│       ├── display.ts         # Display helpers
-│       ├── env.ts             # .env file read/write
-│       └── types.ts           # Shared types
-├── .cursor/mcp.json           # Cursor MCP configuration
-├── .cursorrules               # Cursor-specific AI instructions
-├── .github/workflows/         # CI, Release (semantic-release), PR-title check
-├── .releaserc.js              # semantic-release config
-├── scripts/                   # bundle.sh (release bundler)
-└── eslint.config.js           # Linting (no-explicit-any enforced)
-```
-
-### Applying changes to the MCP App
-
-The MCP App sandbox does not allow loading external scripts, so the MCP App always uses the pre-built bundle.
-
-| What changed                   | What to do                                   |
-| ------------------------------ | -------------------------------------------- |
-| Frontend code (`preview/src/`) | Rebuild: `npm run build --workspace=preview` |
-| Server code (`server/src/`)    | Restart the MCP server in your client        |
-
-### Scripts
-
-```bash
-npm run setup                         # Interactive setup wizard (ES credentials)
-npm run build                         # Build both server and preview
-npm run test                          # Run all tests (server + preview)
-npm run lint                          # ESLint check
-npm run typecheck                     # TypeScript check (both projects)
-npm run format                        # Format all files with Prettier
-npm run format:check                  # Check formatting without writing
-npm run check                         # Run all checks (format + lint + typecheck)
-npm run build --workspace=preview     # Build single-file MCP App
-
-# Integration tests (require Docker)
-cd server
-npm run test:integration              # Run against default stack version
-npm run test:integration:9.3          # Run against ES/Kibana 9.3.0
-npm run test:integration:9.4          # Run against ES/Kibana 9.4.0-SNAPSHOT
-npm run test:integration:all          # Run against both versions sequentially
-```
-
-### Testing
-
-Tests use [Vitest](https://vitest.dev/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/).
-
-```bash
-npm test                              # Run all unit tests
-npm run test --workspace=server       # Server unit tests only
-npm run test --workspace=preview      # Preview unit tests only
-npm run test --workspace=setup        # Setup unit tests only
-```
-
-**Setup tests** cover `.env` parsing and writing (quote stripping, file permissions), config resolution, connection testing, and display helpers.
-
-**Server unit tests** cover pure utility functions (ES|QL transforms, index pattern parsing, time field detection, slugify), the Lens forward/reverse translators, round-trip export-then-import fidelity, and dashboard translation.
-
-**Preview tests** cover chart component rendering (correct chart type for each config), the `useEsqlQuery` hook (fetch, loading, error, abort, time range), and empty data states.
-
-#### Integration tests
-
-Integration tests exercise the full MCP client → server → Elasticsearch/Kibana roundtrip using [testcontainers](https://testcontainers.com/). They spin up real ES + Kibana containers with security enabled, seed test data, and interact with the server via both stdio and HTTP transports.
-
-```bash
-cd server
-npm run test:integration              # Default stack version
-npm run test:integration:9.3          # ES/Kibana 9.3.0 (saved objects API)
-npm run test:integration:9.4          # ES/Kibana 9.4.0-SNAPSHOT (Dashboard API)
-npm run test:integration:all          # Both versions sequentially
-```
-
-**Requirements:** Docker must be running. First run pulls the ES/Kibana images (~1GB each).
-
-The same test suite runs against both **9.3** (saved objects API path) and **9.4** (new Dashboard API path) to verify both code paths in `export_to_kibana` and `import_from_kibana`. The stack version is configurable via the `STACK_VERSION` env var (or `ES_IMAGE`/`KIBANA_IMAGE` for full control).
-
-### Releasing
-
-Releases are cut by [semantic-release](https://github.com/semantic-release/semantic-release) from commit history — no hand-picked version numbers.
-
-**How it works**
-
-1. PRs are squash-merged into `main`. The PR title becomes the commit message.
-2. A PR title must follow [Conventional Commits](https://www.conventionalcommits.org/) — enforced by the `PR title` workflow. Allowed types: `feat`, `fix`, `refactor`, `perf`, `build`, `chore`, `docs`, `revert`.
-3. Trigger the `Release` workflow manually from `main` (Actions → Release → Run workflow). semantic-release:
-   - Analyses commits since the last tag and decides the bump level (`feat` → minor, everything else → patch, `BREAKING CHANGE:` footer → major)
-   - Creates a GitHub release (notes + tag) with the `.mcpb` + `.tgz` artifacts attached
-
-**Local dry run** (no GitHub credentials needed):
-
-```bash
-npx semantic-release --dry-run --no-ci
-```
-
-### Code quality
-
-- TypeScript strict mode enabled
-- `no-explicit-any` enforced via ESLint
-- Prettier formatting enforced
-- Pre-commit hook runs lint-staged (format + lint on staged files)
-- CI pipeline on GitHub Actions (format check + lint + typecheck + build + tests)
-- Integration tests run against ES/Kibana 9.3 and 9.4 in parallel on CI
-- Emotion theme types properly declared for EUI integration
 
 ## Credits
 
