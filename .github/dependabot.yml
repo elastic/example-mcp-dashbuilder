@@ -7,7 +7,7 @@ updates:
     groups:
       elastic:
         patterns:
-          - "@elastic/*"
+          - '@elastic/*'
       mcp:
         patterns:
-          - "@modelcontextprotocol/*"
+          - '@modelcontextprotocol/*'
