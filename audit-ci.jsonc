@@ -1,0 +1,7 @@
+{
+  "high": true,
+  // GHSA-36jr-mh4h-2g58: d3-color ReDoS via @elastic/charts → d3-scale → d3-color<3.1.0
+  // @elastic/charts confirmed the vulnerable color-parsing code path is not called.
+  // Fix is blocked on Kibana's ESM migration. Remove when @elastic/charts updates d3.
+  "allowlist": ["GHSA-36jr-mh4h-2g58"]
+}
