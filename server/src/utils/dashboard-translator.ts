@@ -9,7 +9,7 @@ import type { DashboardConfig, PanelConfig } from '../types.js';
 import { translatePanelToLens } from './lens-translator.js';
 import type { TimeFieldContext } from './lens-translator.js';
 import { parseIndexPattern } from './esql-parser.js';
-import { autoPlacePanels as autoPlacePanelsGeneric } from 'mcp-dashboards-shared';
+import { autoPlacePanels as autoPlacePanelsGeneric } from '@elastic/mcp-dashboards-shared';
 
 interface SavedDashboardPanel {
   panelIndex: string;
