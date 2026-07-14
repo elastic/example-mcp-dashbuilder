@@ -25,7 +25,7 @@
     "@modelcontextprotocol/ext-apps": "^1.7.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^5.2.1",
-    "mcp-dashboards-shared": "*",
+    "@elastic/mcp-dashboards-shared": "*",
     "zod": "^3.24.0"
   },
   "optionalDependencies": {
