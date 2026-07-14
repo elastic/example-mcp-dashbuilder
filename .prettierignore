@@ -1,4 +1,5 @@
 .npmrc
+audit-ci.jsonc
 node_modules/
 .venv/
 dist/
