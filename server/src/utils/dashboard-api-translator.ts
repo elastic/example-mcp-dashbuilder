@@ -15,7 +15,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import { autoPlacePanels as autoPlacePanelsGeneric } from 'mcp-dashboards-shared';
+import { autoPlacePanels as autoPlacePanelsGeneric } from '@elastic/mcp-dashboards-shared';
 import type {
   DashboardConfig,
   PanelConfig,

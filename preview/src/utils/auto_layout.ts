@@ -7,9 +7,9 @@
 import type { GridLayoutData, GridPanelData } from '../grid-layout';
 import { GRID_SETTINGS } from '../constants';
 import type { PanelConfig, SectionConfig } from '../types';
-import { autoPlacePanels as autoPlacePanelsGeneric } from 'mcp-dashboards-shared';
+import { autoPlacePanels as autoPlacePanelsGeneric } from '@elastic/mcp-dashboards-shared';
 
-export { buildBalancedRowWidths } from 'mcp-dashboards-shared';
+export { buildBalancedRowWidths } from '@elastic/mcp-dashboards-shared';
 
 /**
  * Auto-place panels and return a record keyed by panel id (legacy API shape).
