@@ -26,7 +26,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "express": "^5.2.1",
     "@elastic/mcp-dashboards-shared": "*",
-    "zod": "^3.24.0"
+    "zod": "^4.4.3"
   },
   "optionalDependencies": {
     "puppeteer": "^24.0.0"
